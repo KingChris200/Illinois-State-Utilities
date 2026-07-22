@@ -11,6 +11,11 @@ const {
     createRecordId,
 } = require('../../utils/database');
 
+const {
+    createCase,
+    updateCase,
+} = require('../../utils/caseManager');
+
 const STAFF_RANKS = [
     'Trial Moderator',
     'Senior Moderator',
@@ -51,7 +56,7 @@ const INFRACTION_TYPES = {
         opening:
             'has received an official staff notice from Illinois State Roleplay management.',
         closing:
-            'This notice is intended to formally document the concern and provide an opportunity for improvement.',
+            'This notice formally documents the concern and provides an opportunity for improvement.',
     },
 
     inactivity_notice: {
@@ -127,14 +132,12 @@ function convertHexToDecimal(hexColor) {
 
     const parsedColor = Number.parseInt(cleanedColor, 16);
 
-    if (Number.isNaN(parsedColor)) {
-        return 0x005b96;
-    }
-
-    return parsedColor;
+    return Number.isNaN(parsedColor)
+        ? 0x005b96
+        : parsedColor;
 }
 
-function getMemberDisplayName(user) {
+function getDisplayName(user) {
     return user.globalName || user.username;
 }
 
@@ -145,9 +148,7 @@ module.exports = {
             'Issue and permanently record an ISRP staff disciplinary action.'
         )
 
-        /*
-         * Required options must come first.
-         */
+        // Required options
         .addUserOption((option) =>
             option
                 .setName('staff-member')
@@ -210,9 +211,7 @@ module.exports = {
                 .setRequired(true)
         )
 
-        /*
-         * Optional options must come after all required options.
-         */
+        // Optional options
         .addStringOption((option) =>
             option
                 .setName('evidence')
@@ -337,7 +336,7 @@ module.exports = {
             }
 
             /*
-             * Load the server configuration.
+             * Load server configuration.
              */
             const configurations =
                 await readDatabase(
@@ -351,13 +350,12 @@ module.exports = {
             if (!guildConfiguration) {
                 return interaction.editReply({
                     content:
-                        '❌ Illinois State Utilities has not been configured in this server yet.\n\nPlease run `/setup` before using the discipline system.',
+                        '❌ Illinois State Utilities has not been configured in this server yet.\n\nRun `/setup` before using the discipline system.',
                 });
             }
 
             /*
-             * Load the existing staff profile so the selected rank
-             * can be checked against the saved current rank.
+             * Confirm the selected rank matches the saved staff profile.
              */
             const staffRecordsDatabase =
                 await readDatabase(
@@ -385,13 +383,10 @@ module.exports = {
                 });
             }
 
-            const configuredSessionChannelId =
-                guildConfiguration.sessionChannelId;
-
             const configuredSessionChannel =
-                configuredSessionChannelId
+                guildConfiguration.sessionChannelId
                     ? interaction.guild.channels.cache.get(
-                          configuredSessionChannelId
+                          guildConfiguration.sessionChannelId
                       )
                     : null;
 
@@ -410,32 +405,26 @@ module.exports = {
                 });
             }
 
-            const caseId =
+            const createdAt =
+                new Date().toISOString();
+
+            /*
+             * This is the disciplinary record ID stored in infractions.json.
+             */
+            const infractionId =
                 createRecordId(
                     infractionType.recordPrefix
                 );
 
-            const createdAt =
-                new Date().toISOString();
-
-            const staffDisplayName =
-                getMemberDisplayName(staffMember);
-
-            const issuedByDisplayName =
-                getMemberDisplayName(
-                    interaction.user
-                );
-
             const isTermination =
-                infractionTypeKey ===
-                'termination';
+                infractionTypeKey === 'termination';
 
             const isBlacklist =
-                infractionTypeKey ===
-                'blacklist';
+                infractionTypeKey === 'blacklist';
 
             const infractionRecord = {
-                id: caseId,
+                id: infractionId,
+
                 type: infractionTypeKey,
                 typeLabel: infractionType.label,
 
@@ -443,9 +432,9 @@ module.exports = {
                 guildName: interaction.guild.name,
 
                 staffMemberId: staffMember.id,
-                staffUsername:
-                    staffMember.username,
-                staffDisplayName,
+                staffUsername: staffMember.username,
+                staffDisplayName:
+                    getDisplayName(staffMember),
 
                 currentRank,
                 reason,
@@ -453,16 +442,18 @@ module.exports = {
                 duration,
                 notes,
 
-                issuedById:
-                    interaction.user.id,
-
+                issuedById: interaction.user.id,
                 issuedByUsername:
                     interaction.user.username,
-
-                issuedByDisplayName,
+                issuedByDisplayName:
+                    getDisplayName(
+                        interaction.user
+                    ),
 
                 announcementChannelId:
                     destinationChannel.id,
+
+                caseId: null,
 
                 status: 'active',
 
@@ -471,14 +462,71 @@ module.exports = {
             };
 
             /*
-             * Save the complete disciplinary case.
-             *
-             * Structure:
-             * {
-             *     "guildId": [
-             *         case records
-             *     ]
-             * }
+             * Create the official searchable case.
+             */
+            const officialCase =
+                await createCase({
+                    guildId:
+                        interaction.guildId,
+
+                    guildName:
+                        interaction.guild.name,
+
+                    caseType:
+                        infractionTypeKey,
+
+                    title:
+                        `${infractionType.label} — ${getDisplayName(
+                            staffMember
+                        )}`,
+
+                    staffMemberId:
+                        staffMember.id,
+
+                    staffUsername:
+                        staffMember.username,
+
+                    staffDisplayName:
+                        getDisplayName(
+                            staffMember
+                        ),
+
+                    issuedById:
+                        interaction.user.id,
+
+                    issuedByUsername:
+                        interaction.user.username,
+
+                    issuedByDisplayName:
+                        getDisplayName(
+                            interaction.user
+                        ),
+
+                    reason,
+                    evidence,
+                    notes,
+
+                    relatedRecordId:
+                        infractionId,
+
+                    relatedChannelId:
+                        destinationChannel.id,
+
+                    metadata: {
+                        currentRank,
+                        duration,
+                        infractionType:
+                            infractionTypeKey,
+                        infractionLabel:
+                            infractionType.label,
+                    },
+                });
+
+            infractionRecord.caseId =
+                officialCase.id;
+
+            /*
+             * Save the disciplinary record.
              */
             await updateDatabase(
                 'infractions',
@@ -514,7 +562,7 @@ module.exports = {
             );
 
             /*
-             * Add the case to the shared staff-history timeline.
+             * Add the disciplinary action to unified staff history.
              */
             await updateDatabase(
                 'staff-history',
@@ -562,7 +610,8 @@ module.exports = {
                         interaction.guildId
                     ][staffMember.id].push({
                         ...infractionRecord,
-                        historyType: 'infraction',
+                        historyType:
+                            'infraction',
                     });
 
                     return staffHistory;
@@ -618,17 +667,25 @@ module.exports = {
                             : [];
 
                     infractionHistory.push({
-                        caseId,
-                        type: infractionTypeKey,
+                        infractionId,
+                        caseId:
+                            officialCase.id,
+
+                        type:
+                            infractionTypeKey,
+
                         typeLabel:
                             infractionType.label,
+
                         currentRank,
                         reason,
                         evidence,
                         duration,
                         notes,
+
                         issuedById:
                             interaction.user.id,
+
                         status: 'active',
                         createdAt,
                     });
@@ -643,14 +700,17 @@ module.exports = {
                             staffMember.username,
 
                         displayName:
-                            staffDisplayName,
+                            getDisplayName(
+                                staffMember
+                            ),
 
                         currentRank,
 
-                        noticeCount: Number(
-                            existingRecord.noticeCount ||
-                                0
-                        ),
+                        noticeCount:
+                            Number(
+                                existingRecord.noticeCount ||
+                                    0
+                            ),
 
                         inactivityNoticeCount:
                             Number(
@@ -659,25 +719,31 @@ module.exports = {
                                     0
                             ),
 
-                        warningCount: Number(
-                            existingRecord.warningCount ||
-                                0
-                        ),
+                        warningCount:
+                            Number(
+                                existingRecord.warningCount ||
+                                    0
+                            ),
 
-                        strikeCount: Number(
-                            existingRecord.strikeCount ||
-                                0
-                        ),
+                        strikeCount:
+                            Number(
+                                existingRecord.strikeCount ||
+                                    0
+                            ),
 
-                        terminationCount: Number(
-                            existingRecord
-                                .terminationCount || 0
-                        ),
+                        terminationCount:
+                            Number(
+                                existingRecord
+                                    .terminationCount ||
+                                    0
+                            ),
 
-                        blacklistCount: Number(
-                            existingRecord
-                                .blacklistCount || 0
-                        ),
+                        blacklistCount:
+                            Number(
+                                existingRecord
+                                    .blacklistCount ||
+                                    0
+                            ),
 
                         totalInfractionCount:
                             Number(
@@ -686,20 +752,25 @@ module.exports = {
                                     0
                             ) + 1,
 
-                        promotionCount: Number(
-                            existingRecord
-                                .promotionCount || 0
-                        ),
+                        promotionCount:
+                            Number(
+                                existingRecord
+                                    .promotionCount ||
+                                    0
+                            ),
 
-                        demotionCount: Number(
-                            existingRecord
-                                .demotionCount || 0
-                        ),
+                        demotionCount:
+                            Number(
+                                existingRecord
+                                    .demotionCount ||
+                                    0
+                            ),
 
-                        awardCount: Number(
-                            existingRecord.awardCount ||
-                                0
-                        ),
+                        awardCount:
+                            Number(
+                                existingRecord.awardCount ||
+                                    0
+                            ),
 
                         infractionHistory,
 
@@ -748,8 +819,11 @@ module.exports = {
                         updatedRecord.terminatedById =
                             interaction.user.id;
 
+                        updatedRecord.terminationRecordId =
+                            infractionId;
+
                         updatedRecord.terminationCaseId =
-                            caseId;
+                            officialCase.id;
                     }
 
                     if (isBlacklist) {
@@ -765,8 +839,11 @@ module.exports = {
                         updatedRecord.blacklistedById =
                             interaction.user.id;
 
+                        updatedRecord.blacklistRecordId =
+                            infractionId;
+
                         updatedRecord.blacklistCaseId =
-                            caseId;
+                            officialCase.id;
                     }
 
                     staffRecords[
@@ -825,8 +902,11 @@ module.exports = {
 
             descriptionLines.push(
                 '',
-                '**Case ID**',
-                `\`${caseId}\``,
+                '**Infraction Record ID**',
+                `\`${infractionId}\``,
+                '',
+                '**Official Case ID**',
+                `\`${officialCase.id}\``,
                 '',
                 infractionType.closing
             );
@@ -866,24 +946,22 @@ module.exports = {
                     })
                     .setTimestamp();
 
-            const announcementContent =
-                pingRole
-                    ? `${pingRole}`
-                    : undefined;
-
             const announcementMessage =
                 await destinationChannel.send({
                     content:
-                        announcementContent,
+                        pingRole
+                            ? `${pingRole}`
+                            : undefined,
 
                     embeds: [
                         infractionEmbed,
                     ],
 
                     allowedMentions: {
-                        roles: pingRole
-                            ? [pingRole.id]
-                            : [],
+                        roles:
+                            pingRole
+                                ? [pingRole.id]
+                                : [],
 
                         users: [
                             staffMember.id,
@@ -892,103 +970,121 @@ module.exports = {
                 });
 
             /*
-             * Send a detailed management log.
+             * Link the Discord announcement to the official case.
              */
-            const logChannelId =
-                guildConfiguration.logChannelId;
+            await updateCase(
+                interaction.guildId,
+                officialCase.id,
+                {
+                    performedById:
+                        interaction.user.id,
 
-            if (logChannelId) {
-                const logChannel =
-                    interaction.guild.channels.cache.get(
-                        logChannelId
-                    );
+                    performedByUsername:
+                        interaction.user.username,
 
-                if (
-                    logChannel &&
-                    logChannel.isTextBased()
-                ) {
-                    const brandColor =
-                        convertHexToDecimal(
-                            guildConfiguration.brandColor
-                        );
+                    reason:
+                        'Linked the disciplinary announcement to this case.',
 
-                    const logDescription = [
-                        `**Staff Member:** ${staffMember}`,
-                        `**Action Type:** ${infractionType.label}`,
-                        `**Current / Final Rank:** ${currentRank}`,
-                        `**Reason:** ${reason}`,
-                        `**Evidence / Reference:** ${
-                            evidence ||
-                            'None provided'
-                        }`,
-                        `**Duration / Expiration:** ${
-                            duration ||
-                            'Not provided'
-                        }`,
-                        `**Additional Notes:** ${
-                            notes ||
-                            'None provided'
-                        }`,
-                        `**Issued By:** ${interaction.user}`,
-                        `**Announcement:** ${announcementMessage.url}`,
-                        `**Case ID:** \`${caseId}\``,
-                        `**Case Status:** Active`,
-                    ];
+                    action:
+                        'announcement_linked',
 
-                    const logEmbed =
-                        new EmbedBuilder()
-                            .setColor(
-                                brandColor
-                            )
-                            .setTitle(
-                                `${infractionType.label} Recorded`
-                            )
-                            .setDescription(
-                                logDescription.join(
-                                    '\n'
-                                )
-                            )
-                            .setThumbnail(
-                                staffMember.displayAvatarURL(
-                                    {
-                                        size: 256,
-                                    }
-                                )
-                            )
-                            .setFooter({
-                                text:
-                                    'Illinois State Utilities • Management Logs',
+                    updates: {
+                        relatedMessageUrl:
+                            announcementMessage.url,
 
-                                iconURL:
-                                    interaction.client.user.displayAvatarURL(),
-                            })
-                            .setTimestamp();
-
-                    await logChannel
-                        .send({
-                            embeds: [
-                                logEmbed,
-                            ],
-
-                            allowedMentions: {
-                                parse: [],
-                            },
-                        })
-                        .catch(
-                            (error) => {
-                                console.error(
-                                    'Infraction saved, but the management log could not be sent:',
-                                    error
-                                );
-                            }
-                        );
+                        relatedChannelId:
+                            destinationChannel.id,
+                    },
                 }
+            );
+
+            /*
+             * Send management log.
+             */
+            const logChannel =
+                guildConfiguration.logChannelId
+                    ? interaction.guild.channels.cache.get(
+                          guildConfiguration.logChannelId
+                      )
+                    : null;
+
+            if (
+                logChannel &&
+                logChannel.isTextBased()
+            ) {
+                const logEmbed =
+                    new EmbedBuilder()
+                        .setColor(
+                            convertHexToDecimal(
+                                guildConfiguration.brandColor
+                            )
+                        )
+                        .setTitle(
+                            `${infractionType.label} Recorded`
+                        )
+                        .setDescription(
+                            [
+                                `**Staff Member:** ${staffMember}`,
+                                `**Action Type:** ${infractionType.label}`,
+                                `**Current / Final Rank:** ${currentRank}`,
+                                `**Reason:** ${reason}`,
+                                `**Evidence / Reference:** ${
+                                    evidence ||
+                                    'None provided'
+                                }`,
+                                `**Duration / Expiration:** ${
+                                    duration ||
+                                    'Not provided'
+                                }`,
+                                `**Additional Notes:** ${
+                                    notes ||
+                                    'None provided'
+                                }`,
+                                `**Issued By:** ${interaction.user}`,
+                                `**Announcement:** ${announcementMessage.url}`,
+                                `**Infraction Record ID:** \`${infractionId}\``,
+                                `**Official Case ID:** \`${officialCase.id}\``,
+                                '**Case Status:** Open',
+                            ].join('\n')
+                        )
+                        .setThumbnail(
+                            staffMember.displayAvatarURL({
+                                size: 256,
+                            })
+                        )
+                        .setFooter({
+                            text:
+                                'Illinois State Utilities • Management Logs',
+
+                            iconURL:
+                                interaction.client.user.displayAvatarURL(),
+                        })
+                        .setTimestamp();
+
+                await logChannel
+                    .send({
+                        embeds: [
+                            logEmbed,
+                        ],
+
+                        allowedMentions: {
+                            parse: [],
+                        },
+                    })
+                    .catch((error) => {
+                        console.error(
+                            'Infraction saved, but the management log could not be sent:',
+                            error
+                        );
+                    });
             }
 
-            await interaction.editReply({
+            return interaction.editReply({
                 content:
                     `✅ A **${infractionType.label}** was successfully issued to ${staffMember} in ${destinationChannel}.\n\n` +
-                    `Case ID: \`${caseId}\``,
+                    `Infraction Record ID: \`${infractionId}\`\n` +
+                    `Official Case ID: \`${officialCase.id}\`\n\n` +
+                    `Use \`/case view\` with the official case ID to open the complete record.`,
 
                 allowedMentions: {
                     parse: [],
@@ -1010,9 +1106,7 @@ module.exports = {
                 interaction.replied
             ) {
                 await interaction
-                    .editReply(
-                        errorMessage
-                    )
+                    .editReply(errorMessage)
                     .catch(() => {});
             } else {
                 await interaction
