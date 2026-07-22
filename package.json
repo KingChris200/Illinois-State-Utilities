@@ -1,23 +1,34 @@
 {
-  "name": "isp-management",
+  "name": "illinois-state-utilities",
   "version": "1.0.0",
-  "description": "",
+  "description": "Custom management platform for Illinois State Roleplay.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "deploy-commands": "node deploy-commands.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"No tests configured yet.\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KingChris200/ISP-Management.git"
+    "url": "git+https://github.com/KingChris200/Illinois-State-Utilities.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "erlc",
+    "management"
+  ],
+  "author": "KingChris200",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/KingChris200/ISP-Management/issues"
+    "url": "https://github.com/KingChris200/Illinois-State-Utilities/issues"
   },
-  "homepage": "https://github.com/KingChris200/ISP-Management#readme",
+  "homepage": "https://github.com/KingChris200/Illinois-State-Utilities#readme",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2"
