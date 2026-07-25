@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const util = require("node:util");
 
-// Replace with your Discord User ID
+
 const OWNER_ID = "1065784980564881418";
 
 module.exports = {
