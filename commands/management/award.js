@@ -91,8 +91,9 @@ function createDiscordTimestamp(
     dateInput,
     style = 'F'
 ) {
-    const timestamp =
-        new Date(dateInput).getTime();
+    const timestamp = new Date(
+        dateInput
+    ).getTime();
 
     if (Number.isNaN(timestamp)) {
         return 'Unknown date';
@@ -144,10 +145,16 @@ function findAwardById(
             ? awardsDatabase[guildId]
             : [];
 
-    return guildAwards.find(
-        (award) =>
-            award.id.toLowerCase() ===
-            awardId.toLowerCase()
+    return (
+        guildAwards.find(
+            (award) =>
+                String(
+                    award.id
+                ).toLowerCase() ===
+                String(
+                    awardId
+                ).toLowerCase()
+        ) || null
     );
 }
 
@@ -181,19 +188,21 @@ async function addStaffHistoryRecord(
 
             if (
                 !Array.isArray(
-                    staffHistory[guildId][
-                        staffMemberId
-                    ]
+                    staffHistory[
+                        guildId
+                    ][staffMemberId]
                 )
             ) {
-                staffHistory[guildId][
-                    staffMemberId
-                ] = [];
+                staffHistory[
+                    guildId
+                ][staffMemberId] = [];
             }
 
-            staffHistory[guildId][
-                staffMemberId
-            ].push(historyRecord);
+            staffHistory[
+                guildId
+            ][staffMemberId].push(
+                historyRecord
+            );
 
             return staffHistory;
         },
@@ -584,7 +593,8 @@ module.exports = {
                 }
 
                 if (
-                    awardTypeKey === 'custom' &&
+                    awardTypeKey ===
+                        'custom' &&
                     !customName
                 ) {
                     return interaction.editReply({
@@ -594,12 +604,15 @@ module.exports = {
                 }
 
                 const finalAwardName =
-                    awardTypeKey === 'custom'
+                    awardTypeKey ===
+                    'custom'
                         ? customName
                         : awardType.name;
 
                 const awardId =
-                    createRecordId('award');
+                    createRecordId(
+                        'award'
+                    );
 
                 const createdAt =
                     new Date().toISOString();
@@ -673,7 +686,8 @@ module.exports = {
                                 awardsDatabase
                             )
                         ) {
-                            awardsDatabase = {};
+                            awardsDatabase =
+                                {};
                         }
 
                         if (
@@ -690,7 +704,9 @@ module.exports = {
 
                         awardsDatabase[
                             interaction.guildId
-                        ].push(awardRecord);
+                        ].push(
+                            awardRecord
+                        );
 
                         return awardsDatabase;
                     },
@@ -710,7 +726,8 @@ module.exports = {
                                 staffRecords
                             )
                         ) {
-                            staffRecords = {};
+                            staffRecords =
+                                {};
                         }
 
                         if (
@@ -734,7 +751,9 @@ module.exports = {
                         const existingRecord =
                             staffRecords[
                                 interaction.guildId
-                            ][staffMember.id] || {};
+                            ][
+                                staffMember.id
+                            ] || {};
 
                         const awardHistory =
                             Array.isArray(
@@ -747,15 +766,22 @@ module.exports = {
 
                         awardHistory.push({
                             awardId,
+
                             awardName:
                                 finalAwardName,
+
                             awardType:
                                 awardTypeKey,
+
                             reason,
                             notes,
+
                             issuedById:
                                 interaction.user.id,
-                            status: 'active',
+
+                            status:
+                                'active',
+
                             createdAt,
                         });
 
@@ -857,7 +883,9 @@ module.exports = {
 
                 const awardEmbed =
                     new EmbedBuilder()
-                        .setColor(0xf1c40f)
+                        .setColor(
+                            0xf1c40f
+                        )
                         .setTitle(
                             'ISRP | Staff Award'
                         )
@@ -880,7 +908,8 @@ module.exports = {
                             iconURL:
                                 interaction.guild.iconURL(
                                     {
-                                        dynamic: true,
+                                        dynamic:
+                                            true,
                                     }
                                 ) ||
                                 undefined,
@@ -894,6 +923,10 @@ module.exports = {
                         })
                         .setTimestamp();
 
+                /*
+                 * The award announcement is sent
+                 * to the channel where the command is used.
+                 */
                 const announcementMessage =
                     await interaction.channel.send({
                         content:
@@ -910,6 +943,10 @@ module.exports = {
                         },
                     });
 
+                /*
+                 * Send a private management log
+                 * using the channel saved through /setup.
+                 */
                 if (
                     logChannel &&
                     logChannel.isTextBased()
@@ -934,7 +971,9 @@ module.exports = {
                                     `**Awarded By:** ${interaction.user}`,
                                     `**Announcement:** ${announcementMessage.url}`,
                                     `**Award ID:** \`${awardId}\``,
-                                ].join('\n')
+                                ].join(
+                                    '\n'
+                                )
                             )
                             .setThumbnail(
                                 staffMember
@@ -961,14 +1000,20 @@ module.exports = {
                                 parse: [],
                             },
                         })
-                        .catch((error) => {
-                            console.error(
-                                'Award saved, but the management log could not be sent:',
-                                error
-                            );
-                        });
+                        .catch(
+                            (error) => {
+                                console.error(
+                                    'Award saved, but the management log could not be sent:',
+                                    error
+                                );
+                            }
+                        );
                 }
 
+                /*
+                 * Send the recipient a DM.
+                 * Failure is ignored if their DMs are disabled.
+                 */
                 await staffMember
                     .send({
                         embeds: [
@@ -991,7 +1036,9 @@ module.exports = {
             /*
              * /award remove
              */
-            if (subcommand === 'remove') {
+            if (
+                subcommand === 'remove'
+            ) {
                 if (
                     !canManageAwards(interaction)
                 ) {
@@ -1066,6 +1113,10 @@ module.exports = {
                                 awardId
                             );
 
+                        if (!record) {
+                            return awards;
+                        }
+
                         record.status =
                             'revoked';
 
@@ -1126,12 +1177,16 @@ module.exports = {
                                 staffProfile
                                     .awardHistory
                                     .find(
-                                        (entry) =>
+                                        (
+                                            entry
+                                        ) =>
                                             entry.awardId ===
                                             awardId
                                     );
 
-                            if (historyEntry) {
+                            if (
+                                historyEntry
+                            ) {
                                 historyEntry.status =
                                     'revoked';
 
@@ -1143,6 +1198,9 @@ module.exports = {
 
                                 historyEntry.revocationReason =
                                     reason;
+
+                                historyEntry.revocationNotes =
+                                    notes;
                             }
                         }
 
@@ -1194,7 +1252,9 @@ module.exports = {
 
                 const revokeEmbed =
                     new EmbedBuilder()
-                        .setColor(0xe67e22)
+                        .setColor(
+                            0xe67e22
+                        )
                         .setTitle(
                             'Staff Award Revoked'
                         )
@@ -1209,7 +1269,9 @@ module.exports = {
                                 }`,
                                 `**Revoked By:** ${interaction.user}`,
                                 `**Award ID:** \`${awardId}\``,
-                            ].join('\n')
+                            ].join(
+                                '\n'
+                            )
                         )
                         .setFooter({
                             text:
@@ -1224,15 +1286,24 @@ module.exports = {
                     logChannel &&
                     logChannel.isTextBased()
                 ) {
-                    await logChannel.send({
-                        embeds: [
-                            revokeEmbed,
-                        ],
+                    await logChannel
+                        .send({
+                            embeds: [
+                                revokeEmbed,
+                            ],
 
-                        allowedMentions: {
-                            parse: [],
-                        },
-                    });
+                            allowedMentions: {
+                                parse: [],
+                            },
+                        })
+                        .catch(
+                            (error) => {
+                                console.error(
+                                    'Award revoked, but the management log could not be sent:',
+                                    error
+                                );
+                            }
+                        );
                 }
 
                 return interaction.editReply({
@@ -1244,7 +1315,9 @@ module.exports = {
             /*
              * /award history
              */
-            if (subcommand === 'history') {
+            if (
+                subcommand === 'history'
+            ) {
                 const staffMember =
                     interaction.options.getUser(
                         'staff-member',
@@ -1293,7 +1366,8 @@ module.exports = {
                         );
 
                 if (
-                    staffAwards.length === 0
+                    staffAwards.length ===
+                    0
                 ) {
                     return interaction.editReply({
                         content:
@@ -1313,7 +1387,10 @@ module.exports = {
 
                 const sections =
                     displayedAwards.map(
-                        (award, index) =>
+                        (
+                            award,
+                            index
+                        ) =>
                             [
                                 `### ${award.awardEmoji || '🏅'} ${index + 1}. ${award.awardName}`,
                                 `**Status:** ${
@@ -1337,10 +1414,21 @@ module.exports = {
                                           200
                                       )}`
                                     : null,
+                                award.status ===
+                                    'revoked'
+                                    ? `**Revocation Reason:** ${truncateText(
+                                          award.revocationReason,
+                                          200
+                                      )}`
+                                    : null,
                                 `**Award ID:** \`${award.id}\``,
                             ]
-                                .filter(Boolean)
-                                .join('\n')
+                                .filter(
+                                    Boolean
+                                )
+                                .join(
+                                    '\n'
+                                )
                     );
 
                 const historyEmbed =
@@ -1360,7 +1448,9 @@ module.exports = {
                                 sections.join(
                                     '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
                                 ),
-                            ].join('\n')
+                            ].join(
+                                '\n'
+                            )
                         )
                         .setThumbnail(
                             staffMember
@@ -1376,7 +1466,8 @@ module.exports = {
                             iconURL:
                                 interaction.guild.iconURL(
                                     {
-                                        dynamic: true,
+                                        dynamic:
+                                            true,
                                     }
                                 ) ||
                                 undefined,
@@ -1404,7 +1495,9 @@ module.exports = {
             /*
              * /award list
              */
-            if (subcommand === 'list') {
+            if (
+                subcommand === 'list'
+            ) {
                 const status =
                     interaction.options.getString(
                         'status'
@@ -1427,12 +1520,16 @@ module.exports = {
                             interaction.guildId
                         ]
                     )
-                        ? awardsDatabase[
-                              interaction.guildId
+                        ? [
+                              ...awardsDatabase[
+                                  interaction.guildId
+                              ],
                           ]
                         : [];
 
-                if (status !== 'all') {
+                if (
+                    status !== 'all'
+                ) {
                     guildAwards =
                         guildAwards.filter(
                             (award) =>
@@ -1455,10 +1552,14 @@ module.exports = {
                                     firstAward.createdAt
                                 ).getTime()
                         )
-                        .slice(0, limit);
+                        .slice(
+                            0,
+                            limit
+                        );
 
                 if (
-                    guildAwards.length === 0
+                    guildAwards.length ===
+                    0
                 ) {
                     return interaction.editReply({
                         content:
@@ -1468,7 +1569,10 @@ module.exports = {
 
                 const sections =
                     guildAwards.map(
-                        (award, index) =>
+                        (
+                            award,
+                            index
+                        ) =>
                             [
                                 `### ${award.awardEmoji || '🏅'} ${index + 1}. ${award.awardName}`,
                                 `**Staff Member:** <@${award.staffMemberId}>`,
@@ -1483,7 +1587,9 @@ module.exports = {
                                     'D'
                                 )}`,
                                 `**Award ID:** \`${award.id}\``,
-                            ].join('\n')
+                            ].join(
+                                '\n'
+                            )
                     );
 
                 const listEmbed =
@@ -1507,7 +1613,8 @@ module.exports = {
                             iconURL:
                                 interaction.guild.iconURL(
                                     {
-                                        dynamic: true,
+                                        dynamic:
+                                            true,
                                     }
                                 ) ||
                                 undefined,
