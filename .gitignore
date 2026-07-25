@@ -1,0 +1,18 @@
+# Secrets
+.env
+.env.*
+
+# Dependencies
+node_modules/
+
+# Live bot data
+data/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
+Thumbs.db
