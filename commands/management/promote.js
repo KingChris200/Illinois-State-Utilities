@@ -1,7 +1,6 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
-    ChannelType,
     MessageFlags,
     PermissionFlagsBits,
 } = require('discord.js');
@@ -26,11 +25,21 @@ const {
 
 /*
  * ============================================================
- * CONSTANTS
+ * PROMOTION CONFIGURATION
  * ============================================================
  */
 
-const DEFAULT_BRAND_COLOR = 0x2b2d31;
+/*
+ * Official Illinois State Roleplay promotion channel.
+ *
+ * The bot will use the promotions channel stored inside
+ * serverConfigs.js first. This ID acts as the ISRP fallback.
+ */
+const ISRP_PROMOTION_CHANNEL_ID =
+    '1490759034847105196';
+
+const DEFAULT_BRAND_COLOR =
+    0x2b2d31;
 
 const FOOTER_TEXT =
     'Illinois State Utilities • Staff Management System';
@@ -41,6 +50,12 @@ const FOOTER_TEXT =
  * ============================================================
  */
 
+/**
+ * Make sure a database value is a normal object.
+ *
+ * @param {*} value
+ * @returns {object}
+ */
 function normalizeObject(value) {
     if (
         !value ||
@@ -53,6 +68,12 @@ function normalizeObject(value) {
     return value;
 }
 
+/**
+ * Return the best available visible name for a Discord user.
+ *
+ * @param {import('discord.js').User} user
+ * @returns {string}
+ */
 function getUserDisplayName(user) {
     return (
         user.globalName ||
@@ -61,10 +82,24 @@ function getUserDisplayName(user) {
     );
 }
 
-function truncateText(value, maximumLength) {
-    const text = String(value || '');
+/**
+ * Prevent text from exceeding Discord embed limits.
+ *
+ * @param {*} value
+ * @param {number} maximumLength
+ * @returns {string}
+ */
+function truncateText(
+    value,
+    maximumLength
+) {
+    const text =
+        String(value || '');
 
-    if (text.length <= maximumLength) {
+    if (
+        text.length <=
+        maximumLength
+    ) {
         return text;
     }
 
@@ -74,30 +109,53 @@ function truncateText(value, maximumLength) {
     )}...`;
 }
 
+/**
+ * Convert a saved hexadecimal color into a Discord color integer.
+ *
+ * @param {*} value
+ * @returns {number}
+ */
 function parseBrandColor(value) {
-    if (Number.isInteger(value)) {
+    if (
+        Number.isInteger(value)
+    ) {
         return value;
     }
 
-    if (typeof value !== 'string') {
+    if (
+        typeof value !== 'string'
+    ) {
         return DEFAULT_BRAND_COLOR;
     }
 
-    const cleanedValue = value
-        .trim()
-        .replace(/^#/, '')
-        .replace(/^0x/i, '');
+    const cleanedValue =
+        value
+            .trim()
+            .replace(/^#/, '')
+            .replace(/^0x/i, '');
 
     const parsedValue =
-        Number.parseInt(cleanedValue, 16);
+        Number.parseInt(
+            cleanedValue,
+            16
+        );
 
-    if (Number.isNaN(parsedValue)) {
+    if (
+        Number.isNaN(parsedValue)
+    ) {
         return DEFAULT_BRAND_COLOR;
     }
 
     return parsedValue;
 }
 
+/**
+ * Choose the configured server color.
+ *
+ * @param {object} serverConfig
+ * @param {object} guildConfiguration
+ * @returns {number}
+ */
 function getBrandColor(
     serverConfig,
     guildConfiguration
@@ -115,35 +173,74 @@ function getBrandColor(
     );
 }
 
-function getPromotionTitle(serverConfig) {
+/**
+ * Return the configured promotion embed title.
+ *
+ * @param {object} serverConfig
+ * @returns {string}
+ */
+function getPromotionTitle(
+    serverConfig
+) {
     return (
-        serverConfig?.embedTitles?.promotion ||
+        serverConfig
+            ?.embedTitles
+            ?.promotion ||
         `${
-            serverConfig?.shortName || 'ISU'
+            serverConfig?.shortName ||
+            'ISU'
         } | Staff Promotion`
     );
 }
 
-function getPromotionOpening(serverConfig) {
+/**
+ * Return the configured promotion opening message.
+ *
+ * @param {object} serverConfig
+ * @returns {string}
+ */
+function getPromotionOpening(
+    serverConfig
+) {
     return (
-        serverConfig?.messages
+        serverConfig
+            ?.messages
             ?.promotionOpening ||
         'Please join us in congratulating this member on receiving a promotion!'
     );
 }
 
-function getPromotionClosing(serverConfig) {
+/**
+ * Return the configured promotion closing message.
+ *
+ * @param {object} serverConfig
+ * @returns {string}
+ */
+function getPromotionClosing(
+    serverConfig
+) {
     return (
-        serverConfig?.messages
+        serverConfig
+            ?.messages
             ?.promotionClosing ||
         'Thank you for your continued professionalism, dedication, and service.'
     );
 }
 
+/**
+ * Check whether the command user may issue promotions.
+ *
+ * Administrators and members with Manage Roles are allowed.
+ * Configured movement reviewers are also allowed.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {boolean}
+ */
 function canUsePromotionCommand(
     interaction
 ) {
-    const member = interaction.member;
+    const member =
+        interaction.member;
 
     if (!member) {
         return false;
@@ -151,7 +248,8 @@ function canUsePromotionCommand(
 
     if (
         member.permissions.has(
-            PermissionFlagsBits.Administrator
+            PermissionFlagsBits
+                .Administrator
         )
     ) {
         return true;
@@ -159,7 +257,8 @@ function canUsePromotionCommand(
 
     if (
         member.permissions.has(
-            PermissionFlagsBits.ManageRoles
+            PermissionFlagsBits
+                .ManageRoles
         )
     ) {
         return true;
@@ -177,40 +276,33 @@ function canUsePromotionCommand(
  * ============================================================
  */
 
-function resolveCachedTextChannel(
-    guild,
-    channelId
-) {
-    if (!guild || !channelId) {
-        return null;
-    }
-
-    const channel =
-        guild.channels.cache.get(channelId);
-
-    if (!channel?.isTextBased()) {
-        return null;
-    }
-
-    return channel;
-}
-
+/**
+ * Fetch a text-based Discord channel safely.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {string} channelId
+ * @returns {Promise<import('discord.js').GuildBasedChannel|null>}
+ */
 async function fetchTextChannel(
     guild,
     channelId
 ) {
+    if (
+        !guild ||
+        !channelId
+    ) {
+        return null;
+    }
+
     const cachedChannel =
-        resolveCachedTextChannel(
-            guild,
+        guild.channels.cache.get(
             channelId
         );
 
-    if (cachedChannel) {
+    if (
+        cachedChannel?.isTextBased()
+    ) {
         return cachedChannel;
-    }
-
-    if (!guild || !channelId) {
-        return null;
     }
 
     const fetchedChannel =
@@ -218,72 +310,83 @@ async function fetchTextChannel(
             .fetch(channelId)
             .catch(() => null);
 
-    if (!fetchedChannel?.isTextBased()) {
+    if (
+        !fetchedChannel?.isTextBased()
+    ) {
         return null;
     }
 
     return fetchedChannel;
 }
 
-async function resolveAnnouncementChannel({
+/**
+ * Find the official promotion channel for the current server.
+ *
+ * ISP and future servers use the promotions channel inside
+ * serverConfigs.js.
+ *
+ * ISRP falls back to ISRP_PROMOTION_CHANNEL_ID when needed.
+ *
+ * @param {object} options
+ * @returns {Promise<import('discord.js').GuildBasedChannel|null>}
+ */
+async function resolvePromotionChannel({
     interaction,
-    selectedChannel,
     serverConfig,
-    guildConfiguration,
 }) {
-    if (
-        selectedChannel?.isTextBased()
-    ) {
-        return selectedChannel;
-    }
+    const configuredChannelId =
+        serverConfig
+            ?.channels
+            ?.promotions;
 
-    const configuredChannelIds = [
-        serverConfig?.channels?.promotions,
-        guildConfiguration
-            ?.promotionChannelId,
-        guildConfiguration
-            ?.promotionsChannelId,
-        guildConfiguration
-            ?.announcementChannelId,
-    ].filter(Boolean);
-
-    for (
-        const channelId of configuredChannelIds
-    ) {
-        const channel =
+    if (configuredChannelId) {
+        const configuredChannel =
             await fetchTextChannel(
                 interaction.guild,
-                channelId
+                configuredChannelId
             );
 
-        if (channel) {
-            return channel;
+        if (configuredChannel) {
+            return configuredChannel;
         }
     }
 
     if (
-        interaction.channel?.isTextBased()
+        serverConfig?.key === 'main'
     ) {
-        return interaction.channel;
+        return fetchTextChannel(
+            interaction.guild,
+            ISRP_PROMOTION_CHANNEL_ID
+        );
     }
 
     return null;
 }
 
+/**
+ * Find the private management log channel created through /setup.
+ *
+ * @param {object} options
+ * @returns {Promise<import('discord.js').GuildBasedChannel|null>}
+ */
 async function resolveLogChannel({
     interaction,
     guildConfiguration,
 }) {
-    const possibleLogChannelIds = [
-        guildConfiguration?.logChannelId,
+    const possibleChannelIds = [
+        guildConfiguration
+            ?.logChannelId,
+
         guildConfiguration
             ?.managementLogChannelId,
+
         guildConfiguration
             ?.logsChannelId,
     ].filter(Boolean);
 
     for (
-        const channelId of possibleLogChannelIds
+        const channelId of
+        possibleChannelIds
     ) {
         const channel =
             await fetchTextChannel(
@@ -299,16 +402,28 @@ async function resolveLogChannel({
     return null;
 }
 
+/**
+ * Check whether the bot can send embeds in a channel.
+ *
+ * @param {import('discord.js').GuildBasedChannel} channel
+ * @param {import('discord.js').GuildMember} botMember
+ * @returns {boolean}
+ */
 function botCanSendEmbeds(
     channel,
     botMember
 ) {
-    if (!channel || !botMember) {
+    if (
+        !channel ||
+        !botMember
+    ) {
         return false;
     }
 
     const permissions =
-        channel.permissionsFor(botMember);
+        channel.permissionsFor(
+            botMember
+        );
 
     if (!permissions) {
         return false;
@@ -316,13 +431,16 @@ function botCanSendEmbeds(
 
     return (
         permissions.has(
-            PermissionFlagsBits.ViewChannel
+            PermissionFlagsBits
+                .ViewChannel
         ) &&
         permissions.has(
-            PermissionFlagsBits.SendMessages
+            PermissionFlagsBits
+                .SendMessages
         ) &&
         permissions.has(
-            PermissionFlagsBits.EmbedLinks
+            PermissionFlagsBits
+                .EmbedLinks
         )
     );
 }
@@ -333,6 +451,12 @@ function botCanSendEmbeds(
  * ============================================================
  */
 
+/**
+ * Load optional settings created through /setup.
+ *
+ * @param {string} guildId
+ * @returns {Promise<object>}
+ */
 async function getGuildConfiguration(
     guildId
 ) {
@@ -343,34 +467,49 @@ async function getGuildConfiguration(
         );
 
     const normalizedConfigurations =
-        normalizeObject(configurations);
+        normalizeObject(
+            configurations
+        );
 
     return normalizeObject(
-        normalizedConfigurations[guildId]
+        normalizedConfigurations[
+            guildId
+        ]
     );
 }
 
+/**
+ * Save a promotion in the complete promotion database.
+ *
+ * @param {object} options
+ * @returns {Promise<void>}
+ */
 async function savePromotionRecord({
     guildId,
-    record,
+    promotionRecord,
 }) {
     await updateDatabase(
         'promotions',
 
         (promotions) => {
             promotions =
-                normalizeObject(promotions);
+                normalizeObject(
+                    promotions
+                );
 
             if (
                 !Array.isArray(
                     promotions[guildId]
                 )
             ) {
-                promotions[guildId] = [];
+                promotions[guildId] =
+                    [];
             }
 
-            promotions[guildId].push(
-                record
+            promotions[
+                guildId
+            ].push(
+                promotionRecord
             );
 
             return promotions;
@@ -380,6 +519,12 @@ async function savePromotionRecord({
     );
 }
 
+/**
+ * Add announcement information after the message is sent.
+ *
+ * @param {object} options
+ * @returns {Promise<void>}
+ */
 async function updatePromotionAnnouncement({
     guildId,
     promotionId,
@@ -390,7 +535,9 @@ async function updatePromotionAnnouncement({
 
         (promotions) => {
             promotions =
-                normalizeObject(promotions);
+                normalizeObject(
+                    promotions
+                );
 
             const guildPromotions =
                 promotions[guildId];
@@ -403,22 +550,24 @@ async function updatePromotionAnnouncement({
                 return promotions;
             }
 
-            const promotionIndex =
+            const recordIndex =
                 guildPromotions.findIndex(
-                    (promotion) =>
-                        promotion.id ===
+                    (record) =>
+                        record.id ===
                         promotionId
                 );
 
-            if (promotionIndex === -1) {
+            if (
+                recordIndex === -1
+            ) {
                 return promotions;
             }
 
             guildPromotions[
-                promotionIndex
+                recordIndex
             ] = {
                 ...guildPromotions[
-                    promotionIndex
+                    recordIndex
                 ],
 
                 announcementChannelId:
@@ -432,7 +581,8 @@ async function updatePromotionAnnouncement({
                     announcementMessage.url,
 
                 updatedAt:
-                    new Date().toISOString(),
+                    new Date()
+                        .toISOString(),
             };
 
             return promotions;
@@ -442,6 +592,12 @@ async function updatePromotionAnnouncement({
     );
 }
 
+/**
+ * Create or update the promoted member's staff record.
+ *
+ * @param {object} options
+ * @returns {Promise<void>}
+ */
 async function updateStaffRecord({
     interaction,
     staffMember,
@@ -528,37 +684,43 @@ async function updateStaffRecord({
                 promotionCount:
                     Number(
                         existingRecord
-                            .promotionCount || 0
+                            .promotionCount ||
+                            0
                     ) + 1,
 
                 demotionCount:
                     Number(
                         existingRecord
-                            .demotionCount || 0
+                            .demotionCount ||
+                            0
                     ),
 
                 infractionCount:
                     Number(
                         existingRecord
-                            .infractionCount || 0
+                            .infractionCount ||
+                            0
                     ),
 
                 warningCount:
                     Number(
                         existingRecord
-                            .warningCount || 0
+                            .warningCount ||
+                            0
                     ),
 
                 awardCount:
                     Number(
                         existingRecord
-                            .awardCount || 0
+                            .awardCount ||
+                            0
                     ),
 
                 trainingCount:
                     Number(
                         existingRecord
-                            .trainingCount || 0
+                            .trainingCount ||
+                            0
                     ),
 
                 totalShiftMilliseconds:
@@ -570,7 +732,8 @@ async function updateStaffRecord({
 
                 activeLoa:
                     existingRecord
-                        .activeLoa || null,
+                        .activeLoa ||
+                    null,
 
                 joinedStaffAt:
                     existingRecord
@@ -601,6 +764,12 @@ async function updateStaffRecord({
  * ============================================================
  */
 
+/**
+ * Reverse a completed role change after a database failure.
+ *
+ * @param {object} options
+ * @returns {Promise<{success: boolean, errors: Array}>}
+ */
 async function rollbackPromotionRoles({
     guildMember,
     removedRole,
@@ -624,6 +793,7 @@ async function rollbackPromotionRoles({
                 errors.push({
                     action:
                         'remove-new-role',
+
                     error,
                 });
             });
@@ -643,7 +813,8 @@ async function rollbackPromotionRoles({
             .catch((error) => {
                 errors.push({
                     action:
-                        'restore-old-role',
+                        'restore-previous-role',
+
                     error,
                 });
             });
@@ -663,6 +834,12 @@ async function rollbackPromotionRoles({
  * ============================================================
  */
 
+/**
+ * Build the public promotion announcement embed.
+ *
+ * @param {object} options
+ * @returns {EmbedBuilder}
+ */
 function buildPromotionEmbed({
     interaction,
     staffMember,
@@ -681,10 +858,11 @@ function buildPromotionEmbed({
 
     const serverName =
         serverConfig.serverName ||
-        guildConfiguration.serverName ||
+        guildConfiguration
+            .serverName ||
         interaction.guild.name;
 
-    const description = [
+    const descriptionLines = [
         getPromotionOpening(
             serverConfig
         ),
@@ -715,24 +893,29 @@ function buildPromotionEmbed({
     ];
 
     if (notes) {
-        description.push(
+        descriptionLines.push(
             '',
             '**Additional Notes**',
             notes
         );
     }
 
-    description.push(
+    descriptionLines.push(
         '',
+
         getPromotionClosing(
             serverConfig
         ),
+
         '',
+
         '**Congratulations on your promotion!**'
     );
 
     return new EmbedBuilder()
-        .setColor(brandColor)
+        .setColor(
+            brandColor
+        )
 
         .setTitle(
             getPromotionTitle(
@@ -742,7 +925,8 @@ function buildPromotionEmbed({
 
         .setDescription(
             truncateText(
-                description.join('\n'),
+                descriptionLines
+                    .join('\n'),
                 4096
             )
         )
@@ -752,15 +936,18 @@ function buildPromotionEmbed({
                 serverName,
 
             iconURL:
-                interaction.guild.iconURL({
-                    size: 256,
-                }) || undefined,
+                interaction.guild
+                    .iconURL({
+                        size: 256,
+                    }) ||
+                undefined,
         })
 
         .setThumbnail(
-            staffMember.displayAvatarURL({
-                size: 256,
-            })
+            staffMember
+                .displayAvatarURL({
+                    size: 256,
+                })
         )
 
         .setFooter({
@@ -768,7 +955,8 @@ function buildPromotionEmbed({
                 FOOTER_TEXT,
 
             iconURL:
-                interaction.client.user
+                interaction.client
+                    .user
                     .displayAvatarURL({
                         size: 128,
                     }),
@@ -777,6 +965,12 @@ function buildPromotionEmbed({
         .setTimestamp();
 }
 
+/**
+ * Build the private management log embed.
+ *
+ * @param {object} options
+ * @returns {EmbedBuilder}
+ */
 function buildLogEmbed({
     interaction,
     staffMember,
@@ -796,46 +990,55 @@ function buildLogEmbed({
             guildConfiguration
         );
 
+    const descriptionLines = [
+        `**Server:** ${serverConfig.serverName}`,
+
+        `**Staff Member:** ${staffMember} (\`${staffMember.id}\`)`,
+
+        `**Previous Rank:** ${previousRank}`,
+
+        `**New Rank:** ${newRank}`,
+
+        `**Reason:** ${reason}`,
+
+        `**Additional Notes:** ${
+            notes ||
+            'None provided'
+        }`,
+
+        `**Promoted By:** ${interaction.user} (\`${interaction.user.id}\`)`,
+
+        `**Role Removed:** ${rankResult.removedRole}`,
+
+        `**Role Added:** ${rankResult.addedRole}`,
+
+        `**Announcement:** ${announcementMessage.url}`,
+
+        `**Record ID:** \`${promotionId}\``,
+    ];
+
     return new EmbedBuilder()
-        .setColor(brandColor)
+        .setColor(
+            brandColor
+        )
 
         .setTitle(
             'Staff Promotion Recorded'
         )
 
         .setDescription(
-            [
-                `**Server:** ${serverConfig.serverName}`,
-
-                `**Staff Member:** ${staffMember} (\`${staffMember.id}\`)`,
-
-                `**Previous Rank:** ${previousRank}`,
-
-                `**New Rank:** ${newRank}`,
-
-                `**Reason:** ${reason}`,
-
-                `**Additional Notes:** ${
-                    notes ||
-                    'None provided'
-                }`,
-
-                `**Promoted By:** ${interaction.user} (\`${interaction.user.id}\`)`,
-
-                `**Role Removed:** ${rankResult.removedRole}`,
-
-                `**Role Added:** ${rankResult.addedRole}`,
-
-                `**Announcement:** ${announcementMessage.url}`,
-
-                `**Record ID:** \`${promotionId}\``,
-            ].join('\n')
+            truncateText(
+                descriptionLines
+                    .join('\n'),
+                4096
+            )
         )
 
         .setThumbnail(
-            staffMember.displayAvatarURL({
-                size: 256,
-            })
+            staffMember
+                .displayAvatarURL({
+                    size: 256,
+                })
         )
 
         .setFooter({
@@ -843,7 +1046,8 @@ function buildLogEmbed({
                 'Illinois State Utilities • Management Logs',
 
             iconURL:
-                interaction.client.user
+                interaction.client
+                    .user
                     .displayAvatarURL({
                         size: 128,
                     }),
@@ -859,120 +1063,136 @@ function buildLogEmbed({
  */
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('promote')
+    data:
+        new SlashCommandBuilder()
 
-        .setDescription(
-            'Promote a staff member or department member.'
-        )
+            .setName(
+                'promote'
+            )
 
-        .setDMPermission(false)
+            .setDescription(
+                'Promote a staff member or department member.'
+            )
 
-        /*
-         * Required options
-         */
+            .setDMPermission(
+                false
+            )
 
-        .addUserOption((option) =>
-            option
-                .setName(
-                    'staff-member'
-                )
+            /*
+             * Required options
+             */
 
-                .setDescription(
-                    'The member receiving the promotion.'
-                )
+            .addUserOption(
+                (option) =>
+                    option
 
-                .setRequired(true)
-        )
+                        .setName(
+                            'staff-member'
+                        )
 
-        .addStringOption((option) =>
-            option
-                .setName(
-                    'previous-rank'
-                )
+                        .setDescription(
+                            'The member receiving the promotion.'
+                        )
 
-                .setDescription(
-                    'The member’s current rank.'
-                )
+                        .setRequired(
+                            true
+                        )
+            )
 
-                .setAutocomplete(true)
+            .addStringOption(
+                (option) =>
+                    option
 
-                .setRequired(true)
-        )
+                        .setName(
+                            'previous-rank'
+                        )
 
-        .addStringOption((option) =>
-            option
-                .setName(
-                    'new-rank'
-                )
+                        .setDescription(
+                            'The member’s current rank.'
+                        )
 
-                .setDescription(
-                    'The higher rank being assigned.'
-                )
+                        .setAutocomplete(
+                            true
+                        )
 
-                .setAutocomplete(true)
+                        .setRequired(
+                            true
+                        )
+            )
 
-                .setRequired(true)
-        )
+            .addStringOption(
+                (option) =>
+                    option
 
-        .addStringOption((option) =>
-            option
-                .setName('reason')
+                        .setName(
+                            'new-rank'
+                        )
 
-                .setDescription(
-                    'The reason for this promotion.'
-                )
+                        .setDescription(
+                            'The higher rank being assigned.'
+                        )
 
-                .setMinLength(3)
+                        .setAutocomplete(
+                            true
+                        )
 
-                .setMaxLength(1000)
+                        .setRequired(
+                            true
+                        )
+            )
 
-                .setRequired(true)
-        )
+            .addStringOption(
+                (option) =>
+                    option
 
-        /*
-         * Optional options
-         */
+                        .setName(
+                            'reason'
+                        )
 
-        .addChannelOption((option) =>
-            option
-                .setName('channel')
+                        .setDescription(
+                            'The reason for this promotion.'
+                        )
 
-                .setDescription(
-                    'Optional promotion announcement channel.'
-                )
+                        .setMinLength(
+                            3
+                        )
 
-                .addChannelTypes(
-                    ChannelType.GuildText,
-                    ChannelType.GuildAnnouncement
-                )
+                        .setMaxLength(
+                            1000
+                        )
 
-                .setRequired(false)
-        )
+                        .setRequired(
+                            true
+                        )
+            )
 
-        .addRoleOption((option) =>
-            option
-                .setName('ping')
+            /*
+             * Optional notes only.
+             *
+             * Channel and ping options have intentionally
+             * been removed.
+             */
 
-                .setDescription(
-                    'Optional role to notify about the promotion.'
-                )
+            .addStringOption(
+                (option) =>
+                    option
 
-                .setRequired(false)
-        )
+                        .setName(
+                            'notes'
+                        )
 
-        .addStringOption((option) =>
-            option
-                .setName('notes')
+                        .setDescription(
+                            'Optional additional promotion notes.'
+                        )
 
-                .setDescription(
-                    'Optional additional promotion notes.'
-                )
+                        .setMaxLength(
+                            500
+                        )
 
-                .setMaxLength(500)
-
-                .setRequired(false)
-        ),
+                        .setRequired(
+                            false
+                        )
+            ),
 
     /*
      * ========================================================
@@ -980,12 +1200,15 @@ module.exports = {
      * ========================================================
      */
 
-    async autocomplete(interaction) {
+    async autocomplete(
+        interaction
+    ) {
         try {
-            if (!interaction.inGuild()) {
-                return interaction.respond(
-                    []
-                );
+            if (
+                !interaction.inGuild()
+            ) {
+                return interaction
+                    .respond([]);
             }
 
             const serverConfig =
@@ -995,12 +1218,11 @@ module.exports = {
 
             if (!serverConfig) {
                 console.error(
-                    `❌ No server configuration found for autocomplete in guild ${interaction.guildId}.`
+                    `❌ No server configuration found for /promote autocomplete in guild ${interaction.guildId}.`
                 );
 
-                return interaction.respond(
-                    []
-                );
+                return interaction
+                    .respond([]);
             }
 
             const focusedOption =
@@ -1013,9 +1235,8 @@ module.exports = {
                 focusedOption.name !==
                     'new-rank'
             ) {
-                return interaction.respond(
-                    []
-                );
+                return interaction
+                    .respond([]);
             }
 
             let choices =
@@ -1025,10 +1246,9 @@ module.exports = {
                 );
 
             /*
-             * When choosing the new rank, only display ranks
-             * above the already selected previous rank.
+             * When selecting a new rank, hide ranks that are
+             * equal to or below the selected previous rank.
              */
-
             if (
                 focusedOption.name ===
                 'new-rank'
@@ -1039,29 +1259,43 @@ module.exports = {
                             'previous-rank'
                         );
 
-                const previousRankIndex =
-                    getGuildRankIndex(
-                        interaction.guildId,
-                        selectedPreviousRank
-                    );
-
                 if (
-                    previousRankIndex !== -1
+                    selectedPreviousRank
                 ) {
-                    choices =
-                        choices.filter(
-                            (choice) =>
-                                getGuildRankIndex(
-                                    interaction.guildId,
-                                    choice.value
-                                ) >
-                                previousRankIndex
+                    const previousRankIndex =
+                        getGuildRankIndex(
+                            interaction.guildId,
+                            selectedPreviousRank
                         );
+
+                    if (
+                        previousRankIndex !==
+                        -1
+                    ) {
+                        choices =
+                            choices.filter(
+                                (choice) => {
+                                    const choiceIndex =
+                                        getGuildRankIndex(
+                                            interaction.guildId,
+                                            choice.value
+                                        );
+
+                                    return (
+                                        choiceIndex >
+                                        previousRankIndex
+                                    );
+                                }
+                            );
+                    }
                 }
             }
 
             return interaction.respond(
-                choices.slice(0, 25)
+                choices.slice(
+                    0,
+                    25
+                )
             );
         } catch (error) {
             console.error(
@@ -1077,30 +1311,45 @@ module.exports = {
 
     /*
      * ========================================================
-     * EXECUTE
+     * EXECUTION
      * ========================================================
      */
 
-    async execute(interaction) {
-        let completedRankResult = null;
-        let targetGuildMember = null;
+    async execute(
+        interaction
+    ) {
+        let completedRankResult =
+            null;
+
+        let targetGuildMember =
+            null;
 
         try {
-            if (!interaction.inGuild()) {
+            /*
+             * Server-only command validation.
+             */
+            if (
+                !interaction.inGuild()
+            ) {
                 return interaction.reply({
                     content:
                         '❌ This command can only be used inside a Discord server.',
 
                     flags:
-                        MessageFlags.Ephemeral,
+                        MessageFlags
+                            .Ephemeral,
                 });
             }
 
             await interaction.deferReply({
                 flags:
-                    MessageFlags.Ephemeral,
+                    MessageFlags
+                        .Ephemeral,
             });
 
+            /*
+             * Load the multi-server configuration.
+             */
             const serverConfig =
                 getServerConfig(
                     interaction.guildId
@@ -1109,10 +1358,13 @@ module.exports = {
             if (!serverConfig) {
                 return interaction.editReply({
                     content:
-                        `❌ Illinois State Utilities is not configured for this server.\n\nCurrent server ID: \`${interaction.guildId}\``,
+                        `❌ Illinois State Utilities is not configured for this server.\n\nServer ID: \`${interaction.guildId}\``,
                 });
             }
 
+            /*
+             * Command-user permission validation.
+             */
             if (
                 !canUsePromotionCommand(
                     interaction
@@ -1125,14 +1377,14 @@ module.exports = {
             }
 
             /*
-             * Read command options
+             * Read the command options.
              */
-
             const staffMember =
-                interaction.options.getUser(
-                    'staff-member',
-                    true
-                );
+                interaction.options
+                    .getUser(
+                        'staff-member',
+                        true
+                    );
 
             const previousRank =
                 interaction.options
@@ -1158,26 +1410,20 @@ module.exports = {
                     )
                     .trim();
 
-            const selectedChannel =
-                interaction.options
-                    .getChannel(
-                        'channel'
-                    );
-
-            const pingRole =
-                interaction.options
-                    .getRole('ping');
-
             const notes =
                 interaction.options
-                    .getString('notes')
-                    ?.trim() || null;
+                    .getString(
+                        'notes'
+                    )
+                    ?.trim() ||
+                null;
 
             /*
-             * Basic member validation
+             * Basic target-member validation.
              */
-
-            if (staffMember.bot) {
+            if (
+                staffMember.bot
+            ) {
                 return interaction.editReply({
                     content:
                         '❌ Discord bots cannot receive staff promotions.',
@@ -1195,9 +1441,8 @@ module.exports = {
             }
 
             /*
-             * Rank validation
+             * Validate the selected ranks.
              */
-
             const previousRankIndex =
                 getGuildRankIndex(
                     interaction.guildId,
@@ -1211,7 +1456,8 @@ module.exports = {
                 );
 
             if (
-                previousRankIndex === -1
+                previousRankIndex ===
+                -1
             ) {
                 return interaction.editReply({
                     content:
@@ -1220,7 +1466,8 @@ module.exports = {
             }
 
             if (
-                newRankIndex === -1
+                newRankIndex ===
+                -1
             ) {
                 return interaction.editReply({
                     content:
@@ -1249,17 +1496,21 @@ module.exports = {
             }
 
             /*
-             * Fetch the member
+             * Fetch the target GuildMember.
              */
-
             targetGuildMember =
-                await interaction.guild.members
+                await interaction.guild
+                    .members
                     .fetch(
                         staffMember.id
                     )
-                    .catch(() => null);
+                    .catch(
+                        () => null
+                    );
 
-            if (!targetGuildMember) {
+            if (
+                !targetGuildMember
+            ) {
                 return interaction.editReply({
                     content:
                         '❌ I could not find that member inside this Discord server.',
@@ -1267,55 +1518,53 @@ module.exports = {
             }
 
             /*
-             * Load optional setup configuration
+             * Load optional /setup settings.
              */
-
             const guildConfiguration =
                 await getGuildConfiguration(
                     interaction.guildId
                 );
 
             /*
-             * Resolve announcement channel
+             * Automatically resolve the official promotion channel.
              */
-
-            const announcementChannel =
-                await resolveAnnouncementChannel({
+            const promotionChannel =
+                await resolvePromotionChannel({
                     interaction,
-
-                    selectedChannel,
-
                     serverConfig,
-
-                    guildConfiguration,
                 });
 
-            if (!announcementChannel) {
+            if (
+                !promotionChannel
+            ) {
                 return interaction.editReply({
                     content:
-                        '❌ I could not locate a valid channel for the promotion announcement.',
+                        '❌ I could not locate the official promotion channel for this server.',
                 });
             }
 
+            /*
+             * Verify bot channel permissions.
+             */
             const botMember =
-                interaction.guild.members.me;
+                interaction.guild
+                    .members.me;
 
             if (
                 !botCanSendEmbeds(
-                    announcementChannel,
+                    promotionChannel,
                     botMember
                 )
             ) {
                 return interaction.editReply({
                     content:
-                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${announcementChannel}.`,
+                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${promotionChannel}.`,
                 });
             }
 
             /*
-             * Apply Discord rank roles
+             * Automatically update the member's Discord rank roles.
              */
-
             const rankResult =
                 await applyRankChange({
                     guild:
@@ -1335,7 +1584,9 @@ module.exports = {
                         `${reason} | Promoted by ${interaction.user.username}`,
                 });
 
-            if (!rankResult.success) {
+            if (
+                !rankResult.success
+            ) {
                 return interaction.editReply({
                     content:
                         `❌ ${getRankChangeErrorMessage(
@@ -1348,16 +1599,16 @@ module.exports = {
                 rankResult;
 
             /*
-             * Build promotion record
+             * Create the database promotion record.
              */
-
             const promotionId =
                 createRecordId(
                     'promotion'
                 );
 
             const createdAt =
-                new Date().toISOString();
+                new Date()
+                    .toISOString();
 
             const promotionRecord = {
                 id:
@@ -1373,19 +1624,22 @@ module.exports = {
                     interaction.guildId,
 
                 guildName:
-                    interaction.guild.name,
+                    interaction.guild
+                        .name,
 
                 serverKey:
                     serverConfig.key,
 
                 serverName:
-                    serverConfig.serverName,
+                    serverConfig
+                        .serverName,
 
                 staffMemberId:
                     staffMember.id,
 
                 staffUsername:
-                    staffMember.username,
+                    staffMember
+                        .username,
 
                 staffDisplayName:
                     getUserDisplayName(
@@ -1393,6 +1647,7 @@ module.exports = {
                     ),
 
                 previousRank,
+
                 newRank,
 
                 previousRoleId:
@@ -1404,6 +1659,7 @@ module.exports = {
                         .addedRole.id,
 
                 reason,
+
                 notes,
 
                 promotedById:
@@ -1419,7 +1675,7 @@ module.exports = {
                     ),
 
                 announcementChannelId:
-                    announcementChannel.id,
+                    promotionChannel.id,
 
                 announcementMessageId:
                     null,
@@ -1434,16 +1690,14 @@ module.exports = {
             };
 
             /*
-             * Save database information
+             * Save the promotion and update the staff profile.
              */
-
             try {
                 await savePromotionRecord({
                     guildId:
                         interaction.guildId,
 
-                    record:
-                        promotionRecord,
+                    promotionRecord,
                 });
 
                 await updateStaffRecord({
@@ -1463,7 +1717,9 @@ module.exports = {
 
                     createdAt,
                 });
-            } catch (databaseError) {
+            } catch (
+                databaseError
+            ) {
                 console.error(
                     '❌ Promotion database save failed:',
                     databaseError
@@ -1483,14 +1739,15 @@ module.exports = {
                                 .addedRole,
 
                         reason:
-                            'Database save failed',
+                            'Promotion database save failed',
                     });
 
                 completedRankResult =
                     null;
 
                 if (
-                    rollbackResult.success
+                    rollbackResult
+                        .success
                 ) {
                     return interaction.editReply({
                         content:
@@ -1499,20 +1756,20 @@ module.exports = {
                 }
 
                 console.error(
-                    '❌ Promotion rollback errors:',
-                    rollbackResult.errors
+                    '❌ Promotion rollback failed:',
+                    rollbackResult
+                        .errors
                 );
 
                 return interaction.editReply({
                     content:
-                        '❌ The promotion could not be saved, and the automatic role rollback was not fully successful. Please review the member’s roles immediately.',
+                        '❌ The promotion could not be saved, and the role rollback was not fully successful. Please review the member’s roles immediately.',
                 });
             }
 
             /*
-             * Create announcement embed
+             * Build the public announcement.
              */
-
             const promotionEmbed =
                 buildPromotionEmbed({
                     interaction,
@@ -1533,45 +1790,44 @@ module.exports = {
                 });
 
             /*
-             * Send announcement
+             * Send the promotion directly to the official channel.
+             *
+             * There is no optional role ping.
              */
-
             let announcementMessage;
 
             try {
                 announcementMessage =
-                    await announcementChannel.send({
-                        content:
-                            pingRole
-                                ? `${pingRole}`
-                                : undefined,
-
-                        embeds: [
-                            promotionEmbed,
-                        ],
-
-                        allowedMentions: {
-                            roles:
-                                pingRole
-                                    ? [
-                                          pingRole.id,
-                                      ]
-                                    : [],
-
-                            users: [
-                                staffMember.id,
+                    await promotionChannel
+                        .send({
+                            embeds: [
+                                promotionEmbed,
                             ],
 
-                            repliedUser:
-                                false,
-                        },
-                    });
-            } catch (announcementError) {
+                            allowedMentions: {
+                                users: [
+                                    staffMember.id,
+                                ],
+
+                                roles: [],
+
+                                repliedUser:
+                                    false,
+                            },
+                        });
+            } catch (
+                announcementError
+            ) {
                 console.error(
                     '❌ Promotion announcement failed:',
                     announcementError
                 );
 
+                /*
+                 * The role change and database save already succeeded.
+                 * We do not undo a valid promotion only because the
+                 * public message failed.
+                 */
                 completedRankResult =
                     null;
 
@@ -1582,9 +1838,11 @@ module.exports = {
 
                             '',
 
-                            'The role change and database record succeeded, but I could not send the promotion announcement.',
+                            'The roles and database record were updated, but I could not send the announcement.',
 
                             '',
+
+                            `**Promotion Channel:** ${promotionChannel}`,
 
                             `**Promotion Record:** \`${promotionId}\``,
                         ].join('\n'),
@@ -1596,9 +1854,8 @@ module.exports = {
             }
 
             /*
-             * Attach announcement details to saved record
+             * Save the announcement URL and message ID.
              */
-
             await updatePromotionAnnouncement({
                 guildId:
                     interaction.guildId,
@@ -1608,19 +1865,17 @@ module.exports = {
                 announcementMessage,
             }).catch((error) => {
                 console.error(
-                    '⚠️ Could not save promotion announcement information:',
+                    '⚠️ Promotion announcement information could not be saved:',
                     error
                 );
             });
 
             /*
-             * Send private management log
+             * Send the private management log when configured.
              */
-
             const logChannel =
                 await resolveLogChannel({
                     interaction,
-
                     guildConfiguration,
                 });
 
@@ -1675,10 +1930,10 @@ module.exports = {
             }
 
             /*
-             * Mark the command as fully successful.
+             * The promotion completed successfully.
              */
-
-            completedRankResult = null;
+            completedRankResult =
+                null;
 
             return interaction.editReply({
                 content:
@@ -1688,6 +1943,8 @@ module.exports = {
                         '',
 
                         `**Server:** ${serverConfig.serverName}`,
+
+                        `**Promotion Channel:** ${promotionChannel}`,
 
                         `**Announcement:** ${announcementMessage.url}`,
 
@@ -1709,10 +1966,9 @@ module.exports = {
             );
 
             /*
-             * Emergency rollback if an unexpected error happened
-             * after the Discord rank change.
+             * Emergency rollback for unexpected failures after a
+             * completed rank change but before a confirmed outcome.
              */
-
             if (
                 completedRankResult &&
                 targetGuildMember
@@ -1731,15 +1987,17 @@ module.exports = {
                                 .addedRole,
 
                         reason:
-                            'Unexpected command error',
+                            'Unexpected promotion command failure',
                     });
 
                 if (
-                    !rollbackResult.success
+                    !rollbackResult
+                        .success
                 ) {
                     console.error(
                         '❌ Emergency promotion rollback failed:',
-                        rollbackResult.errors
+                        rollbackResult
+                            .errors
                     );
                 }
             }
@@ -1756,7 +2014,9 @@ module.exports = {
                     .editReply(
                         errorResponse
                     )
-                    .catch(() => {});
+                    .catch(
+                        () => {}
+                    );
             }
 
             if (
@@ -1767,9 +2027,12 @@ module.exports = {
                         ...errorResponse,
 
                         flags:
-                            MessageFlags.Ephemeral,
+                            MessageFlags
+                                .Ephemeral,
                     })
-                    .catch(() => {});
+                    .catch(
+                        () => {}
+                    );
             }
 
             return interaction
@@ -1777,9 +2040,12 @@ module.exports = {
                     ...errorResponse,
 
                     flags:
-                        MessageFlags.Ephemeral,
+                        MessageFlags
+                            .Ephemeral,
                 })
-                .catch(() => {});
+                .catch(
+                    () => {}
+                );
         }
     },
 };
