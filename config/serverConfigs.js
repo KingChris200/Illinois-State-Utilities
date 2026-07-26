@@ -621,6 +621,158 @@ function getRankAutocompleteChoices(
     guildId,
     focusedValue = ''
 ) {
+    const ranks =
+        getGuildRanks(guildId);
+
+    const normalizedSearch =
+        String(focusedValue)
+            .trim()
+            .toLowerCase();
+
+    /*
+     * Show all ranks immediately when the field is empty.
+     */
+    if (!normalizedSearch) {
+        return ranks
+            .slice(0, 25)
+            .map((rank) => ({
+                name: rank.name,
+                value: rank.name,
+            }));
+    }
+
+    /*
+     * Break the typed search into separate words.
+     *
+     * Example:
+     * "assistant server director"
+     *
+     * becomes:
+     * ["assistant", "server", "director"]
+     */
+    const searchWords =
+        normalizedSearch
+            .split(/\s+/)
+            .filter(Boolean);
+
+    const scoredRanks =
+        ranks
+            .map((rank) => {
+                const normalizedRankName =
+                    rank.name.toLowerCase();
+
+                const rankWords =
+                    normalizedRankName.split(
+                        /\s+/
+                    );
+
+                let score = 0;
+
+                /*
+                 * Highest priority:
+                 * The entire search appears inside the rank.
+                 */
+                if (
+                    normalizedRankName.includes(
+                        normalizedSearch
+                    )
+                ) {
+                    score += 100;
+                }
+
+                /*
+                 * Reward each typed word that matches anywhere.
+                 */
+                for (
+                    const searchWord of
+                    searchWords
+                ) {
+                    if (
+                        normalizedRankName.includes(
+                            searchWord
+                        )
+                    ) {
+                        score += 20;
+                    }
+
+                    /*
+                     * Reward partial word beginnings.
+                     *
+                     * Example:
+                     * "dir" matches "director"
+                     */
+                    if (
+                        rankWords.some(
+                            (rankWord) =>
+                                rankWord.startsWith(
+                                    searchWord
+                                )
+                        )
+                    ) {
+                        score += 15;
+                    }
+
+                    /*
+                     * Reward matching initials.
+                     *
+                     * Example:
+                     * "asd" matches:
+                     * Assistant Server Director
+                     */
+                    const initials =
+                        rankWords
+                            .map(
+                                (word) =>
+                                    word[0]
+                            )
+                            .join('');
+
+                    if (
+                        initials.startsWith(
+                            searchWord
+                        )
+                    ) {
+                        score += 30;
+                    }
+                }
+
+                return {
+                    rank,
+                    score,
+                };
+            })
+            .filter(
+                (result) =>
+                    result.score > 0
+            )
+            .sort(
+                (first, second) =>
+                    second.score -
+                    first.score
+            );
+
+    /*
+     * If nothing matched, show every rank instead of displaying
+     * Discord's useless "No options match your search" screen.
+     */
+    const results =
+        scoredRanks.length > 0
+            ? scoredRanks.map(
+                  (result) =>
+                      result.rank
+              )
+            : ranks;
+
+    return results
+        .slice(0, 25)
+        .map((rank) => ({
+            name: rank.name,
+            value: rank.name,
+        }));
+}
+    guildId,
+    focusedValue = ''
+) {
     const normalizedSearch =
         String(focusedValue)
             .trim()
