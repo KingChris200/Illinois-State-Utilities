@@ -629,9 +629,6 @@ function getRankAutocompleteChoices(
             .trim()
             .toLowerCase();
 
-    /*
-     * Show all ranks immediately when the field is empty.
-     */
     if (!normalizedSearch) {
         return ranks
             .slice(0, 25)
@@ -641,15 +638,6 @@ function getRankAutocompleteChoices(
             }));
     }
 
-    /*
-     * Break the typed search into separate words.
-     *
-     * Example:
-     * "assistant server director"
-     *
-     * becomes:
-     * ["assistant", "server", "director"]
-     */
     const searchWords =
         normalizedSearch
             .split(/\s+/)
@@ -662,16 +650,15 @@ function getRankAutocompleteChoices(
                     rank.name.toLowerCase();
 
                 const rankWords =
-                    normalizedRankName.split(
-                        /\s+/
-                    );
+                    normalizedRankName.split(/\s+/);
+
+                const initials =
+                    rankWords
+                        .map((word) => word[0] || '')
+                        .join('');
 
                 let score = 0;
 
-                /*
-                 * Highest priority:
-                 * The entire search appears inside the rank.
-                 */
                 if (
                     normalizedRankName.includes(
                         normalizedSearch
@@ -680,13 +667,7 @@ function getRankAutocompleteChoices(
                     score += 100;
                 }
 
-                /*
-                 * Reward each typed word that matches anywhere.
-                 */
-                for (
-                    const searchWord of
-                    searchWords
-                ) {
+                for (const searchWord of searchWords) {
                     if (
                         normalizedRankName.includes(
                             searchWord
@@ -695,37 +676,15 @@ function getRankAutocompleteChoices(
                         score += 20;
                     }
 
-                    /*
-                     * Reward partial word beginnings.
-                     *
-                     * Example:
-                     * "dir" matches "director"
-                     */
                     if (
-                        rankWords.some(
-                            (rankWord) =>
-                                rankWord.startsWith(
-                                    searchWord
-                                )
+                        rankWords.some((rankWord) =>
+                            rankWord.startsWith(
+                                searchWord
+                            )
                         )
                     ) {
                         score += 15;
                     }
-
-                    /*
-                     * Reward matching initials.
-                     *
-                     * Example:
-                     * "asd" matches:
-                     * Assistant Server Director
-                     */
-                    const initials =
-                        rankWords
-                            .map(
-                                (word) =>
-                                    word[0]
-                            )
-                            .join('');
 
                     if (
                         initials.startsWith(
@@ -741,25 +700,16 @@ function getRankAutocompleteChoices(
                     score,
                 };
             })
-            .filter(
-                (result) =>
-                    result.score > 0
-            )
+            .filter((result) => result.score > 0)
             .sort(
                 (first, second) =>
-                    second.score -
-                    first.score
+                    second.score - first.score
             );
 
-    /*
-     * If nothing matched, show every rank instead of displaying
-     * Discord's useless "No options match your search" screen.
-     */
     const results =
         scoredRanks.length > 0
             ? scoredRanks.map(
-                  (result) =>
-                      result.rank
+                  (result) => result.rank
               )
             : ranks;
 
@@ -770,45 +720,6 @@ function getRankAutocompleteChoices(
             value: rank.name,
         }));
 }
-    guildId,
-    focusedValue = ''
-) {
-    const normalizedSearch =
-        String(focusedValue)
-            .trim()
-            .toLowerCase();
-
-    return getGuildRanks(
-        guildId
-    )
-        .filter((rank) => {
-            if (!normalizedSearch) {
-                return true;
-            }
-
-            return rank.name
-                .toLowerCase()
-                .includes(
-                    normalizedSearch
-                );
-        })
-        .slice(0, 25)
-        .map((rank) => ({
-            name:
-                rank.name,
-
-            value:
-                rank.name,
-        }));
-}
-
-/**
- * Check whether a member holds an authorized reviewer role.
- *
- * @param {import('discord.js').GuildMember|null} member
- * @param {string} guildId
- * @returns {boolean}
- */
 function memberCanReviewMovements(
     member,
     guildId
