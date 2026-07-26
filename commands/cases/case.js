@@ -1,298 +1,207 @@
 const {
     SlashCommandBuilder,
-    EmbedBuilder,
     MessageFlags,
-    PermissionFlagsBits,
 } = require('discord.js');
 
-const {
-    readDatabase,
-} = require('../../utils/database');
+/*
+ * ============================================================
+ * MODULAR CASE COMMAND HANDLERS
+ * ============================================================
+ *
+ * Every handler owns the execution logic for one subcommand.
+ *
+ * To add another case feature later:
+ *
+ * 1. Create its module.
+ * 2. Import it below.
+ * 3. Add it to caseSubcommands.
+ * 4. Register its slash-command options.
+ */
 
-const {
-    findCase,
-} = require('../../utils/caseManager');
+const caseView =
+    require('./caseview');
 
-const CASE_PRESENTATION = {
-    promotion: {
-        label: 'Promotion',
-        emoji: '⬆️',
-        color: 0x2ecc71,
+const caseEdit =
+    require('./caseedit');
+
+const caseClose =
+    require('./caseclose');
+
+const caseReopen =
+    require('./casereopen');
+
+const caseVoid =
+    require('./casevoid');
+
+const caseSearch =
+    require('./casesearch');
+
+const caseList =
+    require('./caselist');
+
+const caseExport =
+    require('./caseexport');
+
+/*
+ * ============================================================
+ * SHARED COMMAND CHOICES
+ * ============================================================
+ */
+
+const CASE_TYPE_CHOICES = [
+    {
+        name: 'Promotion',
+        value: 'promotion',
     },
-
-    demotion: {
-        label: 'Demotion',
-        emoji: '⬇️',
-        color: 0xc0392b,
+    {
+        name: 'Demotion',
+        value: 'demotion',
     },
-
-    notice: {
-        label: 'Notice',
-        emoji: '🟡',
-        color: 0xf1c40f,
+    {
+        name: 'Notice',
+        value: 'notice',
     },
-
-    inactivity_notice: {
-        label: 'Inactivity Notice',
-        emoji: '🟠',
-        color: 0xe67e22,
+    {
+        name: 'Inactivity Notice',
+        value: 'inactivity_notice',
     },
-
-    warning: {
-        label: 'Warning',
-        emoji: '⚠️',
-        color: 0xf39c12,
+    {
+        name: 'Warning',
+        value: 'warning',
     },
-
-    strike: {
-        label: 'Strike',
-        emoji: '🔴',
-        color: 0xe74c3c,
+    {
+        name: 'Strike',
+        value: 'strike',
     },
-
-    termination: {
-        label: 'Termination',
-        emoji: '⛔',
-        color: 0x992d22,
+    {
+        name: 'Termination',
+        value: 'termination',
     },
-
-    blacklist: {
-        label: 'Blacklist',
-        emoji: '🚫',
-        color: 0x2b2d31,
+    {
+        name: 'Blacklist',
+        value: 'blacklist',
     },
-
-    award: {
-        label: 'Award',
-        emoji: '🏆',
-        color: 0xf1c40f,
+    {
+        name: 'Award',
+        value: 'award',
     },
-
-    loa: {
-        label: 'Leave of Absence',
-        emoji: '🏖️',
-        color: 0x5865f2,
+    {
+        name: 'Leave of Absence',
+        value: 'loa',
     },
-
-    other: {
-        label: 'Staff Case',
-        emoji: '📁',
-        color: 0x005b96,
+    {
+        name: 'Other',
+        value: 'other',
     },
-};
+];
 
-const STATUS_PRESENTATION = {
-    open: {
-        label: 'Open',
-        emoji: '🟢',
+const CASE_STATUS_CHOICES = [
+    {
+        name: 'Open Cases',
+        value: 'open',
     },
-
-    closed: {
-        label: 'Closed',
-        emoji: '🔴',
+    {
+        name: 'Closed Cases',
+        value: 'closed',
     },
-
-    voided: {
-        label: 'Voided',
-        emoji: '⚫',
+    {
+        name: 'Voided Cases',
+        value: 'voided',
     },
-};
+];
 
-function canManageCases(interaction) {
-    return (
-        interaction.memberPermissions?.has(
-            PermissionFlagsBits.ManageMessages
-        ) ||
-        interaction.memberPermissions?.has(
-            PermissionFlagsBits.ManageGuild
-        ) ||
-        interaction.memberPermissions?.has(
-            PermissionFlagsBits.Administrator
-        )
+const VISIBILITY_CHOICES = [
+    {
+        name:
+            'Private — Only you can see it',
+        value: 'private',
+    },
+    {
+        name:
+            'Public — Everyone can see it',
+        value: 'public',
+    },
+];
+
+/*
+ * ============================================================
+ * SUBCOMMAND ROUTER
+ * ============================================================
+ *
+ * The map connects Discord's selected subcommand name to the
+ * module that handles it.
+ */
+
+const caseSubcommands =
+    new Map(
+        [
+            caseView,
+            caseEdit,
+            caseClose,
+            caseReopen,
+            caseVoid,
+            caseSearch,
+            caseList,
+            caseExport,
+        ].map((commandModule) => [
+            commandModule.subcommandName,
+            commandModule,
+        ])
     );
-}
 
-function convertHexToDecimal(hexColor) {
-    if (typeof hexColor !== 'string') {
-        return 0x005b96;
-    }
+/*
+ * ============================================================
+ * SAFE ROUTER ERROR RESPONSE
+ * ============================================================
+ */
 
-    const cleanedColor = hexColor
-        .trim()
-        .replace(/^#/, '')
-        .replace(/^0x/i, '');
-
-    const parsedColor = Number.parseInt(
-        cleanedColor,
-        16
-    );
-
-    return Number.isNaN(parsedColor)
-        ? 0x005b96
-        : parsedColor;
-}
-
-function createDiscordTimestamp(
-    dateInput,
-    style = 'F'
+async function sendRouterError(
+    interaction,
+    message
 ) {
-    if (!dateInput) {
-        return 'Not recorded';
-    }
+    const payload = {
+        content:
+            `❌ ${message}`,
 
-    const timestamp = new Date(
-        dateInput
-    ).getTime();
-
-    if (Number.isNaN(timestamp)) {
-        return 'Not recorded';
-    }
-
-    return `<t:${Math.floor(
-        timestamp / 1000
-    )}:${style}>`;
-}
-
-function truncateText(
-    text,
-    maximumLength,
-    fallback = 'Not provided'
-) {
-    if (
-        text === null ||
-        text === undefined ||
-        String(text).trim().length === 0
-    ) {
-        return fallback;
-    }
-
-    const normalizedText =
-        String(text).trim();
-
-    if (
-        normalizedText.length <=
-        maximumLength
-    ) {
-        return normalizedText;
-    }
-
-    return `${normalizedText.slice(
-        0,
-        maximumLength - 3
-    )}...`;
-}
-
-function formatAuditAction(action) {
-    const actionNames = {
-        case_created: 'Case Created',
-        case_updated: 'Case Updated',
-        case_closed: 'Case Closed',
-        case_open: 'Case Reopened',
-        case_voided: 'Case Voided',
+        allowedMentions: {
+            parse: [],
+        },
     };
 
-    return (
-        actionNames[action] ||
-        String(action || 'Case Updated')
-            .replaceAll('_', ' ')
-            .replace(/\b\w/g, (letter) =>
-                letter.toUpperCase()
-            )
-    );
+    /*
+     * Once an interaction has been deferred or replied to,
+     * Discord requires editReply() or followUp().
+     */
+
+    if (interaction.deferred) {
+        return interaction.editReply({
+            ...payload,
+            embeds: [],
+            components: [],
+            files: [],
+        });
+    }
+
+    if (interaction.replied) {
+        return interaction.followUp({
+            ...payload,
+            flags:
+                MessageFlags.Ephemeral,
+        });
+    }
+
+    return interaction.reply({
+        ...payload,
+        flags:
+            MessageFlags.Ephemeral,
+    });
 }
 
-function formatAuditChanges(changes) {
-    if (
-        !changes ||
-        typeof changes !== 'object' ||
-        Array.isArray(changes)
-    ) {
-        return null;
-    }
-
-    const entries = Object.entries(
-        changes
-    );
-
-    if (entries.length === 0) {
-        return null;
-    }
-
-    return entries
-        .slice(0, 3)
-        .map(([field, change]) => {
-            const formattedField = field
-                .replaceAll('_', ' ')
-                .replace(/\b\w/g, (letter) =>
-                    letter.toUpperCase()
-                );
-
-            const previousValue =
-                change?.from === null ||
-                change?.from === undefined
-                    ? 'None'
-                    : truncateText(
-                          change.from,
-                          80
-                      );
-
-            const newValue =
-                change?.to === null ||
-                change?.to === undefined
-                    ? 'None'
-                    : truncateText(
-                          change.to,
-                          80
-                      );
-
-            return `${formattedField}: ${previousValue} → ${newValue}`;
-        })
-        .join('\n');
-}
-
-function createAuditSection(
-    auditEntry,
-    index
-) {
-    const performedBy =
-        auditEntry.performedById
-            ? `<@${auditEntry.performedById}>`
-            : auditEntry.performedByUsername ||
-              'Unknown';
-
-    const lines = [
-        `**${index + 1}. ${formatAuditAction(
-            auditEntry.action
-        )}**`,
-        `By: ${performedBy}`,
-        `Date: ${createDiscordTimestamp(
-            auditEntry.createdAt,
-            'f'
-        )}`,
-    ];
-
-    if (auditEntry.reason) {
-        lines.push(
-            `Reason: ${truncateText(
-                auditEntry.reason,
-                150
-            )}`
-        );
-    }
-
-    const formattedChanges =
-        formatAuditChanges(
-            auditEntry.changes
-        );
-
-    if (formattedChanges) {
-        lines.push(
-            `Changes:\n${formattedChanges}`
-        );
-    }
-
-    return lines.join('\n');
-}
+/*
+ * ============================================================
+ * COMMAND DEFINITION
+ * ============================================================
+ */
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -301,11 +210,17 @@ module.exports = {
             'View and manage Illinois State Utilities case records.'
         )
 
+        /*
+         * --------------------------------------------------------
+         * /case view
+         * --------------------------------------------------------
+         */
+
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('view')
                 .setDescription(
-                    'View a case using its permanent case ID.'
+                    'View a case using its permanent ID.'
                 )
 
                 .addStringOption((option) =>
@@ -319,28 +234,402 @@ module.exports = {
 
                 .addStringOption((option) =>
                     option
-                        .setName('visibility')
+                        .setName(
+                            'visibility'
+                        )
                         .setDescription(
-                            'Choose whether the case response is private or public.'
+                            'Choose whether the response is private or public.'
                         )
                         .addChoices(
-                            {
-                                name:
-                                    'Private — Only you can see it',
-                                value: 'private',
-                            },
-                            {
-                                name:
-                                    'Public — Everyone can see it',
-                                value: 'public',
-                            }
+                            ...VISIBILITY_CHOICES
+                        )
+                        .setRequired(false)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case edit
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('edit')
+                .setDescription(
+                    'Edit the saved details of a case.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('case-id')
+                        .setDescription(
+                            'The permanent ID of the case.'
+                        )
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName(
+                            'reason-for-edit'
+                        )
+                        .setDescription(
+                            'Explain why this case is being edited.'
+                        )
+                        .setMinLength(3)
+                        .setMaxLength(500)
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('title')
+                        .setDescription(
+                            'A corrected or updated case title.'
+                        )
+                        .setMaxLength(200)
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName(
+                            'case-reason'
+                        )
+                        .setDescription(
+                            'A corrected or updated case reason.'
+                        )
+                        .setMaxLength(1000)
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('evidence')
+                        .setDescription(
+                            'A corrected evidence link or reference.'
+                        )
+                        .setMaxLength(1000)
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('notes')
+                        .setDescription(
+                            'Corrected or updated case notes.'
+                        )
+                        .setMaxLength(750)
+                        .setRequired(false)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case close
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('close')
+                .setDescription(
+                    'Close an open case.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('case-id')
+                        .setDescription(
+                            'The permanent ID of the case.'
+                        )
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('reason')
+                        .setDescription(
+                            'Explain why the case is being closed.'
+                        )
+                        .setMinLength(3)
+                        .setMaxLength(750)
+                        .setRequired(true)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case reopen
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('reopen')
+                .setDescription(
+                    'Reopen a previously closed case.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('case-id')
+                        .setDescription(
+                            'The permanent ID of the case.'
+                        )
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('reason')
+                        .setDescription(
+                            'Explain why the case is being reopened.'
+                        )
+                        .setMinLength(3)
+                        .setMaxLength(750)
+                        .setRequired(true)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case void
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('void')
+                .setDescription(
+                    'Void a case without deleting its record.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('case-id')
+                        .setDescription(
+                            'The permanent ID of the case.'
+                        )
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('reason')
+                        .setDescription(
+                            'Explain why the case is being voided.'
+                        )
+                        .setMinLength(3)
+                        .setMaxLength(750)
+                        .setRequired(true)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case search
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('search')
+                .setDescription(
+                    'Search case records using combined filters.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('query')
+                        .setDescription(
+                            'Search IDs, names, titles, reasons, evidence, and notes.'
+                        )
+                        .setMinLength(1)
+                        .setMaxLength(200)
+                        .setRequired(false)
+                )
+
+                .addUserOption((option) =>
+                    option
+                        .setName(
+                            'staff-member'
+                        )
+                        .setDescription(
+                            'Only show cases belonging to this staff member.'
+                        )
+                        .setRequired(false)
+                )
+
+                .addUserOption((option) =>
+                    option
+                        .setName('issued-by')
+                        .setDescription(
+                            'Only show cases issued by this user.'
+                        )
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('type')
+                        .setDescription(
+                            'Only show a particular case type.'
+                        )
+                        .addChoices(
+                            ...CASE_TYPE_CHOICES
+                        )
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('status')
+                        .setDescription(
+                            'Only show cases with this status.'
+                        )
+                        .addChoices(
+                            ...CASE_STATUS_CHOICES
+                        )
+                        .setRequired(false)
+                )
+
+                .addIntegerOption((option) =>
+                    option
+                        .setName('limit')
+                        .setDescription(
+                            'The maximum number of results to display.'
+                        )
+                        .setMinValue(1)
+                        .setMaxValue(20)
+                        .setRequired(false)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case list
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('list')
+                .setDescription(
+                    'Display the server’s most recent case records.'
+                )
+
+                .addUserOption((option) =>
+                    option
+                        .setName(
+                            'staff-member'
+                        )
+                        .setDescription(
+                            'Only show cases belonging to this staff member.'
+                        )
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('type')
+                        .setDescription(
+                            'Only show a particular case type.'
+                        )
+                        .addChoices(
+                            ...CASE_TYPE_CHOICES
+                        )
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('status')
+                        .setDescription(
+                            'Only show cases with this status.'
+                        )
+                        .addChoices(
+                            ...CASE_STATUS_CHOICES
+                        )
+                        .setRequired(false)
+                )
+
+                .addIntegerOption((option) =>
+                    option
+                        .setName('limit')
+                        .setDescription(
+                            'The maximum number of cases to display.'
+                        )
+                        .setMinValue(1)
+                        .setMaxValue(20)
+                        .setRequired(false)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName(
+                            'visibility'
+                        )
+                        .setDescription(
+                            'Choose whether the response is private or public.'
+                        )
+                        .addChoices(
+                            ...VISIBILITY_CHOICES
+                        )
+                        .setRequired(false)
+                )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * /case export
+         * --------------------------------------------------------
+         */
+
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('export')
+                .setDescription(
+                    'Export a complete case record as a text file.'
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName('case-id')
+                        .setDescription(
+                            'The permanent ID of the case.'
+                        )
+                        .setRequired(true)
+                )
+
+                .addStringOption((option) =>
+                    option
+                        .setName(
+                            'visibility'
+                        )
+                        .setDescription(
+                            'Choose whether the exported file is private or public.'
+                        )
+                        .addChoices(
+                            ...VISIBILITY_CHOICES
                         )
                         .setRequired(false)
                 )
         ),
 
+    /*
+     * ============================================================
+     * ROUTER EXECUTION
+     * ============================================================
+     */
+
     async execute(interaction) {
         try {
+            /*
+             * Slash commands should never run outside a server.
+             */
+
             if (!interaction.inGuild()) {
                 return interaction.reply({
                     content:
@@ -348,376 +637,86 @@ module.exports = {
 
                     flags:
                         MessageFlags.Ephemeral,
+
+                    allowedMentions: {
+                        parse: [],
+                    },
                 });
             }
 
-            if (!canManageCases(interaction)) {
-                return interaction.reply({
-                    content:
-                        '❌ You need the **Manage Messages** permission to view case records.',
+            /*
+             * Determine which /case subcommand Discord received.
+             */
 
-                    flags:
-                        MessageFlags.Ephemeral,
-                });
-            }
-
-            const subcommand =
-                interaction.options.getSubcommand();
-
-            const visibility =
-                interaction.options.getString(
-                    'visibility'
-                ) || 'private';
-
-            await interaction.deferReply({
-                flags:
-                    visibility === 'private'
-                        ? MessageFlags.Ephemeral
-                        : undefined,
-            });
-
-            const configurations =
-                await readDatabase(
-                    'guild-configs',
-                    {}
-                );
-
-            const guildConfiguration =
-                configurations[
-                    interaction.guildId
-                ];
-
-            if (!guildConfiguration) {
-                return interaction.editReply({
-                    content:
-                        '❌ Illinois State Utilities has not been configured yet. Run `/setup` first.',
-                });
-            }
-
-            if (subcommand !== 'view') {
-                return interaction.editReply({
-                    content:
-                        '❌ That case-management action is not available yet.',
-                });
-            }
-
-            const caseId =
+            const subcommandName =
                 interaction.options
-                    .getString(
-                        'case-id',
-                        true
-                    )
-                    .trim();
+                    .getSubcommand(true);
 
-            const caseRecord =
-                await findCase(
-                    interaction.guildId,
-                    caseId
+            /*
+             * Locate its registered handler.
+             */
+
+            const commandModule =
+                caseSubcommands.get(
+                    subcommandName
                 );
 
-            if (!caseRecord) {
-                return interaction.editReply({
-                    content:
-                        `❌ No case was found with ID \`${caseId}\`.\n\n` +
-                        'Double-check the ID and try again.',
-                });
-            }
-
-            const casePresentation =
-                CASE_PRESENTATION[
-                    caseRecord.type
-                ] ||
-                CASE_PRESENTATION.other;
-
-            const statusPresentation =
-                STATUS_PRESENTATION[
-                    caseRecord.status
-                ] ||
-                STATUS_PRESENTATION.open;
-
-            const brandColor =
-                convertHexToDecimal(
-                    guildConfiguration.brandColor
+            if (!commandModule) {
+                console.error(
+                    `No case handler is registered for subcommand: ${subcommandName}`
                 );
 
-            const displayColor =
-                caseRecord.status === 'open'
-                    ? casePresentation.color ||
-                      brandColor
-                    : caseRecord.status ===
-                        'voided'
-                      ? 0x2b2d31
-                      : 0x747f8d;
-
-            const descriptionLines = [
-                `Below is the complete saved record for case \`${caseRecord.id}\`.`,
-                '',
-                '**Case Type**',
-                `${casePresentation.emoji} ${casePresentation.label}`,
-                '',
-                '**Case Status**',
-                `${statusPresentation.emoji} ${statusPresentation.label}`,
-                '',
-                '**Staff Member**',
-                caseRecord.staffMemberId
-                    ? `<@${caseRecord.staffMemberId}>`
-                    : caseRecord.staffDisplayName ||
-                      caseRecord.staffUsername ||
-                      'Unknown',
-                '',
-                '**Issued By**',
-                caseRecord.issuedById
-                    ? `<@${caseRecord.issuedById}>`
-                    : caseRecord.issuedByDisplayName ||
-                      caseRecord.issuedByUsername ||
-                      'Unknown',
-            ];
-
-            if (caseRecord.title) {
-                descriptionLines.push(
-                    '',
-                    '**Case Title**',
-                    truncateText(
-                        caseRecord.title,
-                        200
-                    )
+                return sendRouterError(
+                    interaction,
+                    'That case-management action is not currently available.'
                 );
             }
 
-            descriptionLines.push(
-                '',
-                '**Reason**',
-                truncateText(
-                    caseRecord.reason,
-                    750
-                )
+            if (
+                typeof commandModule.execute !==
+                'function'
+            ) {
+                console.error(
+                    `The case handler "${subcommandName}" does not export an execute function.`
+                );
+
+                return sendRouterError(
+                    interaction,
+                    'That case-management action is configured incorrectly.'
+                );
+            }
+
+            /*
+             * Hand complete control to the selected module.
+             *
+             * Each module handles:
+             * - Permissions
+             * - Response visibility
+             * - Deferring the interaction
+             * - Database actions
+             * - User-facing responses
+             */
+
+            return await commandModule.execute(
+                interaction
             );
-
-            if (caseRecord.evidence) {
-                descriptionLines.push(
-                    '',
-                    '**Evidence / Reference**',
-                    truncateText(
-                        caseRecord.evidence,
-                        750
-                    )
-                );
-            }
-
-            if (caseRecord.notes) {
-                descriptionLines.push(
-                    '',
-                    '**Additional Notes**',
-                    truncateText(
-                        caseRecord.notes,
-                        500
-                    )
-                );
-            }
-
-            if (caseRecord.relatedRecordId) {
-                descriptionLines.push(
-                    '',
-                    '**Related Record ID**',
-                    `\`${caseRecord.relatedRecordId}\``
-                );
-            }
-
-            if (caseRecord.relatedChannelId) {
-                descriptionLines.push(
-                    '',
-                    '**Related Channel**',
-                    `<#${caseRecord.relatedChannelId}>`
-                );
-            }
-
-            if (caseRecord.relatedMessageUrl) {
-                descriptionLines.push(
-                    '',
-                    '**Related Message**',
-                    `[Open Related Message](${caseRecord.relatedMessageUrl})`
-                );
-            }
-
-            descriptionLines.push(
-                '',
-                '**Case Timeline**',
-                `Created: ${createDiscordTimestamp(
-                    caseRecord.createdAt,
-                    'F'
-                )}`,
-                `Last Updated: ${createDiscordTimestamp(
-                    caseRecord.updatedAt,
-                    'R'
-                )}`
-            );
-
-            if (caseRecord.closedAt) {
-                descriptionLines.push(
-                    `Closed: ${createDiscordTimestamp(
-                        caseRecord.closedAt,
-                        'F'
-                    )}`
-                );
-            }
-
-            if (caseRecord.voidedAt) {
-                descriptionLines.push(
-                    `Voided: ${createDiscordTimestamp(
-                        caseRecord.voidedAt,
-                        'F'
-                    )}`
-                );
-            }
-
-            if (caseRecord.reopenedAt) {
-                descriptionLines.push(
-                    `Last Reopened: ${createDiscordTimestamp(
-                        caseRecord.reopenedAt,
-                        'F'
-                    )}`
-                );
-            }
-
-            const auditLog =
-                Array.isArray(
-                    caseRecord.auditLog
-                )
-                    ? [...caseRecord.auditLog]
-                          .sort(
-                              (
-                                  firstEntry,
-                                  secondEntry
-                              ) =>
-                                  new Date(
-                                      secondEntry.createdAt
-                                  ).getTime() -
-                                  new Date(
-                                      firstEntry.createdAt
-                                  ).getTime()
-                          )
-                          .slice(0, 5)
-                    : [];
-
-            if (auditLog.length > 0) {
-                descriptionLines.push(
-                    '',
-                    '**Recent Audit Activity**',
-                    ''
-                );
-
-                auditLog.forEach(
-                    (
-                        auditEntry,
-                        index
-                    ) => {
-                        descriptionLines.push(
-                            createAuditSection(
-                                auditEntry,
-                                index
-                            )
-                        );
-
-                        if (
-                            index <
-                            auditLog.length - 1
-                        ) {
-                            descriptionLines.push(
-                                '',
-                                '──────────────',
-                                ''
-                            );
-                        }
-                    }
-                );
-            }
-
-            descriptionLines.push(
-                '',
-                '**Case ID**',
-                `\`${caseRecord.id}\``
-            );
-
-            const caseEmbed =
-                new EmbedBuilder()
-                    .setColor(displayColor)
-                    .setTitle(
-                        `${casePresentation.emoji} ISRP | Case Record`
-                    )
-                    .setDescription(
-                        descriptionLines.join('\n')
-                    )
-                    .setAuthor({
-                        name:
-                            guildConfiguration.serverName ||
-                            interaction.guild.name,
-
-                        iconURL:
-                            interaction.guild.iconURL({
-                                dynamic: true,
-                            }) || undefined,
-                    })
-                    .setFooter({
-                        text:
-                            'Illinois State Utilities • Case Management System',
-
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
-                    })
-                    .setTimestamp();
-
-            const caseUser =
-                caseRecord.staffMemberId
-                    ? await interaction.client.users
-                          .fetch(
-                              caseRecord.staffMemberId
-                          )
-                          .catch(() => null)
-                    : null;
-
-            if (caseUser) {
-                caseEmbed.setThumbnail(
-                    caseUser.displayAvatarURL({
-                        size: 256,
-                    })
-                );
-            }
-
-            await interaction.editReply({
-                embeds: [caseEmbed],
-
-                allowedMentions: {
-                    parse: [],
-                },
-            });
         } catch (error) {
             console.error(
-                'Error executing /case:',
+                'Error routing /case command:',
                 error
             );
 
-            const errorMessage = {
-                content:
-                    '❌ Something went wrong while loading this case record.',
-            };
-
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                await interaction
-                    .editReply(errorMessage)
-                    .catch(() => {});
-            } else {
-                await interaction
-                    .reply({
-                        ...errorMessage,
-
-                        flags:
-                            MessageFlags.Ephemeral,
-                    })
-                    .catch(() => {});
-            }
+            return sendRouterError(
+                interaction,
+                'Something went wrong while opening the case-management system. Please try again and check the bot logs if the problem continues.'
+            ).catch(
+                (responseError) => {
+                    console.error(
+                        'Unable to send /case router error response:',
+                        responseError
+                    );
+                }
+            );
         }
     },
 };
