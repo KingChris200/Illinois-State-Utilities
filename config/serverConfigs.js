@@ -4,36 +4,69 @@
  * MULTI-SERVER CONFIGURATION
  * ============================================================
  *
- * This file allows one bot to operate differently depending
- * on the Discord server where a command is used.
- *
  * Rank arrays must always be ordered:
  *
  * LOWEST RANK → HIGHEST RANK
- *
- * Role IDs remain valid even when the visible Discord role
- * names are changed.
  */
 
 /*
- * The main Illinois State Roleplay server ID has not yet been
- * provided, so it is loaded from the .env file.
- *
- * Add this to your .env:
- *
- * MAIN_SERVER_ID=YOUR_MAIN_SERVER_ID
+ * ============================================================
+ * SERVER IDS
+ * ============================================================
  */
 
 const MAIN_SERVER_ID =
-    process.env.MAIN_SERVER_ID;
+    '1377060744596771483';
 
 const ISP_SERVER_ID =
     '1527511728169025658';
 
 /*
  * ============================================================
- * MAIN SERVER RANKS
+ * ISRP CHANNEL IDS
  * ============================================================
+ */
+
+const ISRP_CHANNELS = {
+    promotions:
+        '1490759034847105196',
+
+    demotions:
+        '1490759095500800190',
+
+    infractions:
+        '1490759095500800190',
+
+    movements:
+        '1490759095500800190',
+};
+
+/*
+ * ============================================================
+ * ISP CHANNEL IDS
+ * ============================================================
+ */
+
+const ISP_CHANNELS = {
+    promotions:
+        '1527521493087682590',
+
+    demotions:
+        '1527521493087682590',
+
+    infractions:
+        '1527521493087682590',
+
+    movements:
+        '1527521493087682590',
+};
+
+/*
+ * ============================================================
+ * ISRP STAFF RANKS
+ * ============================================================
+ *
+ * Ordered from lowest to highest.
  */
 
 const MAIN_SERVER_RANKS = [
@@ -114,13 +147,10 @@ const MAIN_SERVER_RANKS = [
 
 /*
  * ============================================================
- * ISP RANKS
+ * ISP PERSONNEL RANKS
  * ============================================================
  *
- * These names use the new ISP branding.
- *
- * The Discord role IDs will continue working even if you have
- * not finished renaming every role yet.
+ * Ordered from lowest to highest.
  */
 
 const ISP_RANKS = [
@@ -190,121 +220,143 @@ const ISP_RANKS = [
 
 const SERVER_CONFIGS = {
     /*
-     * Main Illinois State Roleplay server
+     * ========================================================
+     * ILLINOIS STATE ROLEPLAY
+     * ========================================================
      */
 
-    ...(MAIN_SERVER_ID
-        ? {
-              [MAIN_SERVER_ID]: {
-                  key: 'main',
+    [MAIN_SERVER_ID]: {
+        key: 'main',
 
-                  serverName:
-                      'Illinois State Roleplay',
+        serverName:
+            'Illinois State Roleplay',
 
-                  shortName: 'ISRP',
+        shortName:
+            'ISRP',
 
-                  departmentName:
-                      'Illinois State Roleplay Staff Team',
+        departmentName:
+            'Illinois State Roleplay Staff Team',
 
-                  brandColor: 0x2b2d31,
+        brandColor:
+            0x2b2d31,
 
-                  ranks: MAIN_SERVER_RANKS,
+        ranks:
+            MAIN_SERVER_RANKS,
 
-                  channels: {
-                      /*
-                       * Replace these later if your existing
-                       * /setup configuration should not be used.
-                       */
+        channels:
+            ISRP_CHANNELS,
 
-                      promotions: null,
-                      demotions: null,
-                      infractions: null,
-                      movements:
-                          '1490759095500800190',
-                  },
+        roleGroups: {
+            ownershipTeam:
+                '1520179382407266354',
 
-                  roleGroups: {
-                      ownershipTeam:
-                          '1520179382407266354',
+            directorTeam:
+                '1490808065514016887',
 
-                      directorTeam:
-                          '1490808065514016887',
+            internalAffairsTeam:
+                '1526344302618218656',
 
-                      internalAffairsTeam:
-                          '1526344302618218656',
+            managementBoard:
+                '1490523581187231795',
 
-                      managementBoard:
-                          '1490523581187231795',
+            supervisoryBoard:
+                '1490523797629960392',
 
-                      supervisoryBoard:
-                          '1490523797629960392',
+            moderationBoard:
+                '1520521292711854283',
 
-                      moderationBoard:
-                          '1520521292711854283',
+            serverStaffTeam:
+                '1490847791940112485',
 
-                      serverStaffTeam:
-                          '1490847791940112485',
+            trainingAndEducation:
+                '1490884232380420106',
+        },
 
-                      trainingAndEducation:
-                          '1490884232380420106',
-                  },
+        reviewerRoleIds: [
+            /*
+             * Ownership
+             */
 
-                  reviewerRoleIds: [
-                      '1520179382407266354',
-                      '1490522930608738406',
-                      '1490522983947698349',
+            '1520179382407266354',
+            '1490522930608738406',
+            '1490522983947698349',
 
-                      '1491215580223639604',
-                      '1490523081129857196',
-                      '1490523390778544291',
-                      '1490808065514016887',
+            /*
+             * Directorate
+             */
 
-                      '1526345126794756156',
-                      '1526344724238307459',
-                      '1526344620844253325',
-                      '1526344302618218656',
+            '1491215580223639604',
+            '1490523081129857196',
+            '1490523390778544291',
+            '1490808065514016887',
 
-                      '1490523518901813339',
-                      '1510594665852829716',
-                      '1490885470522183740',
-                      '1490523581187231795',
+            /*
+             * Internal Affairs
+             */
 
-                      '1490523702142701811',
-                      '1510602643016388728',
-                      '1510594647766990988',
-                      '1490523797629960392',
-                  ],
+            '1526345126794756156',
+            '1526344724238307459',
+            '1526344620844253325',
+            '1526344302618218656',
 
-                  embedTitles: {
-                      promotion:
-                          'ISRP | Staff Promotion',
+            /*
+             * Management
+             */
 
-                      demotion:
-                          'ISRP | Staff Demotion',
+            '1490523518901813339',
+            '1510594665852829716',
+            '1490885470522183740',
+            '1490523581187231795',
 
-                      movement:
-                          'ISRP | Staff Movement',
-                  },
+            /*
+             * Staff Supervisory
+             */
 
-                  messages: {
-                      promotionOpening:
-                          'Congratulations on receiving a staff promotion within Illinois State Roleplay!',
+            '1490523702142701811',
+            '1510602643016388728',
+            '1510594647766990988',
+            '1490523797629960392',
+        ],
 
-                      promotionClosing:
-                          'Thank you for your continued dedication, professionalism, and service to Illinois State Roleplay.',
+        embedTitles: {
+            promotion:
+                'ISRP | Staff Promotion',
 
-                      demotionOpening:
-                          'A staff rank adjustment has been issued within Illinois State Roleplay.',
+            demotion:
+                'ISRP | Staff Demotion',
 
-                      demotionClosing:
-                          'Please review all expectations associated with your newly assigned rank.',
-                  },
-              },
-          }
-        : {}),
+            infraction:
+                'ISRP | Staff Infraction',
+
+            movement:
+                'ISRP | Staff Movement',
+        },
+
+        messages: {
+            promotionOpening:
+                'Congratulations on receiving a staff promotion within Illinois State Roleplay!',
+
+            promotionClosing:
+                'Thank you for your continued dedication, professionalism, and service to Illinois State Roleplay.',
+
+            demotionOpening:
+                'A staff rank adjustment has been issued within Illinois State Roleplay.',
+
+            demotionClosing:
+                'Please review all expectations associated with your newly assigned rank.',
+
+            infractionOpening:
+                'A staff disciplinary action has been formally recorded within Illinois State Roleplay.',
+
+            infractionClosing:
+                'Please review the reason and expectations associated with this disciplinary action.',
+        },
+    },
 
     /*
-     * Illinois State Police server
+     * ========================================================
+     * ILLINOIS STATE POLICE
+     * ========================================================
      */
 
     [ISP_SERVER_ID]: {
@@ -313,41 +365,20 @@ const SERVER_CONFIGS = {
         serverName:
             'Illinois State Police',
 
-        shortName: 'ISP',
+        shortName:
+            'ISP',
 
         departmentName:
             'Illinois State Police',
 
-        brandColor: 0x17365d,
+        brandColor:
+            0x17365d,
 
-        ranks: ISP_RANKS,
+        ranks:
+            ISP_RANKS,
 
-        channels: {
-            promotions:
-                '1527521493087682590',
-
-            /*
-             * Promotions will use the supplied channel.
-             * Until separate channels are supplied, demotions
-             * and general movements can use the same channel.
-             */
-
-            demotions:
-                '1527521493087682590',
-
-            infractions:
-                '1527521493087682590',
-
-            movements:
-                '1527521493087682590',
-        },
-
-        /*
-         * Organizational and category roles.
-         *
-         * These roles are not selectable ranks because they
-         * represent teams, offices, divisions, or statuses.
-         */
+        channels:
+            ISP_CHANNELS,
 
         roleGroups: {
             officeOfDirectors:
@@ -393,21 +424,21 @@ const SERVER_CONFIGS = {
                 '1528183742403969084',
         },
 
-        /*
-         * ISP reviewer permissions.
-         *
-         * These ranks can perform protected movement actions.
-         * We can tighten or expand this list later.
-         */
-
         reviewerRoleIds: [
+            /*
+             * ISP Directorate
+             */
+
             '1527514675443535982',
             '1528212634044989481',
             '1527514681969999882',
 
+            /*
+             * ISP Command
+             */
+
             '1527517875882033246',
             '1527514682166870046',
-
             '1527514682896810024',
             '1527514683601584206',
         ],
@@ -418,6 +449,9 @@ const SERVER_CONFIGS = {
 
             demotion:
                 'ISP | Personnel Demotion',
+
+            infraction:
+                'ISP | Personnel Infraction',
 
             movement:
                 'ISP | Personnel Movement',
@@ -435,6 +469,12 @@ const SERVER_CONFIGS = {
 
             demotionClosing:
                 'Please review the duties, responsibilities, and expectations associated with your assigned rank.',
+
+            infractionOpening:
+                'A personnel disciplinary action has been formally recorded within the Illinois State Police.',
+
+            infractionClosing:
+                'Please review the reason and expectations associated with this disciplinary action.',
         },
     },
 };
@@ -448,52 +488,57 @@ const SERVER_CONFIGS = {
 /**
  * Return the complete configuration for a Discord guild.
  *
- * @param {string} guildId Discord guild ID.
+ * @param {string} guildId
  * @returns {object|null}
  */
-
 function getServerConfig(guildId) {
     if (!guildId) {
         return null;
     }
 
-    return SERVER_CONFIGS[guildId] || null;
+    return (
+        SERVER_CONFIGS[
+            String(guildId)
+        ] || null
+    );
 }
 
 /**
- * Return the configured hierarchy for a guild.
+ * Return the configured ranks for a guild.
  *
- * @param {string} guildId Discord guild ID.
+ * @param {string} guildId
  * @returns {Array<{name: string, roleId: string}>}
  */
-
 function getGuildRanks(guildId) {
-    return getServerConfig(guildId)?.ranks || [];
+    return (
+        getServerConfig(guildId)
+            ?.ranks || []
+    );
 }
 
 /**
- * Return only the rank names for a guild.
+ * Return the configured rank names.
  *
- * @param {string} guildId Discord guild ID.
+ * @param {string} guildId
  * @returns {string[]}
  */
-
 function getGuildRankNames(guildId) {
-    return getGuildRanks(guildId).map(
+    return getGuildRanks(
+        guildId
+    ).map(
         (rank) => rank.name
     );
 }
 
 /**
- * Find a configured rank by its visible name.
+ * Find a configured rank by name.
  *
- * Rank-name comparisons are case-insensitive.
+ * Rank comparisons are case-insensitive.
  *
- * @param {string} guildId Discord guild ID.
- * @param {string} rankName Visible rank name.
+ * @param {string} guildId
+ * @param {string} rankName
  * @returns {{name: string, roleId: string}|null}
  */
-
 function findGuildRank(
     guildId,
     rankName
@@ -503,10 +548,14 @@ function findGuildRank(
     }
 
     const normalizedRankName =
-        rankName.trim().toLowerCase();
+        String(rankName)
+            .trim()
+            .toLowerCase();
 
     return (
-        getGuildRanks(guildId).find(
+        getGuildRanks(
+            guildId
+        ).find(
             (rank) =>
                 rank.name
                     .toLowerCase() ===
@@ -516,56 +565,58 @@ function findGuildRank(
 }
 
 /**
- * Return the hierarchy index for a rank.
+ * Return a rank's hierarchy index.
  *
- * Since ranks are ordered lowest to highest:
- *
- * Higher number = higher rank
- * Lower number = lower rank
- *
- * @param {string} guildId Discord guild ID.
- * @param {string} rankName Visible rank name.
+ * @param {string} guildId
+ * @param {string} rankName
  * @returns {number}
  */
-
 function getGuildRankIndex(
     guildId,
     rankName
 ) {
+    if (!rankName) {
+        return -1;
+    }
+
+    const normalizedRankName =
+        String(rankName)
+            .trim()
+            .toLowerCase();
+
     return getGuildRankNames(
         guildId
     ).findIndex(
         (configuredRankName) =>
-            configuredRankName.toLowerCase() ===
-            String(rankName)
-                .trim()
-                .toLowerCase()
+            configuredRankName
+                .toLowerCase() ===
+            normalizedRankName
     );
 }
 
 /**
- * Determine whether a guild is supported.
+ * Check whether a server is supported.
  *
- * @param {string} guildId Discord guild ID.
+ * @param {string} guildId
  * @returns {boolean}
  */
-
 function isSupportedGuild(guildId) {
     return Boolean(
-        getServerConfig(guildId)
+        getServerConfig(
+            guildId
+        )
     );
 }
 
 /**
- * Return autocomplete-ready choices for a guild.
+ * Return autocomplete-ready rank choices.
  *
- * Discord permits a maximum of 25 autocomplete results.
+ * Discord allows up to 25 autocomplete results.
  *
- * @param {string} guildId Discord guild ID.
- * @param {string} focusedValue Text currently entered by user.
+ * @param {string} guildId
+ * @param {string} focusedValue
  * @returns {Array<{name: string, value: string}>}
  */
-
 function getRankAutocompleteChoices(
     guildId,
     focusedValue = ''
@@ -575,7 +626,9 @@ function getRankAutocompleteChoices(
             .trim()
             .toLowerCase();
 
-    return getGuildRanks(guildId)
+    return getGuildRanks(
+        guildId
+    )
         .filter((rank) => {
             if (!normalizedSearch) {
                 return true;
@@ -589,19 +642,21 @@ function getRankAutocompleteChoices(
         })
         .slice(0, 25)
         .map((rank) => ({
-            name: rank.name,
-            value: rank.name,
+            name:
+                rank.name,
+
+            value:
+                rank.name,
         }));
 }
 
 /**
- * Check whether a member has an authorized reviewer role.
+ * Check whether a member holds an authorized reviewer role.
  *
  * @param {import('discord.js').GuildMember|null} member
  * @param {string} guildId
  * @returns {boolean}
  */
-
 function memberCanReviewMovements(
     member,
     guildId
@@ -611,7 +666,9 @@ function memberCanReviewMovements(
     }
 
     const serverConfig =
-        getServerConfig(guildId);
+        getServerConfig(
+            guildId
+        );
 
     if (!serverConfig) {
         return false;
@@ -619,9 +676,40 @@ function memberCanReviewMovements(
 
     return member.roles.cache.some(
         (role) =>
-            serverConfig.reviewerRoleIds.includes(
-                role.id
-            )
+            serverConfig
+                .reviewerRoleIds
+                .includes(role.id)
+    );
+}
+
+/**
+ * Return a configured channel ID.
+ *
+ * Supported types:
+ * promotions, demotions, infractions, movements
+ *
+ * @param {string} guildId
+ * @param {string} channelType
+ * @returns {string|null}
+ */
+function getConfiguredChannelId(
+    guildId,
+    channelType
+) {
+    const serverConfig =
+        getServerConfig(
+            guildId
+        );
+
+    if (!serverConfig) {
+        return null;
+    }
+
+    return (
+        serverConfig
+            .channels
+            ?.[channelType] ||
+        null
     );
 }
 
@@ -634,6 +722,9 @@ function memberCanReviewMovements(
 module.exports = {
     MAIN_SERVER_ID,
     ISP_SERVER_ID,
+
+    ISRP_CHANNELS,
+    ISP_CHANNELS,
 
     MAIN_SERVER_RANKS,
     ISP_RANKS,
@@ -648,4 +739,5 @@ module.exports = {
     isSupportedGuild,
     getRankAutocompleteChoices,
     memberCanReviewMovements,
+    getConfiguredChannelId,
 };
