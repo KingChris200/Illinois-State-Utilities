@@ -26,11 +26,22 @@ const {
 
 /*
  * ============================================================
+ * CONSTANTS
+ * ============================================================
+ */
+
+const DEFAULT_BRAND_COLOR = 0x2b2d31;
+
+const FOOTER_TEXT =
+    'Illinois State Utilities • Staff Management System';
+
+/*
+ * ============================================================
  * GENERAL HELPERS
  * ============================================================
  */
 
-function normalizeDatabaseObject(value) {
+function normalizeObject(value) {
     if (
         !value ||
         typeof value !== 'object' ||
@@ -42,7 +53,7 @@ function normalizeDatabaseObject(value) {
     return value;
 }
 
-function getDisplayName(user) {
+function getUserDisplayName(user) {
     return (
         user.globalName ||
         user.username ||
@@ -57,60 +68,34 @@ function truncateText(value, maximumLength) {
         return text;
     }
 
-    return `${text.slice(0, maximumLength - 3)}...`;
+    return `${text.slice(
+        0,
+        maximumLength - 3
+    )}...`;
 }
 
-function getConfiguredChannel(
-    interaction,
-    selectedChannel,
-    serverConfig,
-    guildConfiguration
-) {
-    if (selectedChannel) {
-        return selectedChannel;
+function parseBrandColor(value) {
+    if (Number.isInteger(value)) {
+        return value;
     }
 
-    const configuredPromotionChannelId =
-        serverConfig?.channels?.promotions ||
-        guildConfiguration?.promotionChannelId ||
-        guildConfiguration?.promotionsChannelId ||
-        guildConfiguration?.announcementChannelId;
-
-    if (configuredPromotionChannelId) {
-        const configuredChannel =
-            interaction.guild.channels.cache.get(
-                configuredPromotionChannelId
-            );
-
-        if (configuredChannel?.isTextBased()) {
-            return configuredChannel;
-        }
+    if (typeof value !== 'string') {
+        return DEFAULT_BRAND_COLOR;
     }
 
-    return interaction.channel;
-}
+    const cleanedValue = value
+        .trim()
+        .replace(/^#/, '')
+        .replace(/^0x/i, '');
 
-function getConfiguredLogChannel(
-    interaction,
-    guildConfiguration
-) {
-    const logChannelId =
-        guildConfiguration?.logChannelId ||
-        guildConfiguration?.managementLogChannelId ||
-        guildConfiguration?.logsChannelId;
+    const parsedValue =
+        Number.parseInt(cleanedValue, 16);
 
-    if (!logChannelId) {
-        return null;
+    if (Number.isNaN(parsedValue)) {
+        return DEFAULT_BRAND_COLOR;
     }
 
-    const channel =
-        interaction.guild.channels.cache.get(logChannelId);
-
-    if (!channel?.isTextBased()) {
-        return null;
-    }
-
-    return channel;
+    return parsedValue;
 }
 
 function getBrandColor(
@@ -118,38 +103,45 @@ function getBrandColor(
     guildConfiguration
 ) {
     if (
-        Number.isInteger(serverConfig?.brandColor)
+        Number.isInteger(
+            serverConfig?.brandColor
+        )
     ) {
         return serverConfig.brandColor;
     }
 
-    const configuredColor =
-        guildConfiguration?.brandColor;
-
-    if (Number.isInteger(configuredColor)) {
-        return configuredColor;
-    }
-
-    if (typeof configuredColor === 'string') {
-        const cleanedColor = configuredColor
-            .trim()
-            .replace(/^#/, '')
-            .replace(/^0x/i, '');
-
-        const parsedColor =
-            Number.parseInt(cleanedColor, 16);
-
-        if (!Number.isNaN(parsedColor)) {
-            return parsedColor;
-        }
-    }
-
-    return 0x2b2d31;
+    return parseBrandColor(
+        guildConfiguration?.brandColor
+    );
 }
 
-function canManagePromotions(
-    interaction,
-    serverConfig
+function getPromotionTitle(serverConfig) {
+    return (
+        serverConfig?.embedTitles?.promotion ||
+        `${
+            serverConfig?.shortName || 'ISU'
+        } | Staff Promotion`
+    );
+}
+
+function getPromotionOpening(serverConfig) {
+    return (
+        serverConfig?.messages
+            ?.promotionOpening ||
+        'Please join us in congratulating this member on receiving a promotion!'
+    );
+}
+
+function getPromotionClosing(serverConfig) {
+    return (
+        serverConfig?.messages
+            ?.promotionClosing ||
+        'Thank you for your continued professionalism, dedication, and service.'
+    );
+}
+
+function canUsePromotionCommand(
+    interaction
 ) {
     const member = interaction.member;
 
@@ -179,52 +171,160 @@ function canManagePromotions(
     );
 }
 
-async function safelyRollbackRoles({
-    member,
-    removedRole,
-    addedRole,
-    reason,
+/*
+ * ============================================================
+ * CHANNEL HELPERS
+ * ============================================================
+ */
+
+function resolveCachedTextChannel(
+    guild,
+    channelId
+) {
+    if (!guild || !channelId) {
+        return null;
+    }
+
+    const channel =
+        guild.channels.cache.get(channelId);
+
+    if (!channel?.isTextBased()) {
+        return null;
+    }
+
+    return channel;
+}
+
+async function fetchTextChannel(
+    guild,
+    channelId
+) {
+    const cachedChannel =
+        resolveCachedTextChannel(
+            guild,
+            channelId
+        );
+
+    if (cachedChannel) {
+        return cachedChannel;
+    }
+
+    if (!guild || !channelId) {
+        return null;
+    }
+
+    const fetchedChannel =
+        await guild.channels
+            .fetch(channelId)
+            .catch(() => null);
+
+    if (!fetchedChannel?.isTextBased()) {
+        return null;
+    }
+
+    return fetchedChannel;
+}
+
+async function resolveAnnouncementChannel({
+    interaction,
+    selectedChannel,
+    serverConfig,
+    guildConfiguration,
 }) {
-    const rollbackErrors = [];
-
     if (
-        addedRole &&
-        member.roles.cache.has(addedRole.id)
+        selectedChannel?.isTextBased()
     ) {
-        await member.roles
-            .remove(
-                addedRole,
-                `Promotion rollback: ${reason}`
-            )
-            .catch((error) => {
-                rollbackErrors.push({
-                    step: 'remove-new-role',
-                    error,
-                });
-            });
+        return selectedChannel;
+    }
+
+    const configuredChannelIds = [
+        serverConfig?.channels?.promotions,
+        guildConfiguration
+            ?.promotionChannelId,
+        guildConfiguration
+            ?.promotionsChannelId,
+        guildConfiguration
+            ?.announcementChannelId,
+    ].filter(Boolean);
+
+    for (
+        const channelId of configuredChannelIds
+    ) {
+        const channel =
+            await fetchTextChannel(
+                interaction.guild,
+                channelId
+            );
+
+        if (channel) {
+            return channel;
+        }
     }
 
     if (
-        removedRole &&
-        !member.roles.cache.has(removedRole.id)
+        interaction.channel?.isTextBased()
     ) {
-        await member.roles
-            .add(
-                removedRole,
-                `Promotion rollback: ${reason}`
-            )
-            .catch((error) => {
-                rollbackErrors.push({
-                    step: 'restore-previous-role',
-                    error,
-                });
-            });
+        return interaction.channel;
     }
 
-    return {
-        success: rollbackErrors.length === 0,
-        errors: rollbackErrors,
-    };
+    return null;
+}
+
+async function resolveLogChannel({
+    interaction,
+    guildConfiguration,
+}) {
+    const possibleLogChannelIds = [
+        guildConfiguration?.logChannelId,
+        guildConfiguration
+            ?.managementLogChannelId,
+        guildConfiguration
+            ?.logsChannelId,
+    ].filter(Boolean);
+
+    for (
+        const channelId of possibleLogChannelIds
+    ) {
+        const channel =
+            await fetchTextChannel(
+                interaction.guild,
+                channelId
+            );
+
+        if (channel) {
+            return channel;
+        }
+    }
+
+    return null;
+}
+
+function botCanSendEmbeds(
+    channel,
+    botMember
+) {
+    if (!channel || !botMember) {
+        return false;
+    }
+
+    const permissions =
+        channel.permissionsFor(botMember);
+
+    if (!permissions) {
+        return false;
+    }
+
+    return (
+        permissions.has(
+            PermissionFlagsBits.ViewChannel
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.SendMessages
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.EmbedLinks
+        )
+    );
 }
 
 /*
@@ -233,26 +333,111 @@ async function safelyRollbackRoles({
  * ============================================================
  */
 
+async function getGuildConfiguration(
+    guildId
+) {
+    const configurations =
+        await readDatabase(
+            'guild-configs',
+            {}
+        );
+
+    const normalizedConfigurations =
+        normalizeObject(configurations);
+
+    return normalizeObject(
+        normalizedConfigurations[guildId]
+    );
+}
+
 async function savePromotionRecord({
     guildId,
-    promotionRecord,
+    record,
 }) {
     await updateDatabase(
         'promotions',
+
         (promotions) => {
             promotions =
-                normalizeDatabaseObject(promotions);
+                normalizeObject(promotions);
 
-            if (!Array.isArray(promotions[guildId])) {
+            if (
+                !Array.isArray(
+                    promotions[guildId]
+                )
+            ) {
                 promotions[guildId] = [];
             }
 
             promotions[guildId].push(
-                promotionRecord
+                record
             );
 
             return promotions;
         },
+
+        {}
+    );
+}
+
+async function updatePromotionAnnouncement({
+    guildId,
+    promotionId,
+    announcementMessage,
+}) {
+    await updateDatabase(
+        'promotions',
+
+        (promotions) => {
+            promotions =
+                normalizeObject(promotions);
+
+            const guildPromotions =
+                promotions[guildId];
+
+            if (
+                !Array.isArray(
+                    guildPromotions
+                )
+            ) {
+                return promotions;
+            }
+
+            const promotionIndex =
+                guildPromotions.findIndex(
+                    (promotion) =>
+                        promotion.id ===
+                        promotionId
+                );
+
+            if (promotionIndex === -1) {
+                return promotions;
+            }
+
+            guildPromotions[
+                promotionIndex
+            ] = {
+                ...guildPromotions[
+                    promotionIndex
+                ],
+
+                announcementChannelId:
+                    announcementMessage
+                        .channelId,
+
+                announcementMessageId:
+                    announcementMessage.id,
+
+                announcementMessageUrl:
+                    announcementMessage.url,
+
+                updatedAt:
+                    new Date().toISOString(),
+            };
+
+            return promotions;
+        },
+
         {}
     );
 }
@@ -269,45 +454,61 @@ async function updateStaffRecord({
 }) {
     await updateDatabase(
         'staff-records',
+
         (staffRecords) => {
             staffRecords =
-                normalizeDatabaseObject(staffRecords);
-
-            staffRecords[interaction.guildId] =
-                normalizeDatabaseObject(
-                    staffRecords[interaction.guildId]
+                normalizeObject(
+                    staffRecords
                 );
 
+            staffRecords[
+                interaction.guildId
+            ] = normalizeObject(
+                staffRecords[
+                    interaction.guildId
+                ]
+            );
+
             const existingRecord =
-                normalizeDatabaseObject(
-                    staffRecords[interaction.guildId][
-                        staffMember.id
-                    ]
+                normalizeObject(
+                    staffRecords[
+                        interaction.guildId
+                    ][staffMember.id]
                 );
 
             const promotionHistory =
                 Array.isArray(
-                    existingRecord.promotionHistory
+                    existingRecord
+                        .promotionHistory
                 )
-                    ? [...existingRecord.promotionHistory]
+                    ? [
+                          ...existingRecord
+                              .promotionHistory,
+                      ]
                     : [];
 
             promotionHistory.push({
                 promotionId,
+
                 previousRank,
                 newRank,
+
                 reason,
                 notes,
+
                 promotedById:
                     interaction.user.id,
+
                 promotedByUsername:
-                    interaction.user.username,
+                    interaction.user
+                        .username,
+
                 createdAt,
             });
 
-            staffRecords[interaction.guildId][
-                staffMember.id
-            ] = {
+            staffRecords[
+                interaction.guildId
+            ][staffMember.id] = {
                 ...existingRecord,
 
                 staffMemberId:
@@ -317,53 +518,70 @@ async function updateStaffRecord({
                     staffMember.username,
 
                 displayName:
-                    getDisplayName(staffMember),
+                    getUserDisplayName(
+                        staffMember
+                    ),
 
                 currentRank:
                     newRank,
 
                 promotionCount:
                     Number(
-                        existingRecord.promotionCount || 0
+                        existingRecord
+                            .promotionCount || 0
                     ) + 1,
 
                 demotionCount:
                     Number(
-                        existingRecord.demotionCount || 0
+                        existingRecord
+                            .demotionCount || 0
                     ),
 
                 infractionCount:
                     Number(
-                        existingRecord.infractionCount || 0
+                        existingRecord
+                            .infractionCount || 0
                     ),
 
                 warningCount:
                     Number(
-                        existingRecord.warningCount || 0
+                        existingRecord
+                            .warningCount || 0
                     ),
 
                 awardCount:
                     Number(
-                        existingRecord.awardCount || 0
+                        existingRecord
+                            .awardCount || 0
+                    ),
+
+                trainingCount:
+                    Number(
+                        existingRecord
+                            .trainingCount || 0
                     ),
 
                 totalShiftMilliseconds:
                     Number(
                         existingRecord
-                            .totalShiftMilliseconds || 0
+                            .totalShiftMilliseconds ||
+                            0
                     ),
 
                 activeLoa:
-                    existingRecord.activeLoa || null,
+                    existingRecord
+                        .activeLoa || null,
 
                 joinedStaffAt:
-                    existingRecord.joinedStaffAt ||
+                    existingRecord
+                        .joinedStaffAt ||
                     createdAt,
 
                 promotionHistory,
 
                 createdAt:
-                    existingRecord.createdAt ||
+                    existingRecord
+                        .createdAt ||
                     createdAt,
 
                 updatedAt:
@@ -372,8 +590,71 @@ async function updateStaffRecord({
 
             return staffRecords;
         },
+
         {}
     );
+}
+
+/*
+ * ============================================================
+ * ROLE ROLLBACK
+ * ============================================================
+ */
+
+async function rollbackPromotionRoles({
+    guildMember,
+    removedRole,
+    addedRole,
+    reason,
+}) {
+    const errors = [];
+
+    if (
+        addedRole &&
+        guildMember.roles.cache.has(
+            addedRole.id
+        )
+    ) {
+        await guildMember.roles
+            .remove(
+                addedRole,
+                `Promotion rollback: ${reason}`
+            )
+            .catch((error) => {
+                errors.push({
+                    action:
+                        'remove-new-role',
+                    error,
+                });
+            });
+    }
+
+    if (
+        removedRole &&
+        !guildMember.roles.cache.has(
+            removedRole.id
+        )
+    ) {
+        await guildMember.roles
+            .add(
+                removedRole,
+                `Promotion rollback: ${reason}`
+            )
+            .catch((error) => {
+                errors.push({
+                    action:
+                        'restore-old-role',
+                    error,
+                });
+            });
+    }
+
+    return {
+        success:
+            errors.length === 0,
+
+        errors,
+    };
 }
 
 /*
@@ -391,87 +672,109 @@ function buildPromotionEmbed({
     notes,
     serverConfig,
     guildConfiguration,
-    brandColor,
 }) {
+    const brandColor =
+        getBrandColor(
+            serverConfig,
+            guildConfiguration
+        );
+
     const serverName =
         serverConfig.serverName ||
-        guildConfiguration?.serverName ||
+        guildConfiguration.serverName ||
         interaction.guild.name;
 
-    const openingMessage =
-        serverConfig.messages?.promotionOpening ||
-        `Please congratulate ${staffMember} on receiving a staff promotion!`;
+    const description = [
+        getPromotionOpening(
+            serverConfig
+        ),
 
-    const closingMessage =
-        serverConfig.messages?.promotionClosing ||
-        'Thank you for your continued professionalism and dedication.';
+        '',
 
-    const title =
-        serverConfig.embedTitles?.promotion ||
-        `${serverConfig.shortName || 'ISU'} | Staff Promotion`;
+        `## Congratulations, ${staffMember}!`,
 
-    const descriptionLines = [
-        openingMessage,
         '',
-        `Congratulations, ${staffMember}!`,
+
+        '**Previous Rank**',
+        previousRank,
+
         '',
-        '### Rank Advancement',
-        `**Previous Rank:** ${previousRank}`,
-        `**New Rank:** ${newRank}`,
+
+        '**New Rank**',
+        newRank,
+
         '',
-        '### Promotion Reason',
+
+        '**Promotion Reason**',
         reason,
+
         '',
-        '### Promoted By',
+
+        '**Promoted By**',
         `${interaction.user}`,
     ];
 
     if (notes) {
-        descriptionLines.push(
+        description.push(
             '',
-            '### Additional Notes',
+            '**Additional Notes**',
             notes
         );
     }
 
-    descriptionLines.push(
+    description.push(
         '',
-        closingMessage,
+        getPromotionClosing(
+            serverConfig
+        ),
         '',
         '**Congratulations on your promotion!**'
     );
 
-    const embed = new EmbedBuilder()
+    return new EmbedBuilder()
         .setColor(brandColor)
-        .setTitle(title)
+
+        .setTitle(
+            getPromotionTitle(
+                serverConfig
+            )
+        )
+
         .setDescription(
             truncateText(
-                descriptionLines.join('\n'),
+                description.join('\n'),
                 4096
             )
         )
-        .setThumbnail(
-            staffMember.displayAvatarURL({
-                size: 256,
-            })
-        )
+
         .setAuthor({
-            name: serverName,
+            name:
+                serverName,
+
             iconURL:
                 interaction.guild.iconURL({
                     size: 256,
                 }) || undefined,
         })
+
+        .setThumbnail(
+            staffMember.displayAvatarURL({
+                size: 256,
+            })
+        )
+
         .setFooter({
             text:
-                'Illinois State Utilities • Staff Management System',
+                FOOTER_TEXT,
+
             iconURL:
                 interaction.client.user
-                    .displayAvatarURL(),
+                    .displayAvatarURL({
+                        size: 128,
+                    }),
         })
-        .setTimestamp();
 
-    return embed;
+        .setTimestamp();
 }
 
 function buildLogEmbed({
@@ -482,128 +785,192 @@ function buildLogEmbed({
     reason,
     notes,
     promotionId,
-    announcementMessage,
     rankResult,
-    brandColor,
+    announcementMessage,
     serverConfig,
+    guildConfiguration,
 }) {
+    const brandColor =
+        getBrandColor(
+            serverConfig,
+            guildConfiguration
+        );
+
     return new EmbedBuilder()
         .setColor(brandColor)
-        .setTitle('Staff Promotion Recorded')
+
+        .setTitle(
+            'Staff Promotion Recorded'
+        )
+
         .setDescription(
             [
                 `**Server:** ${serverConfig.serverName}`,
+
                 `**Staff Member:** ${staffMember} (\`${staffMember.id}\`)`,
+
                 `**Previous Rank:** ${previousRank}`,
+
                 `**New Rank:** ${newRank}`,
+
                 `**Reason:** ${reason}`,
+
                 `**Additional Notes:** ${
-                    notes || 'None provided'
+                    notes ||
+                    'None provided'
                 }`,
+
                 `**Promoted By:** ${interaction.user} (\`${interaction.user.id}\`)`,
+
                 `**Role Removed:** ${rankResult.removedRole}`,
+
                 `**Role Added:** ${rankResult.addedRole}`,
+
                 `**Announcement:** ${announcementMessage.url}`,
+
                 `**Record ID:** \`${promotionId}\``,
             ].join('\n')
         )
+
         .setThumbnail(
             staffMember.displayAvatarURL({
                 size: 256,
             })
         )
+
         .setFooter({
             text:
                 'Illinois State Utilities • Management Logs',
+
             iconURL:
                 interaction.client.user
-                    .displayAvatarURL(),
+                    .displayAvatarURL({
+                        size: 128,
+                    }),
         })
+
         .setTimestamp();
 }
 
 /*
  * ============================================================
- * COMMAND
+ * PROMOTE COMMAND
  * ============================================================
  */
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('promote')
+
         .setDescription(
             'Promote a staff member or department member.'
         )
 
+        .setDMPermission(false)
+
+        /*
+         * Required options
+         */
+
         .addUserOption((option) =>
             option
-                .setName('staff-member')
+                .setName(
+                    'staff-member'
+                )
+
                 .setDescription(
                     'The member receiving the promotion.'
                 )
+
                 .setRequired(true)
         )
 
         .addStringOption((option) =>
             option
-                .setName('previous-rank')
+                .setName(
+                    'previous-rank'
+                )
+
                 .setDescription(
                     'The member’s current rank.'
                 )
+
                 .setAutocomplete(true)
+
                 .setRequired(true)
         )
 
         .addStringOption((option) =>
             option
-                .setName('new-rank')
+                .setName(
+                    'new-rank'
+                )
+
                 .setDescription(
                     'The higher rank being assigned.'
                 )
+
                 .setAutocomplete(true)
+
                 .setRequired(true)
         )
 
         .addStringOption((option) =>
             option
                 .setName('reason')
+
                 .setDescription(
                     'The reason for this promotion.'
                 )
+
                 .setMinLength(3)
+
                 .setMaxLength(1000)
+
                 .setRequired(true)
         )
+
+        /*
+         * Optional options
+         */
 
         .addChannelOption((option) =>
             option
                 .setName('channel')
+
                 .setDescription(
-                    'Optional announcement channel.'
+                    'Optional promotion announcement channel.'
                 )
+
                 .addChannelTypes(
                     ChannelType.GuildText,
                     ChannelType.GuildAnnouncement
                 )
+
                 .setRequired(false)
         )
 
         .addRoleOption((option) =>
             option
                 .setName('ping')
+
                 .setDescription(
-                    'Optional role to notify.'
+                    'Optional role to notify about the promotion.'
                 )
+
                 .setRequired(false)
         )
 
         .addStringOption((option) =>
             option
                 .setName('notes')
+
                 .setDescription(
                     'Optional additional promotion notes.'
                 )
+
                 .setMaxLength(500)
+
                 .setRequired(false)
         ),
 
@@ -616,11 +983,29 @@ module.exports = {
     async autocomplete(interaction) {
         try {
             if (!interaction.inGuild()) {
-                return interaction.respond([]);
+                return interaction.respond(
+                    []
+                );
+            }
+
+            const serverConfig =
+                getServerConfig(
+                    interaction.guildId
+                );
+
+            if (!serverConfig) {
+                console.error(
+                    `❌ No server configuration found for autocomplete in guild ${interaction.guildId}.`
+                );
+
+                return interaction.respond(
+                    []
+                );
             }
 
             const focusedOption =
-                interaction.options.getFocused(true);
+                interaction.options
+                    .getFocused(true);
 
             if (
                 focusedOption.name !==
@@ -628,19 +1013,59 @@ module.exports = {
                 focusedOption.name !==
                     'new-rank'
             ) {
-                return interaction.respond([]);
+                return interaction.respond(
+                    []
+                );
             }
 
-            const choices =
+            let choices =
                 getRankAutocompleteChoices(
                     interaction.guildId,
                     focusedOption.value
                 );
 
-            return interaction.respond(choices);
+            /*
+             * When choosing the new rank, only display ranks
+             * above the already selected previous rank.
+             */
+
+            if (
+                focusedOption.name ===
+                'new-rank'
+            ) {
+                const selectedPreviousRank =
+                    interaction.options
+                        .getString(
+                            'previous-rank'
+                        );
+
+                const previousRankIndex =
+                    getGuildRankIndex(
+                        interaction.guildId,
+                        selectedPreviousRank
+                    );
+
+                if (
+                    previousRankIndex !== -1
+                ) {
+                    choices =
+                        choices.filter(
+                            (choice) =>
+                                getGuildRankIndex(
+                                    interaction.guildId,
+                                    choice.value
+                                ) >
+                                previousRankIndex
+                        );
+                }
+            }
+
+            return interaction.respond(
+                choices.slice(0, 25)
+            );
         } catch (error) {
             console.error(
-                'Error handling /promote autocomplete:',
+                '❌ Error handling /promote autocomplete:',
                 error
             );
 
@@ -652,7 +1077,7 @@ module.exports = {
 
     /*
      * ========================================================
-     * EXECUTION
+     * EXECUTE
      * ========================================================
      */
 
@@ -665,12 +1090,15 @@ module.exports = {
                 return interaction.reply({
                     content:
                         '❌ This command can only be used inside a Discord server.',
-                    flags: MessageFlags.Ephemeral,
+
+                    flags:
+                        MessageFlags.Ephemeral,
                 });
             }
 
             await interaction.deferReply({
-                flags: MessageFlags.Ephemeral,
+                flags:
+                    MessageFlags.Ephemeral,
             });
 
             const serverConfig =
@@ -681,21 +1109,24 @@ module.exports = {
             if (!serverConfig) {
                 return interaction.editReply({
                     content:
-                        '❌ Illinois State Utilities does not currently have a server configuration for this Discord server.',
+                        `❌ Illinois State Utilities is not configured for this server.\n\nCurrent server ID: \`${interaction.guildId}\``,
                 });
             }
 
             if (
-                !canManagePromotions(
-                    interaction,
-                    serverConfig
+                !canUsePromotionCommand(
+                    interaction
                 )
             ) {
                 return interaction.editReply({
                     content:
-                        '❌ You do not have permission to issue staff promotions in this server.',
+                        '❌ You do not have permission to issue promotions in this server.',
                 });
             }
+
+            /*
+             * Read command options
+             */
 
             const staffMember =
                 interaction.options.getUser(
@@ -728,19 +1159,23 @@ module.exports = {
                     .trim();
 
             const selectedChannel =
-                interaction.options.getChannel(
-                    'channel'
-                );
+                interaction.options
+                    .getChannel(
+                        'channel'
+                    );
 
             const pingRole =
-                interaction.options.getRole(
-                    'ping'
-                );
+                interaction.options
+                    .getRole('ping');
 
             const notes =
                 interaction.options
                     .getString('notes')
                     ?.trim() || null;
+
+            /*
+             * Basic member validation
+             */
 
             if (staffMember.bot) {
                 return interaction.editReply({
@@ -759,6 +1194,10 @@ module.exports = {
                 });
             }
 
+            /*
+             * Rank validation
+             */
+
             const previousRankIndex =
                 getGuildRankIndex(
                     interaction.guildId,
@@ -772,12 +1211,20 @@ module.exports = {
                 );
 
             if (
-                previousRankIndex === -1 ||
+                previousRankIndex === -1
+            ) {
+                return interaction.editReply({
+                    content:
+                        `❌ **${previousRank}** is not a configured rank for ${serverConfig.serverName}.`,
+                });
+            }
+
+            if (
                 newRankIndex === -1
             ) {
                 return interaction.editReply({
                     content:
-                        `❌ One or both ranks are not recognized by the **${serverConfig.serverName}** hierarchy.`,
+                        `❌ **${newRank}** is not a configured rank for ${serverConfig.serverName}.`,
                 });
             }
 
@@ -801,71 +1248,73 @@ module.exports = {
                 });
             }
 
-            const configurations =
-                await readDatabase(
-                    'guild-configs',
-                    {}
-                );
+            /*
+             * Fetch the member
+             */
 
-            const guildConfiguration =
-                normalizeDatabaseObject(
-                    configurations
-                )[interaction.guildId] || {};
+            targetGuildMember =
+                await interaction.guild.members
+                    .fetch(
+                        staffMember.id
+                    )
+                    .catch(() => null);
 
-            const destinationChannel =
-                getConfiguredChannel(
-                    interaction,
-                    selectedChannel,
-                    serverConfig,
-                    guildConfiguration
-                );
-
-            if (
-                !destinationChannel ||
-                !destinationChannel.isTextBased()
-            ) {
+            if (!targetGuildMember) {
                 return interaction.editReply({
                     content:
-                        '❌ I could not locate a valid promotion announcement channel.',
+                        '❌ I could not find that member inside this Discord server.',
+                });
+            }
+
+            /*
+             * Load optional setup configuration
+             */
+
+            const guildConfiguration =
+                await getGuildConfiguration(
+                    interaction.guildId
+                );
+
+            /*
+             * Resolve announcement channel
+             */
+
+            const announcementChannel =
+                await resolveAnnouncementChannel({
+                    interaction,
+
+                    selectedChannel,
+
+                    serverConfig,
+
+                    guildConfiguration,
+                });
+
+            if (!announcementChannel) {
+                return interaction.editReply({
+                    content:
+                        '❌ I could not locate a valid channel for the promotion announcement.',
                 });
             }
 
             const botMember =
                 interaction.guild.members.me;
 
-            const channelPermissions =
-                destinationChannel.permissionsFor(
-                    botMember
-                );
-
             if (
-                !channelPermissions?.has(
-                    PermissionFlagsBits.ViewChannel
-                ) ||
-                !channelPermissions?.has(
-                    PermissionFlagsBits.SendMessages
-                ) ||
-                !channelPermissions?.has(
-                    PermissionFlagsBits.EmbedLinks
+                !botCanSendEmbeds(
+                    announcementChannel,
+                    botMember
                 )
             ) {
                 return interaction.editReply({
                     content:
-                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${destinationChannel}.`,
+                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${announcementChannel}.`,
                 });
             }
 
-            targetGuildMember =
-                await interaction.guild.members
-                    .fetch(staffMember.id)
-                    .catch(() => null);
-
-            if (!targetGuildMember) {
-                return interaction.editReply({
-                    content:
-                        '❌ I could not find that member inside this server.',
-                });
-            }
+            /*
+             * Apply Discord rank roles
+             */
 
             const rankResult =
                 await applyRankChange({
@@ -876,6 +1325,7 @@ module.exports = {
                         targetGuildMember,
 
                     previousRank,
+
                     newRank,
 
                     actionType:
@@ -897,17 +1347,17 @@ module.exports = {
             completedRankResult =
                 rankResult;
 
+            /*
+             * Build promotion record
+             */
+
             const promotionId =
-                createRecordId('promotion');
+                createRecordId(
+                    'promotion'
+                );
 
             const createdAt =
                 new Date().toISOString();
-
-            const brandColor =
-                getBrandColor(
-                    serverConfig,
-                    guildConfiguration
-                );
 
             const promotionRecord = {
                 id:
@@ -938,7 +1388,7 @@ module.exports = {
                     staffMember.username,
 
                 staffDisplayName:
-                    getDisplayName(
+                    getUserDisplayName(
                         staffMember
                     ),
 
@@ -946,10 +1396,12 @@ module.exports = {
                 newRank,
 
                 previousRoleId:
-                    rankResult.removedRole.id,
+                    rankResult
+                        .removedRole.id,
 
                 newRoleId:
-                    rankResult.addedRole.id,
+                    rankResult
+                        .addedRole.id,
 
                 reason,
                 notes,
@@ -958,15 +1410,16 @@ module.exports = {
                     interaction.user.id,
 
                 promotedByUsername:
-                    interaction.user.username,
+                    interaction.user
+                        .username,
 
                 promotedByDisplayName:
-                    getDisplayName(
+                    getUserDisplayName(
                         interaction.user
                     ),
 
                 announcementChannelId:
-                    destinationChannel.id,
+                    announcementChannel.id,
 
                 announcementMessageId:
                     null,
@@ -975,77 +1428,119 @@ module.exports = {
                     null,
 
                 createdAt,
+
                 updatedAt:
                     createdAt,
             };
+
+            /*
+             * Save database information
+             */
 
             try {
                 await savePromotionRecord({
                     guildId:
                         interaction.guildId,
 
-                    promotionRecord,
+                    record:
+                        promotionRecord,
                 });
 
                 await updateStaffRecord({
                     interaction,
+
                     staffMember,
+
                     previousRank,
+
                     newRank,
+
                     reason,
+
                     notes,
+
                     promotionId,
+
                     createdAt,
                 });
             } catch (databaseError) {
                 console.error(
-                    'Promotion database save failed:',
+                    '❌ Promotion database save failed:',
                     databaseError
                 );
 
                 const rollbackResult =
-                    await safelyRollbackRoles({
-                        member:
+                    await rollbackPromotionRoles({
+                        guildMember:
                             targetGuildMember,
 
                         removedRole:
-                            rankResult.removedRole,
+                            rankResult
+                                .removedRole,
 
                         addedRole:
-                            rankResult.addedRole,
+                            rankResult
+                                .addedRole,
 
                         reason:
-                            'Promotion database save failed',
+                            'Database save failed',
                     });
 
-                completedRankResult = null;
+                completedRankResult =
+                    null;
+
+                if (
+                    rollbackResult.success
+                ) {
+                    return interaction.editReply({
+                        content:
+                            '❌ The promotion could not be saved, so the Discord role change was automatically reversed.',
+                    });
+                }
+
+                console.error(
+                    '❌ Promotion rollback errors:',
+                    rollbackResult.errors
+                );
 
                 return interaction.editReply({
                     content:
-                        rollbackResult.success
-                            ? '❌ The promotion could not be saved, so the Discord role change was automatically reversed.'
-                            : '❌ The promotion could not be saved, and the automatic role rollback was not fully successful. Please contact a bot administrator immediately.',
+                        '❌ The promotion could not be saved, and the automatic role rollback was not fully successful. Please review the member’s roles immediately.',
                 });
             }
+
+            /*
+             * Create announcement embed
+             */
 
             const promotionEmbed =
                 buildPromotionEmbed({
                     interaction,
+
                     staffMember,
+
                     previousRank,
+
                     newRank,
+
                     reason,
+
                     notes,
+
                     serverConfig,
+
                     guildConfiguration,
-                    brandColor,
                 });
+
+            /*
+             * Send announcement
+             */
 
             let announcementMessage;
 
             try {
                 announcementMessage =
-                    await destinationChannel.send({
+                    await announcementChannel.send({
                         content:
                             pingRole
                                 ? `${pingRole}`
@@ -1073,105 +1568,92 @@ module.exports = {
                     });
             } catch (announcementError) {
                 console.error(
-                    'Promotion announcement failed:',
+                    '❌ Promotion announcement failed:',
                     announcementError
                 );
 
+                completedRankResult =
+                    null;
+
                 return interaction.editReply({
                     content:
-                        `⚠️ ${staffMember} was promoted from **${previousRank}** to **${newRank}**, and the database record was saved, but I could not send the announcement in ${destinationChannel}.\n\n**Record ID:** \`${promotionId}\``,
+                        [
+                            `⚠️ ${staffMember} was successfully promoted from **${previousRank}** to **${newRank}**.`,
+
+                            '',
+
+                            'The role change and database record succeeded, but I could not send the promotion announcement.',
+
+                            '',
+
+                            `**Promotion Record:** \`${promotionId}\``,
+                        ].join('\n'),
+
                     allowedMentions: {
                         parse: [],
                     },
                 });
             }
 
-            promotionRecord.announcementMessageId =
-                announcementMessage.id;
+            /*
+             * Attach announcement details to saved record
+             */
 
-            promotionRecord.announcementMessageUrl =
-                announcementMessage.url;
+            await updatePromotionAnnouncement({
+                guildId:
+                    interaction.guildId,
 
-            promotionRecord.updatedAt =
-                new Date().toISOString();
+                promotionId,
 
-            await updateDatabase(
-                'promotions',
-                (promotions) => {
-                    promotions =
-                        normalizeDatabaseObject(
-                            promotions
-                        );
-
-                    const guildPromotions =
-                        promotions[
-                            interaction.guildId
-                        ];
-
-                    if (
-                        !Array.isArray(
-                            guildPromotions
-                        )
-                    ) {
-                        return promotions;
-                    }
-
-                    const recordIndex =
-                        guildPromotions.findIndex(
-                            (record) =>
-                                record.id ===
-                                promotionId
-                        );
-
-                    if (recordIndex !== -1) {
-                        guildPromotions[
-                            recordIndex
-                        ] = {
-                            ...guildPromotions[
-                                recordIndex
-                            ],
-
-                            announcementMessageId:
-                                announcementMessage.id,
-
-                            announcementMessageUrl:
-                                announcementMessage.url,
-
-                            updatedAt:
-                                promotionRecord.updatedAt,
-                        };
-                    }
-
-                    return promotions;
-                },
-                {}
-            ).catch((error) => {
+                announcementMessage,
+            }).catch((error) => {
                 console.error(
-                    'Could not attach announcement details to promotion record:',
+                    '⚠️ Could not save promotion announcement information:',
                     error
                 );
             });
 
-            const logChannel =
-                getConfiguredLogChannel(
-                    interaction,
-                    guildConfiguration
-                );
+            /*
+             * Send private management log
+             */
 
-            if (logChannel) {
+            const logChannel =
+                await resolveLogChannel({
+                    interaction,
+
+                    guildConfiguration,
+                });
+
+            if (
+                logChannel &&
+                botCanSendEmbeds(
+                    logChannel,
+                    botMember
+                )
+            ) {
                 const logEmbed =
                     buildLogEmbed({
                         interaction,
+
                         staffMember,
+
                         previousRank,
+
                         newRank,
+
                         reason,
+
                         notes,
+
                         promotionId,
-                        announcementMessage,
+
                         rankResult,
-                        brandColor,
+
+                        announcementMessage,
+
                         serverConfig,
+
+                        guildConfiguration,
                     });
 
                 await logChannel
@@ -1186,23 +1668,33 @@ module.exports = {
                     })
                     .catch((error) => {
                         console.error(
-                            'Promotion succeeded, but the management log could not be sent:',
+                            '⚠️ Promotion succeeded, but the management log could not be sent:',
                             error
                         );
                     });
             }
+
+            /*
+             * Mark the command as fully successful.
+             */
 
             completedRankResult = null;
 
             return interaction.editReply({
                 content:
                     [
-                        `✅ ${staffMember} was successfully promoted from **${previousRank}** to **${newRank}**.`,
+                        `✅ ${staffMember} was successfully promoted from **${previousRank}** to **${newRank}**!`,
+
                         '',
+
                         `**Server:** ${serverConfig.serverName}`,
+
                         `**Announcement:** ${announcementMessage.url}`,
+
                         `**Role Removed:** ${rankResult.removedRole}`,
+
                         `**Role Added:** ${rankResult.addedRole}`,
+
                         `**Promotion Record:** \`${promotionId}\``,
                     ].join('\n'),
 
@@ -1212,22 +1704,22 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                'Error executing /promote:',
+                '❌ Error executing /promote:',
                 error
             );
 
             /*
-             * This fallback only runs if the role change completed
-             * but a later unexpected error occurred before the command
-             * reached a known success state.
+             * Emergency rollback if an unexpected error happened
+             * after the Discord rank change.
              */
+
             if (
                 completedRankResult &&
                 targetGuildMember
             ) {
                 const rollbackResult =
-                    await safelyRollbackRoles({
-                        member:
+                    await rollbackPromotionRoles({
+                        guildMember:
                             targetGuildMember,
 
                         removedRole:
@@ -1239,34 +1731,51 @@ module.exports = {
                                 .addedRole,
 
                         reason:
-                            'Unexpected promotion command failure',
+                            'Unexpected command error',
                     });
 
-                if (!rollbackResult.success) {
+                if (
+                    !rollbackResult.success
+                ) {
                     console.error(
-                        'Emergency promotion rollback failed:',
+                        '❌ Emergency promotion rollback failed:',
                         rollbackResult.errors
                     );
                 }
             }
 
-            const errorMessage = {
+            const errorResponse = {
                 content:
-                    '❌ Something went wrong while processing this promotion. No announcement was intentionally sent.',
+                    '❌ Something went wrong while processing this promotion. Please check the bot logs for more information.',
             };
 
             if (
-                interaction.deferred ||
+                interaction.deferred
+            ) {
+                return interaction
+                    .editReply(
+                        errorResponse
+                    )
+                    .catch(() => {});
+            }
+
+            if (
                 interaction.replied
             ) {
                 return interaction
-                    .editReply(errorMessage)
+                    .followUp({
+                        ...errorResponse,
+
+                        flags:
+                            MessageFlags.Ephemeral,
+                    })
                     .catch(() => {});
             }
 
             return interaction
                 .reply({
-                    ...errorMessage,
+                    ...errorResponse,
+
                     flags:
                         MessageFlags.Ephemeral,
                 })
