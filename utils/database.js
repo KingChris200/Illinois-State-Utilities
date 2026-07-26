@@ -1,14 +1,30 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const DATA_DIRECTORY = path.join(process.cwd(), 'data');
+/*
+ * ============================================================
+ * DATABASE DIRECTORY
+ * ============================================================
+ */
+
+const DATA_DIRECTORY = path.join(
+    process.cwd(),
+    'data'
+);
+
+/*
+ * ============================================================
+ * DATABASE PATH
+ * ============================================================
+ */
 
 /**
- * Converts a database name into a safe JSON file path.
+ * Converts a database name into a safe JSON filename.
  *
  * Example:
  * getDatabasePath('staff-records')
- * becomes:
+ *
+ * Result:
  * data/staff-records.json
  */
 function getDatabasePath(databaseName) {
@@ -32,20 +48,61 @@ function getDatabasePath(databaseName) {
     );
 }
 
+/*
+ * ============================================================
+ * DIRECTORY CREATION
+ * ============================================================
+ */
+
 /**
- * Makes sure the data folder exists.
+ * Makes sure the data directory exists before accessing files.
  */
 async function ensureDataDirectory() {
-    await fs.mkdir(DATA_DIRECTORY, {
-        recursive: true,
-    });
+    await fs.mkdir(
+        DATA_DIRECTORY,
+        {
+            recursive: true,
+        }
+    );
 }
+
+/*
+ * ============================================================
+ * CLONING
+ * ============================================================
+ */
+
+/**
+ * Safely clones default database values.
+ */
+function cloneValue(value) {
+    if (value === undefined) {
+        return {};
+    }
+
+    if (
+        typeof structuredClone ===
+        'function'
+    ) {
+        return structuredClone(value);
+    }
+
+    return JSON.parse(
+        JSON.stringify(value)
+    );
+}
+
+/*
+ * ============================================================
+ * DATABASE READING
+ * ============================================================
+ */
 
 /**
  * Reads a JSON database.
  *
- * If the database does not exist yet, the supplied default value
- * is returned instead.
+ * If the database does not exist, the supplied default value is
+ * returned instead.
  */
 async function readDatabase(
     databaseName,
@@ -53,25 +110,35 @@ async function readDatabase(
 ) {
     await ensureDataDirectory();
 
-    const databasePath = getDatabasePath(databaseName);
+    const databasePath =
+        getDatabasePath(databaseName);
 
     try {
-        const fileContents = await fs.readFile(
-            databasePath,
-            'utf8'
-        );
+        const fileContents =
+            await fs.readFile(
+                databasePath,
+                'utf8'
+            );
 
         if (!fileContents.trim()) {
-            return structuredClone(defaultValue);
+            return cloneValue(
+                defaultValue
+            );
         }
 
-        return JSON.parse(fileContents);
+        return JSON.parse(
+            fileContents
+        );
     } catch (error) {
         if (error.code === 'ENOENT') {
-            return structuredClone(defaultValue);
+            return cloneValue(
+                defaultValue
+            );
         }
 
-        if (error instanceof SyntaxError) {
+        if (
+            error instanceof SyntaxError
+        ) {
             throw new Error(
                 `The database "${databaseName}" contains invalid JSON.`
             );
@@ -81,145 +148,307 @@ async function readDatabase(
     }
 }
 
-/**
- * Saves information to a JSON database.
+/*
+ * ============================================================
+ * DATABASE WRITING
+ * ============================================================
  */
-async function writeDatabase(databaseName, data) {
+
+/**
+ * Writes data to a JSON database.
+ *
+ * Data is written to a temporary file first to reduce the chance
+ * of database corruption.
+ */
+async function writeDatabase(
+    databaseName,
+    data
+) {
     await ensureDataDirectory();
 
-    const databasePath = getDatabasePath(databaseName);
-    const temporaryPath = `${databasePath}.tmp`;
+    const databasePath =
+        getDatabasePath(databaseName);
 
-    const serializedData = JSON.stringify(
-        data,
-        null,
-        4
-    );
+    const temporaryPath =
+        `${databasePath}.tmp`;
 
-    /*
-     * Write to a temporary file first.
-     * This helps reduce the risk of corrupting the main file if
-     * the process stops while data is being saved.
-     */
+    const serializedData =
+        JSON.stringify(
+            data,
+            null,
+            4
+        );
+
     await fs.writeFile(
         temporaryPath,
         serializedData,
         'utf8'
     );
 
-    await fs.rename(
-        temporaryPath,
-        databasePath
-    );
+    try {
+        await fs.rename(
+            temporaryPath,
+            databasePath
+        );
+    } catch (error) {
+        /*
+         * Windows may refuse to rename over an existing file.
+         * Delete the previous file and retry when necessary.
+         */
+
+        if (
+            error.code === 'EEXIST' ||
+            error.code === 'EPERM'
+        ) {
+            try {
+                await fs.unlink(
+                    databasePath
+                );
+            } catch (
+                unlinkError
+            ) {
+                if (
+                    unlinkError.code !==
+                    'ENOENT'
+                ) {
+                    throw unlinkError;
+                }
+            }
+
+            await fs.rename(
+                temporaryPath,
+                databasePath
+            );
+        } else {
+            throw error;
+        }
+    }
 
     return data;
 }
 
+/*
+ * ============================================================
+ * DATABASE UPDATES
+ * ============================================================
+ */
+
 /**
  * Updates a database safely.
  *
- * The callback receives the current database contents.
- * Whatever the callback returns becomes the new saved data.
+ * This function supports both formats used throughout the bot:
+ *
+ * 1. Updater function:
+ *
+ * updateDatabase(
+ *     'staff-records',
+ *     (database) => {
+ *         database.records.push(record);
+ *         return database;
+ *     }
+ * );
+ *
+ * 2. Complete replacement object:
+ *
+ * updateDatabase(
+ *     'staff-records',
+ *     database
+ * );
+ *
+ * Supporting both formats prevents older and newer commands from
+ * conflicting with one another.
  */
 async function updateDatabase(
     databaseName,
-    updater,
+    updaterOrData,
     defaultValue = {}
 ) {
-    if (typeof updater !== 'function') {
-        throw new TypeError(
-            'The database updater must be a function.'
+    /*
+     * Format 1:
+     * The caller provided an updater callback.
+     */
+
+    if (
+        typeof updaterOrData ===
+        'function'
+    ) {
+        const currentData =
+            await readDatabase(
+                databaseName,
+                defaultValue
+            );
+
+        const updatedData =
+            await updaterOrData(
+                currentData
+            );
+
+        if (
+            updatedData ===
+            undefined
+        ) {
+            throw new Error(
+                `The updater for "${databaseName}" returned undefined.`
+            );
+        }
+
+        await writeDatabase(
+            databaseName,
+            updatedData
         );
+
+        return updatedData;
     }
 
-    const currentData = await readDatabase(
-        databaseName,
-        defaultValue
-    );
+    /*
+     * Format 2:
+     * The caller provided the complete database object directly.
+     *
+     * This is the format currently used by saveMovement().
+     */
 
-    const updatedData = await updater(currentData);
-
-    if (updatedData === undefined) {
-        throw new Error(
-            `The updater for "${databaseName}" returned undefined.`
+    if (
+        updaterOrData === null ||
+        typeof updaterOrData !==
+            'object'
+    ) {
+        throw new TypeError(
+            'The database update must be an updater function, object, or array.'
         );
     }
 
     await writeDatabase(
         databaseName,
-        updatedData
+        updaterOrData
     );
 
-    return updatedData;
+    return updaterOrData;
 }
 
+/*
+ * ============================================================
+ * DATABASE DELETION
+ * ============================================================
+ */
+
 /**
- * Deletes a complete database file.
+ * Deletes an entire database file.
  *
- * This should only be used for resets or development tools.
+ * Returns true when a file was deleted.
+ * Returns false when the file did not exist.
  */
-async function deleteDatabase(databaseName) {
-    const databasePath = getDatabasePath(databaseName);
+async function deleteDatabase(
+    databaseName
+) {
+    const databasePath =
+        getDatabasePath(databaseName);
 
     try {
-        await fs.unlink(databasePath);
+        await fs.unlink(
+            databasePath
+        );
+
         return true;
     } catch (error) {
-        if (error.code === 'ENOENT') {
+        if (
+            error.code === 'ENOENT'
+        ) {
             return false;
         }
 
         throw error;
     }
 }
+
+/*
+ * ============================================================
+ * DATABASE EXISTENCE
+ * ============================================================
+ */
 
 /**
- * Checks whether a database already exists.
+ * Checks whether a database file currently exists.
  */
-async function databaseExists(databaseName) {
-    const databasePath = getDatabasePath(databaseName);
+async function databaseExists(
+    databaseName
+) {
+    const databasePath =
+        getDatabasePath(databaseName);
 
     try {
-        await fs.access(databasePath);
+        await fs.access(
+            databasePath
+        );
+
         return true;
     } catch (error) {
-        if (error.code === 'ENOENT') {
+        if (
+            error.code === 'ENOENT'
+        ) {
             return false;
         }
 
         throw error;
     }
 }
+
+/*
+ * ============================================================
+ * RECORD IDS
+ * ============================================================
+ */
 
 /**
  * Creates a unique record ID.
  *
  * Example:
- * promotion-1721623456789-a8k2mz
+ * movement-1721623456789-a8k2mz
  */
-function createRecordId(prefix = 'record') {
-    const safePrefix = String(prefix)
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-_]/g, '-');
+function createRecordId(
+    prefix = 'record'
+) {
+    const safePrefix =
+        String(prefix)
+            .trim()
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9-_]/g,
+                '-'
+            ) || 'record';
 
-    const timestamp = Date.now();
+    const timestamp =
+        Date.now();
 
-    const randomSection = Math.random()
-        .toString(36)
-        .slice(2, 8);
+    const randomSection =
+        Math.random()
+            .toString(36)
+            .slice(2, 8);
 
-    return `${safePrefix}-${timestamp}-${randomSection}`;
+    return (
+        `${safePrefix}-` +
+        `${timestamp}-` +
+        `${randomSection}`
+    );
 }
+
+/*
+ * ============================================================
+ * EXPORTS
+ * ============================================================
+ */
 
 module.exports = {
     DATA_DIRECTORY,
+
     getDatabasePath,
     ensureDataDirectory,
+
     readDatabase,
     writeDatabase,
     updateDatabase,
+
     deleteDatabase,
     databaseExists,
+
     createRecordId,
 };
