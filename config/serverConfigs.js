@@ -4,9 +4,14 @@
  * MULTI-SERVER CONFIGURATION
  * ============================================================
  *
- * Rank arrays must always be ordered:
+ * IMPORTANT:
+ *
+ * Rank arrays must always be ordered from:
  *
  * LOWEST RANK → HIGHEST RANK
+ *
+ * The rank manager uses this order to determine whether a
+ * requested change is a promotion or demotion.
  */
 
 /*
@@ -23,7 +28,7 @@ const ISP_SERVER_ID =
 
 /*
  * ============================================================
- * ISRP CHANNEL IDS
+ * CHANNEL IDS
  * ============================================================
  */
 
@@ -41,12 +46,6 @@ const ISRP_CHANNELS = {
         '1490759095500800190',
 };
 
-/*
- * ============================================================
- * ISP CHANNEL IDS
- * ============================================================
- */
-
 const ISP_CHANNELS = {
     promotions:
         '1527521493087682590',
@@ -63,10 +62,10 @@ const ISP_CHANNELS = {
 
 /*
  * ============================================================
- * ISRP STAFF RANKS
+ * ISRP RANKS
  * ============================================================
  *
- * Ordered from lowest to highest.
+ * Lowest rank to highest rank.
  */
 
 const MAIN_SERVER_RANKS = [
@@ -147,10 +146,10 @@ const MAIN_SERVER_RANKS = [
 
 /*
  * ============================================================
- * ISP PERSONNEL RANKS
+ * ISP RANKS
  * ============================================================
  *
- * Ordered from lowest to highest.
+ * Lowest rank to highest rank.
  */
 
 const ISP_RANKS = [
@@ -426,7 +425,7 @@ const SERVER_CONFIGS = {
 
         reviewerRoleIds: [
             /*
-             * ISP Directorate
+             * Directorate
              */
 
             '1527514675443535982',
@@ -434,7 +433,7 @@ const SERVER_CONFIGS = {
             '1527514681969999882',
 
             /*
-             * ISP Command
+             * Command
              */
 
             '1527517875882033246',
@@ -481,6 +480,46 @@ const SERVER_CONFIGS = {
 
 /*
  * ============================================================
+ * NORMALIZATION HELPERS
+ * ============================================================
+ */
+
+/**
+ * Normalize text for rank searching.
+ *
+ * This removes punctuation, symbols, and repeated spaces.
+ *
+ * @param {*} value
+ * @returns {string}
+ */
+function normalizeSearchText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+/**
+ * Return the initials of a rank.
+ *
+ * Example:
+ *
+ * Assistant Server Director → asd
+ *
+ * @param {string} rankName
+ * @returns {string}
+ */
+function getRankInitials(rankName) {
+    return normalizeSearchText(rankName)
+        .split(' ')
+        .filter(Boolean)
+        .map((word) => word[0] || '')
+        .join('');
+}
+
+/*
+ * ============================================================
  * CONFIGURATION HELPERS
  * ============================================================
  */
@@ -504,7 +543,7 @@ function getServerConfig(guildId) {
 }
 
 /**
- * Return the configured ranks for a guild.
+ * Return the configured rank objects for a guild.
  *
  * @param {string} guildId
  * @returns {Array<{name: string, roleId: string}>}
@@ -517,7 +556,7 @@ function getGuildRanks(guildId) {
 }
 
 /**
- * Return the configured rank names.
+ * Return only the configured rank names.
  *
  * @param {string} guildId
  * @returns {string[]}
@@ -531,9 +570,9 @@ function getGuildRankNames(guildId) {
 }
 
 /**
- * Find a configured rank by name.
+ * Find a configured rank by its exact visible name.
  *
- * Rank comparisons are case-insensitive.
+ * The comparison is case-insensitive and ignores extra spaces.
  *
  * @param {string} guildId
  * @param {string} rankName
@@ -548,24 +587,25 @@ function findGuildRank(
     }
 
     const normalizedRankName =
-        String(rankName)
-            .trim()
-            .toLowerCase();
+        normalizeSearchText(rankName);
 
     return (
         getGuildRanks(
             guildId
         ).find(
             (rank) =>
-                rank.name
-                    .toLowerCase() ===
+                normalizeSearchText(
+                    rank.name
+                ) ===
                 normalizedRankName
         ) || null
     );
 }
 
 /**
- * Return a rank's hierarchy index.
+ * Return the hierarchy index for a configured rank.
+ *
+ * Higher index means a higher rank.
  *
  * @param {string} guildId
  * @param {string} rankName
@@ -580,38 +620,50 @@ function getGuildRankIndex(
     }
 
     const normalizedRankName =
-        String(rankName)
-            .trim()
-            .toLowerCase();
+        normalizeSearchText(rankName);
 
     return getGuildRankNames(
         guildId
     ).findIndex(
         (configuredRankName) =>
-            configuredRankName
-                .toLowerCase() ===
+            normalizeSearchText(
+                configuredRankName
+            ) ===
             normalizedRankName
     );
 }
 
 /**
- * Check whether a server is supported.
+ * Determine whether a Discord guild is supported.
  *
  * @param {string} guildId
  * @returns {boolean}
  */
 function isSupportedGuild(guildId) {
     return Boolean(
-        getServerConfig(
-            guildId
-        )
+        getServerConfig(guildId)
     );
 }
+
+/*
+ * ============================================================
+ * AUTOCOMPLETE
+ * ============================================================
+ */
 
 /**
  * Return autocomplete-ready rank choices.
  *
- * Discord allows up to 25 autocomplete results.
+ * Supports:
+ *
+ * d
+ * director
+ * assistant
+ * assistant server director
+ * asd
+ * sd
+ *
+ * Discord allows a maximum of 25 autocomplete results.
  *
  * @param {string} guildId
  * @param {string} focusedValue
@@ -624,11 +676,19 @@ function getRankAutocompleteChoices(
     const ranks =
         getGuildRanks(guildId);
 
-    const normalizedSearch =
-        String(focusedValue)
-            .trim()
-            .toLowerCase();
+    if (ranks.length === 0) {
+        return [];
+    }
 
+    const normalizedSearch =
+        normalizeSearchText(
+            focusedValue
+        );
+
+    /*
+     * Display all ranks immediately when the user has not typed
+     * anything yet.
+     */
     if (!normalizedSearch) {
         return ranks
             .slice(0, 25)
@@ -640,76 +700,159 @@ function getRankAutocompleteChoices(
 
     const searchWords =
         normalizedSearch
-            .split(/\s+/)
+            .split(' ')
             .filter(Boolean);
 
-    const scoredRanks =
+    const rankedResults =
         ranks
-            .map((rank) => {
+            .map((rank, index) => {
                 const normalizedRankName =
-                    rank.name.toLowerCase();
+                    normalizeSearchText(
+                        rank.name
+                    );
 
                 const rankWords =
-                    normalizedRankName.split(/\s+/);
+                    normalizedRankName
+                        .split(' ')
+                        .filter(Boolean);
 
                 const initials =
-                    rankWords
-                        .map((word) => word[0] || '')
-                        .join('');
+                    getRankInitials(
+                        rank.name
+                    );
 
                 let score = 0;
 
+                /*
+                 * Exact full-rank match.
+                 */
+                if (
+                    normalizedRankName ===
+                    normalizedSearch
+                ) {
+                    score += 1000;
+                }
+
+                /*
+                 * Full phrase appears in rank.
+                 */
                 if (
                     normalizedRankName.includes(
                         normalizedSearch
                     )
                 ) {
-                    score += 100;
+                    score += 500;
                 }
 
-                for (const searchWord of searchWords) {
+                /*
+                 * Rank begins with the search phrase.
+                 */
+                if (
+                    normalizedRankName.startsWith(
+                        normalizedSearch
+                    )
+                ) {
+                    score += 300;
+                }
+
+                /*
+                 * Initial matching:
+                 *
+                 * asd → Assistant Server Director
+                 * sd  → Server Director
+                 */
+                if (
+                    initials ===
+                    normalizedSearch
+                ) {
+                    score += 450;
+                } else if (
+                    initials.startsWith(
+                        normalizedSearch
+                    )
+                ) {
+                    score += 250;
+                }
+
+                for (
+                    const searchWord of
+                    searchWords
+                ) {
+                    /*
+                     * A rank word exactly matches the typed word.
+                     */
+                    if (
+                        rankWords.includes(
+                            searchWord
+                        )
+                    ) {
+                        score += 100;
+                    }
+
+                    /*
+                     * A rank word begins with the typed word.
+                     */
+                    if (
+                        rankWords.some(
+                            (rankWord) =>
+                                rankWord.startsWith(
+                                    searchWord
+                                )
+                        )
+                    ) {
+                        score += 75;
+                    }
+
+                    /*
+                     * The typed word appears anywhere.
+                     */
                     if (
                         normalizedRankName.includes(
                             searchWord
                         )
                     ) {
-                        score += 20;
-                    }
-
-                    if (
-                        rankWords.some((rankWord) =>
-                            rankWord.startsWith(
-                                searchWord
-                            )
-                        )
-                    ) {
-                        score += 15;
-                    }
-
-                    if (
-                        initials.startsWith(
-                            searchWord
-                        )
-                    ) {
-                        score += 30;
+                        score += 40;
                     }
                 }
 
                 return {
                     rank,
                     score,
+                    index,
                 };
             })
-            .filter((result) => result.score > 0)
+            .filter(
+                (result) =>
+                    result.score > 0
+            )
             .sort(
-                (first, second) =>
-                    second.score - first.score
+                (first, second) => {
+                    if (
+                        second.score !==
+                        first.score
+                    ) {
+                        return (
+                            second.score -
+                            first.score
+                        );
+                    }
+
+                    return (
+                        first.index -
+                        second.index
+                    );
+                }
             );
 
+    /*
+     * If no text matched, return all ranks instead of making
+     * Discord display "No options match your search."
+     */
     const results =
-        scoredRanks.length > 0
-            ? scoredRanks.map(
-                  (result) => result.rank
+        rankedResults.length > 0
+            ? rankedResults.map(
+                  (result) =>
+                      result.rank
               )
             : ranks;
 
@@ -720,6 +863,20 @@ function getRankAutocompleteChoices(
             value: rank.name,
         }));
 }
+
+/*
+ * ============================================================
+ * PERMISSION HELPERS
+ * ============================================================
+ */
+
+/**
+ * Check whether a member has a configured reviewer role.
+ *
+ * @param {import('discord.js').GuildMember|null} member
+ * @param {string} guildId
+ * @returns {boolean}
+ */
 function memberCanReviewMovements(
     member,
     guildId
@@ -729,27 +886,42 @@ function memberCanReviewMovements(
     }
 
     const serverConfig =
-        getServerConfig(
-            guildId
-        );
+        getServerConfig(guildId);
 
     if (!serverConfig) {
         return false;
     }
 
+    const reviewerRoleIds =
+        Array.isArray(
+            serverConfig.reviewerRoleIds
+        )
+            ? serverConfig.reviewerRoleIds
+            : [];
+
     return member.roles.cache.some(
         (role) =>
-            serverConfig
-                .reviewerRoleIds
-                .includes(role.id)
+            reviewerRoleIds.includes(
+                role.id
+            )
     );
 }
+
+/*
+ * ============================================================
+ * CHANNEL HELPERS
+ * ============================================================
+ */
 
 /**
  * Return a configured channel ID.
  *
- * Supported types:
- * promotions, demotions, infractions, movements
+ * Valid channel types:
+ *
+ * promotions
+ * demotions
+ * infractions
+ * movements
  *
  * @param {string} guildId
  * @param {string} channelType
@@ -759,10 +931,12 @@ function getConfiguredChannelId(
     guildId,
     channelType
 ) {
+    if (!channelType) {
+        return null;
+    }
+
     const serverConfig =
-        getServerConfig(
-            guildId
-        );
+        getServerConfig(guildId);
 
     if (!serverConfig) {
         return null;
