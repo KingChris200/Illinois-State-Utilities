@@ -60,7 +60,6 @@ const ignoredCommandModules = new Set([
      */
 
     'management/movementHandler.js',
-    'management/movementRevoke.js',
 ]);
 
 /*

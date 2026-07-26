@@ -16,7 +16,16 @@ const {
  */
 
 const CHANNELS = {
+    /*
+     * Temporary configuration:
+     * both movement types use the existing movement channel.
+     *
+     * These can be changed to separate channel IDs later.
+     */
+
     movements: '1490759095500800190',
+    promotions: '1490759095500800190',
+    infractions: '1490759095500800190',
 };
 
 /*
