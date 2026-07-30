@@ -1,187 +1,138 @@
-/**
- * Illinois State Roleplay | Strict
+/*
+ * Illinois State Utilities
  * Session Manager
  *
  * Stores the currently active server vote and session.
  *
  * Important:
- * This currently stores data in memory, meaning an active vote will reset
- * if the bot restarts. We can add permanent JSON/database saving later.
+ * This information is stored in memory. If the bot restarts,
+ * the active vote/session will be reset.
  */
 
 let activeVote = null;
 let activeSession = null;
 
-/**
- * Creates a new server vote.
- *
- * @param {object} voteData
+/*
+ * ==========================================
+ * SERVER VOTE
+ * ==========================================
  */
-function createVote(voteData) {
+
+function createVote(data) {
     activeVote = {
-        guildId: voteData.guildId,
-        channelId: voteData.channelId,
-        messageId: voteData.messageId,
-        hostId: voteData.hostId,
-
-        goal: voteData.goal,
-        durationMinutes: voteData.durationMinutes,
-
-        startedAt: voteData.startedAt,
-        endsAt: voteData.endsAt,
-
-        attending: new Set(),
-        notAttending: new Set(),
-
-        status: 'voting',
+        guildId: data.guildId,
+        channelId: data.channelId,
+        messageId: data.messageId,
+        hostId: data.hostId,
+        hostUsername: data.hostUsername,
+        goal: data.goal,
+        startedAt: data.startedAt ?? Date.now(),
+        endsAt: data.endsAt,
+        votes: new Map(),
+        completed: false,
     };
 
     return activeVote;
 }
 
-/**
- * Returns the active vote.
- */
 function getVote() {
     return activeVote;
 }
 
-/**
- * Checks whether a vote is currently active.
- */
 function hasActiveVote() {
-    return activeVote !== null && activeVote.status === 'voting';
+    return activeVote !== null;
 }
 
-/**
- * Adds or changes a member's vote.
- *
- * @param {string} userId
- * @param {'attending'|'not_attending'} choice
- */
 function setVote(userId, choice) {
     if (!activeVote) {
-        return null;
+        return false;
     }
 
-    // Remove the member's previous selection.
-    activeVote.attending.delete(userId);
-    activeVote.notAttending.delete(userId);
-
-    if (choice === 'attending') {
-        activeVote.attending.add(userId);
-    }
-
-    if (choice === 'not_attending') {
-        activeVote.notAttending.add(userId);
-    }
-
-    return activeVote;
+    activeVote.votes.set(userId, choice);
+    return true;
 }
 
-/**
- * Removes a member's vote completely.
- *
- * @param {string} userId
- */
 function removeVote(userId) {
     if (!activeVote) {
-        return null;
+        return false;
     }
 
-    activeVote.attending.delete(userId);
-    activeVote.notAttending.delete(userId);
-
-    return activeVote;
+    return activeVote.votes.delete(userId);
 }
 
-/**
- * Returns the number of attending voters.
- */
-function getAttendingCount() {
-    return activeVote?.attending.size ?? 0;
-}
-
-/**
- * Returns an array containing attending member IDs.
- */
 function getAttendingMembers() {
     if (!activeVote) {
         return [];
     }
 
-    return [...activeVote.attending];
+    return [...activeVote.votes.entries()]
+        .filter(([, choice]) => choice === 'attending')
+        .map(([userId]) => userId);
 }
 
-/**
- * Checks whether the vote goal has been reached.
- */
+function getNotAttendingMembers() {
+    if (!activeVote) {
+        return [];
+    }
+
+    return [...activeVote.votes.entries()]
+        .filter(([, choice]) => choice === 'not_attending')
+        .map(([userId]) => userId);
+}
+
+function getAttendingCount() {
+    return getAttendingMembers().length;
+}
+
 function hasReachedGoal() {
     if (!activeVote) {
         return false;
     }
 
-    return activeVote.attending.size >= activeVote.goal;
+    return getAttendingCount() >= activeVote.goal;
 }
 
-/**
- * Marks the current vote as completed.
- */
-function completeVote() {
+function markVoteCompleted() {
     if (!activeVote) {
-        return null;
+        return false;
     }
 
-    activeVote.status = 'completed';
-
-    return activeVote;
+    activeVote.completed = true;
+    return true;
 }
 
-/**
- * Clears the active server vote.
- */
 function clearVote() {
     activeVote = null;
 }
 
-/**
- * Starts an official session after the vote goal is reached.
- *
- * @param {object} sessionData
+/*
+ * ==========================================
+ * ACTIVE SESSION
+ * ==========================================
  */
-function startSession(sessionData) {
+
+function startSession(data) {
     activeSession = {
-        guildId: sessionData.guildId,
-        channelId: sessionData.channelId,
-        hostId: sessionData.hostId,
-        startupMessageId: sessionData.startupMessageId ?? null,
-
-        attendeeIds: sessionData.attendeeIds ?? [],
-
-        startedAt: sessionData.startedAt ?? Date.now(),
-        status: 'online',
+        guildId: data.guildId,
+        channelId: data.channelId,
+        hostId: data.hostId,
+        hostUsername: data.hostUsername,
+        startupMessageId: data.startupMessageId ?? null,
+        attendeeIds: data.attendeeIds ?? [],
+        startedAt: data.startedAt ?? Date.now(),
     };
 
     return activeSession;
 }
 
-/**
- * Returns the active session.
- */
 function getSession() {
     return activeSession;
 }
 
-/**
- * Checks whether a session is currently active.
- */
 function hasActiveSession() {
-    return activeSession !== null && activeSession.status === 'online';
+    return activeSession !== null;
 }
 
-/**
- * Ends and returns the active session.
- */
 function endSession() {
     if (!activeSession) {
         return null;
@@ -189,7 +140,6 @@ function endSession() {
 
     const endedSession = {
         ...activeSession,
-        status: 'offline',
         endedAt: Date.now(),
     };
 
@@ -198,9 +148,12 @@ function endSession() {
     return endedSession;
 }
 
-/**
- * Clears all session-related information.
+/*
+ * ==========================================
+ * RESET
+ * ==========================================
  */
+
 function resetAll() {
     activeVote = null;
     activeSession = null;
@@ -210,13 +163,13 @@ module.exports = {
     createVote,
     getVote,
     hasActiveVote,
-
     setVote,
     removeVote,
-    getAttendingCount,
     getAttendingMembers,
+    getNotAttendingMembers,
+    getAttendingCount,
     hasReachedGoal,
-    completeVote,
+    markVoteCompleted,
     clearVote,
 
     startSession,
