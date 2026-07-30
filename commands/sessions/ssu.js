@@ -9,7 +9,7 @@ const {
 
 const sessionManager = require('../../utils/sessionManager');
 
-const SESSION_PING_ROLE_ID = '1377126063926411334';
+const SESSION_PING_ROLE_ID = '1532533275745062932';
 const SERVER_CODE = 'ILLINOISrp';
 
 module.exports = {
