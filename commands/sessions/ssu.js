@@ -1,152 +1,193 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
-    ChannelType,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    PermissionFlagsBits,
 } = require('discord.js');
+
+const sessionManager = require('../../utils/sessionManager');
+
+const SESSION_PING_ROLE_ID = '1377126063926411334';
+const SERVER_CODE = 'ILLINOISrp';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssu')
         .setDescription(
-            'Posts the official Illinois State Roleplay session startup.'
+            'Start a server vote for an Illinois State Roleplay session.'
         )
-
-        .addRoleOption((option) =>
+        .addIntegerOption(option =>
             option
-                .setName('ping')
+                .setName('goal')
                 .setDescription(
-                    'An optional role to ping for the session startup.'
+                    'The number of attending votes required to start the session.'
                 )
+                .setMinValue(1)
+                .setMaxValue(50)
                 .setRequired(false)
         )
-
-        .addChannelOption((option) =>
+        .addIntegerOption(option =>
             option
-                .setName('channel')
+                .setName('duration')
                 .setDescription(
-                    'The channel where the session startup should be posted.'
+                    'How many minutes the server vote should remain open.'
                 )
-                .addChannelTypes(
-                    ChannelType.GuildText,
-                    ChannelType.GuildAnnouncement
-                )
+                .setMinValue(1)
+                .setMaxValue(60)
                 .setRequired(false)
         )
-
-        .addStringOption((option) =>
-            option
-                .setName('notes')
-                .setDescription(
-                    'Optional additional notes for the session.'
-                )
-                .setRequired(false)
-                .setMaxLength(500)
-        ),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
-        const pingRole =
-            interaction.options.getRole('ping');
-
-        const channel =
-            interaction.options.getChannel('channel') ??
-            interaction.channel;
-
-        const notes =
-            interaction.options.getString('notes');
-
-        if (!channel || !channel.isTextBased()) {
+        if (!interaction.inGuild()) {
             return interaction.reply({
-                content:
-                    '❌ I cannot post the session startup in that channel.',
+                content: '❌ This command can only be used inside a server.',
                 ephemeral: true,
             });
         }
 
-        const serverIcon =
-            interaction.guild.iconURL({
-                dynamic: true,
-                size: 256,
-            }) ??
-            interaction.client.user.displayAvatarURL();
-
-        const description = [
-            'If you have voted for the session, you **MUST** join up!',
-            'If not, you will be punished!',
-            '',
-            '**Server Information**',
-            '',
-            '**Server Owner:** Scottattack155',
-            '**Server Name:** Illinois State Roleplay | Strict',
-            '**Server Code:** `ILLINOISrp`',
-            '',
-            '**Join up, Illinois!**',
-        ];
-
-        if (notes) {
-            description.push(
-                '',
-                `**Notes:** ${notes}`
-            );
+        if (sessionManager.hasActiveVote()) {
+            return interaction.reply({
+                content:
+                    '❌ A server vote is already running. Please allow the current vote to finish before starting another one.',
+                ephemeral: true,
+            });
         }
 
-        const embed = new EmbedBuilder()
-            .setColor('#3498DB')
-            .setTitle('ISRP | Session Start Up!')
-            .setDescription(description.join('\n'))
-            .setThumbnail(serverIcon)
+        if (sessionManager.hasActiveSession()) {
+            return interaction.reply({
+                content:
+                    '❌ A session is already active. Use `/ssd` before starting another session.',
+                ephemeral: true,
+            });
+        }
+
+        await interaction.deferReply({
+            ephemeral: true,
+        });
+
+        const voteGoal = interaction.options.getInteger('goal') ?? 8;
+        const durationMinutes =
+            interaction.options.getInteger('duration') ?? 10;
+
+        const voteStartedAt = Date.now();
+        const voteEndsAt = voteStartedAt + durationMinutes * 60 * 1000;
+        const voteEndsTimestamp = Math.floor(voteEndsAt / 1000);
+
+        const guildIcon =
+            interaction.guild.iconURL({
+                extension: 'png',
+                size: 256,
+            }) ?? null;
+
+        const voteEmbed = new EmbedBuilder()
+            .setColor('#1E3A5F')
+            .setAuthor({
+                name: 'Illinois State Roleplay | Strict',
+                iconURL: guildIcon ?? undefined,
+            })
+            .setTitle('🗳️ Server Vote')
+            .setDescription(
+                [
+                    'Illinois State Roleplay is preparing to host a new session.',
+                    '',
+                    'Select **Attending** below only if you genuinely plan to join.',
+                    '',
+                    'The session will automatically begin once the required vote goal is reached.',
+                ].join('\n')
+            )
+            .addFields(
+                {
+                    name: '🎮 Server Code',
+                    value: `\`${SERVER_CODE}\``,
+                    inline: true,
+                },
+                {
+                    name: '👤 Hosted By',
+                    value: `${interaction.user}`,
+                    inline: true,
+                },
+                {
+                    name: '📊 Vote Progress',
+                    value: `\`0 / ${voteGoal}\``,
+                    inline: true,
+                },
+                {
+                    name: '⏰ Voting Ends',
+                    value: `<t:${voteEndsTimestamp}:R>`,
+                    inline: true,
+                },
+                {
+                    name: '🟡 Status',
+                    value: '`Waiting for Votes`',
+                    inline: true,
+                }
+            )
             .setFooter({
-                text:
-                    'Illinois State Utilities • Supporting Illinois State Roleplay',
-                iconURL:
-                    interaction.client.user.displayAvatarURL(),
+                text: 'Illinois State Roleplay | Strict • Session Management',
+                iconURL: guildIcon ?? undefined,
             })
             .setTimestamp();
 
+        if (guildIcon) {
+            voteEmbed.setThumbnail(guildIcon);
+        }
+
+        const voteButtons = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('ssu_attending')
+                .setLabel('Attending')
+                .setEmoji('✅')
+                .setStyle(ButtonStyle.Success),
+
+            new ButtonBuilder()
+                .setCustomId('ssu_not_attending')
+                .setLabel("Can't Attend")
+                .setEmoji('❌')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
         try {
-            await channel.send({
-                content: pingRole
-                    ? `${pingRole}`
-                    : undefined,
-
-                embeds: [embed],
-
+            const voteMessage = await interaction.channel.send({
+                content: `<@&${SESSION_PING_ROLE_ID}>`,
+                embeds: [voteEmbed],
+                components: [voteButtons],
                 allowedMentions: {
-                    roles: pingRole
-                        ? [pingRole.id]
-                        : [],
+                    roles: [SESSION_PING_ROLE_ID],
                     users: [],
                     parse: [],
                 },
             });
 
-            await interaction.reply({
+            sessionManager.createVote({
+                guildId: interaction.guild.id,
+                channelId: interaction.channel.id,
+                messageId: voteMessage.id,
+                hostId: interaction.user.id,
+                goal: voteGoal,
+                durationMinutes,
+                startedAt: voteStartedAt,
+                endsAt: voteEndsAt,
+            });
+
+            await interaction.editReply({
                 content:
-                    `✅ The session startup was successfully posted in ${channel}.`,
-                ephemeral: true,
+                    `✅ The server vote was successfully posted in ${interaction.channel}.\n\n` +
+                    `**Vote Goal:** ${voteGoal}\n` +
+                    `**Duration:** ${durationMinutes} minutes\n` +
+                    `**Server Code:** \`${SERVER_CODE}\``,
             });
         } catch (error) {
-            console.error(
-                '❌ Error while running /ssu:'
-            );
-            console.error(error);
+            console.error('Error while creating the server vote:', error);
 
-            const errorMessage =
-                '❌ I could not post the session startup. Make sure I can view the channel, send messages, and embed links.';
+            sessionManager.clearVote();
 
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
-                await interaction.followUp({
-                    content: errorMessage,
-                    ephemeral: true,
-                });
-            } else {
-                await interaction.reply({
-                    content: errorMessage,
-                    ephemeral: true,
-                });
-            }
+            await interaction.editReply({
+                content:
+                    '❌ I could not create the server vote. Make sure I can view the channel, send messages, embed links, mention roles, and use application commands.',
+            });
         }
     },
 };

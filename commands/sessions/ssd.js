@@ -1,146 +1,279 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
-    ChannelType,
+    PermissionFlagsBits,
 } = require('discord.js');
+
+const sessionManager = require('../../utils/sessionManager');
+
+const SERVER_NAME = 'Illinois State Roleplay | Strict';
+const SERVER_CODE = 'ILLINOISrp';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssd')
-        .setDescription(
-            'Posts the official Illinois State Roleplay session shutdown.'
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('notes')
-                .setDescription(
-                    'Optional notes for the session shutdown.'
-                )
-                .setRequired(false)
-                .setMaxLength(500)
-        )
-
-        .addRoleOption((option) =>
-            option
-                .setName('ping')
-                .setDescription(
-                    'An optional role to ping for the shutdown.'
-                )
-                .setRequired(false)
-        )
-
-        .addChannelOption((option) =>
-            option
-                .setName('channel')
-                .setDescription(
-                    'The channel where the shutdown should be posted.'
-                )
-                .addChannelTypes(
-                    ChannelType.GuildText,
-                    ChannelType.GuildAnnouncement
-                )
-                .setRequired(false)
-        ),
+        .setDescription('End the active Illinois State Roleplay session.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
-        const notes =
-            interaction.options.getString('notes') ??
-            'N/A';
-
-        const pingRole =
-            interaction.options.getRole('ping');
-
-        const channel =
-            interaction.options.getChannel('channel') ??
-            interaction.channel;
-
-        if (!channel || !channel.isTextBased()) {
+        if (!interaction.inGuild()) {
             return interaction.reply({
-                content:
-                    '❌ I cannot post the session shutdown in that channel.',
+                content: '❌ This command can only be used inside a server.',
                 ephemeral: true,
             });
         }
 
-        const serverIcon =
-            interaction.guild.iconURL({
-                dynamic: true,
-                size: 256,
-            }) ??
-            interaction.client.user.displayAvatarURL();
+        /*
+         * Prevent an SSD while a server vote is still running.
+         */
 
-        const embed = new EmbedBuilder()
-            .setColor('#E74C3C')
-            .setTitle('ISRP | Session Shutdown')
+        if (sessionManager.hasActiveVote()) {
+            return interaction.reply({
+                content:
+                    '❌ A server vote is currently running, but the session has not started yet.',
+                ephemeral: true,
+            });
+        }
+
+        /*
+         * Make sure there is an active session to end.
+         */
+
+        if (!sessionManager.hasActiveSession()) {
+            return interaction.reply({
+                content:
+                    '❌ There is no active session to shut down.',
+                ephemeral: true,
+            });
+        }
+
+        await interaction.deferReply({
+            ephemeral: true,
+        });
+
+        /*
+         * End the session and retrieve its saved information.
+         */
+
+        const endedSession = sessionManager.endSession();
+
+        if (!endedSession) {
+            return interaction.editReply({
+                content:
+                    '❌ The session could not be ended because its information was unavailable.',
+            });
+        }
+
+        const endedAt = endedSession.endedAt ?? Date.now();
+        const startedAt = endedSession.startedAt ?? endedAt;
+
+        const sessionDuration = formatDuration(
+            endedAt - startedAt
+        );
+
+        const startedTimestamp = Math.floor(
+            startedAt / 1000
+        );
+
+        const endedTimestamp = Math.floor(
+            endedAt / 1000
+        );
+
+        const guildIcon =
+            interaction.guild.iconURL({
+                extension: 'png',
+                size: 256,
+            }) ?? null;
+
+        /*
+         * The original session host is shown separately
+         * from the person who ran /ssd.
+         */
+
+        const sessionHostMention =
+            `<@${endedSession.hostId}>`;
+
+        const shutdownByMention =
+            `${interaction.user}`;
+
+        const attendeeCount =
+            endedSession.attendeeIds?.length ?? 0;
+
+        const shutdownEmbed = new EmbedBuilder()
+            .setColor('#8B1E2D')
+            .setAuthor({
+                name: SERVER_NAME,
+                iconURL: guildIcon ?? undefined,
+            })
+            .setTitle('🌙 Server Shutdown')
             .setDescription(
                 [
                     'The Illinois State Roleplay session has officially concluded.',
                     '',
-                    'Thank you to everyone who participated in today’s session!',
+                    'Thank you to everyone who attended and participated in today’s session.',
                     '',
-                    'Please disconnect from the server and remain respectful in all community channels.',
-                    '',
-                    `**Session Host:** ${interaction.user}`,
-                    `**Notes:** ${notes}`,
-                    '',
-                    '**We hope to see you at the next session!**',
+                    '**The server is now offline. Please wait for another startup announcement before joining.**',
                 ].join('\n')
             )
-            .setThumbnail(serverIcon)
+            .addFields(
+                {
+                    name: '🎮 Server Code',
+                    value: `\`${SERVER_CODE}\``,
+                    inline: true,
+                },
+                {
+                    name: '👤 Session Host',
+                    value: sessionHostMention,
+                    inline: true,
+                },
+                {
+                    name: '🛡️ Shutdown By',
+                    value: shutdownByMention,
+                    inline: true,
+                },
+                {
+                    name: '⏱️ Session Duration',
+                    value: `\`${sessionDuration}\``,
+                    inline: true,
+                },
+                {
+                    name: '👥 Confirmed Attendance',
+                    value: `\`${attendeeCount} members\``,
+                    inline: true,
+                },
+                {
+                    name: '🔴 Status',
+                    value: '`Offline`',
+                    inline: true,
+                },
+                {
+                    name: '🕒 Session Started',
+                    value:
+                        `<t:${startedTimestamp}:F>\n` +
+                        `<t:${startedTimestamp}:R>`,
+                    inline: true,
+                },
+                {
+                    name: '🛑 Session Ended',
+                    value:
+                        `<t:${endedTimestamp}:F>\n` +
+                        `<t:${endedTimestamp}:R>`,
+                    inline: true,
+                }
+            )
             .setFooter({
                 text:
-                    'Illinois State Utilities • Supporting Illinois State Roleplay',
-                iconURL:
-                    interaction.client.user.displayAvatarURL(),
+                    `${SERVER_NAME} • Session Management`,
+                iconURL: guildIcon ?? undefined,
             })
             .setTimestamp();
 
+        if (guildIcon) {
+            shutdownEmbed.setThumbnail(guildIcon);
+        }
+
         try {
-            await channel.send({
-                content: pingRole
-                    ? `${pingRole}`
-                    : undefined,
+            const shutdownMessage =
+                await interaction.channel.send({
+                    embeds: [shutdownEmbed],
+                });
 
-                embeds: [embed],
-
-                allowedMentions: {
-                    roles: pingRole
-                        ? [pingRole.id]
-                        : [],
-                    users: [],
-                    parse: [],
-                },
-            });
-
-            await interaction.reply({
+            await interaction.editReply({
                 content:
-                    `✅ The session shutdown was successfully posted in ${channel}.`,
-                ephemeral: true,
+                    `✅ The server shutdown was successfully posted in ${interaction.channel}.\n\n` +
+                    `**Session Duration:** ${sessionDuration}\n` +
+                    `**Shutdown Message:** ${shutdownMessage.url}`,
             });
+
+            console.log(
+                `🛑 Illinois State Roleplay session ended by ${interaction.user.tag}. Duration: ${sessionDuration}`
+            );
         } catch (error) {
             console.error(
-                '❌ Error while running /ssd:'
+                'Error while posting the server shutdown:',
+                error
             );
-            console.error(error);
 
-            const errorMessage =
-                '❌ I could not post the session shutdown. Make sure I can view the channel, send messages, and embed links.';
+            /*
+             * The active session has already been cleared,
+             * so we restore it if sending the embed fails.
+             */
 
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
-                await interaction.followUp({
-                    content: errorMessage,
-                    ephemeral: true,
-                });
-            } else {
-                await interaction.reply({
-                    content: errorMessage,
-                    ephemeral: true,
-                });
-            }
+            sessionManager.startSession({
+                guildId: endedSession.guildId,
+                channelId: endedSession.channelId,
+                hostId: endedSession.hostId,
+                startupMessageId:
+                    endedSession.startupMessageId,
+                attendeeIds:
+                    endedSession.attendeeIds,
+                startedAt:
+                    endedSession.startedAt,
+            });
+
+            await interaction.editReply({
+                content:
+                    '❌ I could not post the server shutdown. Make sure I can view the channel, send messages, and embed links.',
+            });
         }
     },
 };
+
+/*
+ * ==========================================
+ * SESSION DURATION FORMATTER
+ * ==========================================
+ */
+
+function formatDuration(durationMilliseconds) {
+    const totalSeconds = Math.max(
+        0,
+        Math.floor(durationMilliseconds / 1000)
+    );
+
+    const days = Math.floor(
+        totalSeconds / 86400
+    );
+
+    const hours = Math.floor(
+        (totalSeconds % 86400) / 3600
+    );
+
+    const minutes = Math.floor(
+        (totalSeconds % 3600) / 60
+    );
+
+    const seconds =
+        totalSeconds % 60;
+
+    const durationParts = [];
+
+    if (days > 0) {
+        durationParts.push(
+            `${days} day${days === 1 ? '' : 's'}`
+        );
+    }
+
+    if (hours > 0) {
+        durationParts.push(
+            `${hours} hour${hours === 1 ? '' : 's'}`
+        );
+    }
+
+    if (minutes > 0) {
+        durationParts.push(
+            `${minutes} minute${minutes === 1 ? '' : 's'}`
+        );
+    }
+
+    if (
+        seconds > 0 ||
+        durationParts.length === 0
+    ) {
+        durationParts.push(
+            `${seconds} second${seconds === 1 ? '' : 's'}`
+        );
+    }
+
+    return durationParts.join(', ');
+}
