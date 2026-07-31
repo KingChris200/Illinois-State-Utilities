@@ -22,13 +22,13 @@ const JOIN_CODE = 'ILLINOISrp';
  * begins using /ssu.
  *
  * Current Role:
- * • Bot Tester
+ * • 𝙸𝚂𝚁𝙿 | Session Ping
  *
  * Once testing has been completed, replace this
  * role ID with the official Session Ping role.
  */
 
-const SESSION_PING_ROLE_ID = '1532533275745062932';
+const SESSION_PING_ROLE_ID = '1377126063926411334';
 
 
 module.exports = {
