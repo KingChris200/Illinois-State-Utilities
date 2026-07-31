@@ -13,16 +13,23 @@ const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const JOIN_CODE = 'ILLINOISrp';
 
 /*
- * IMPORTANT:
- * While testing, place your Bot Tester role ID here.
+/*
+ * ==========================================
+ * SESSION PING ROLE
+ * ==========================================
  *
- * Once testing is complete, replace it with the real
- * Session Ping role ID:
+ * This role is pinged whenever a new Server Vote
+ * begins using /ssu.
  *
- * 1377126063926411334
+ * Current Role:
+ * • Bot Tester
+ *
+ * Once testing has been completed, replace this
+ * role ID with the official Session Ping role.
  */
 
-const SESSION_PING_ROLE_ID = 'PUT_YOUR_BOT_TESTER_ROLE_ID_HERE';
+const SESSION_PING_ROLE_ID = '1532533275745062932';
+
 
 module.exports = {
     data: new SlashCommandBuilder()
