@@ -5,14 +5,15 @@ const {
     ButtonBuilder,
     ButtonStyle,
     PermissionFlagsBits,
+    AttachmentBuilder,
 } = require('discord.js');
 
+const path = require('path');
 const sessionManager = require('../../utils/sessionManager');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const JOIN_CODE = 'ILLINOISrp';
 
-/*
 /*
  * ==========================================
  * SESSION PING ROLE
@@ -21,15 +22,28 @@ const JOIN_CODE = 'ILLINOISrp';
  * This role is pinged whenever a new Server Vote
  * begins using /ssu.
  *
- * Current Role:
- * • 𝙸𝚂𝚁𝙿 | Session Ping
+ * Current testing role:
+ * • Bot Tester
  *
  * Once testing has been completed, replace this
  * role ID with the official Session Ping role.
  */
 
-const SESSION_PING_ROLE_ID = '1377126063926411334';
+const SESSION_PING_ROLE_ID = '1532533275745062932';
 
+/*
+ * ==========================================
+ * SESSION BANNER
+ * ==========================================
+ *
+ * Image location:
+ * assets/thumbnails/session-started.png
+ */
+
+const SESSION_BANNER_PATH = path.join(
+    __dirname,
+    '../../assets/thumbnails/session-started.png'
+);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -119,12 +133,29 @@ module.exports = {
                 size: 256,
             }) ?? null;
 
+        /*
+         * Creates the banner attachment.
+         *
+         * The attachment name must exactly match the filename
+         * used in voteEmbed.setImage().
+         */
+
+        const sessionBanner = new AttachmentBuilder(
+            SESSION_BANNER_PATH,
+            {
+                name: 'session-started.png',
+            }
+        );
+
         const voteEmbed = new EmbedBuilder()
             .setColor('#24589B')
             .setAuthor({
                 name: SERVER_NAME,
                 iconURL: guildIcon ?? undefined,
             })
+            .setImage(
+                'attachment://session-started.png'
+            )
             .setTitle('🗳️ Server Vote')
             .setDescription(
                 [
@@ -173,19 +204,20 @@ module.exports = {
             voteEmbed.setThumbnail(guildIcon);
         }
 
-        const voteButtons = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('ssu_attending')
-                .setLabel('Attending')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success),
+        const voteButtons =
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('ssu_attending')
+                    .setLabel('Attending')
+                    .setEmoji('✅')
+                    .setStyle(ButtonStyle.Success),
 
-            new ButtonBuilder()
-                .setCustomId('ssu_not_attending')
-                .setLabel("Can't Attend")
-                .setEmoji('❌')
-                .setStyle(ButtonStyle.Secondary)
-        );
+                new ButtonBuilder()
+                    .setCustomId('ssu_not_attending')
+                    .setLabel("Can't Attend")
+                    .setEmoji('❌')
+                    .setStyle(ButtonStyle.Secondary)
+            );
 
         await interaction.deferReply({
             ephemeral: true,
@@ -197,8 +229,16 @@ module.exports = {
                     content:
                         `📢 <@&${SESSION_PING_ROLE_ID}> — ` +
                         '**a new server vote has started!**',
+
+                    /*
+                     * Uploads the local Sessions banner.
+                     */
+
+                    files: [sessionBanner],
+
                     embeds: [voteEmbed],
                     components: [voteButtons],
+
                     allowedMentions: {
                         roles: [SESSION_PING_ROLE_ID],
                         users: [],
@@ -211,7 +251,8 @@ module.exports = {
                 channelId: interaction.channel.id,
                 messageId: voteMessage.id,
                 hostId: interaction.user.id,
-                hostUsername: interaction.user.username,
+                hostUsername:
+                    interaction.user.username,
                 goal,
                 startedAt,
                 endsAt,
@@ -221,11 +262,15 @@ module.exports = {
                 content:
                     `✅ Server vote successfully started in ${interaction.channel}.\n\n` +
                     `**Vote Goal:** ${goal}\n` +
-                    `**Voting Duration:** ${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`,
+                    `**Voting Duration:** ${durationMinutes} minute${
+                        durationMinutes === 1
+                            ? ''
+                            : 's'
+                    }`,
             });
 
             /*
-             * Automatically expire the vote when its timer ends,
+             * Automatically expires the vote when its timer ends,
              * even if nobody presses another button.
              */
 
@@ -235,7 +280,8 @@ module.exports = {
 
                 if (
                     !activeVote ||
-                    activeVote.messageId !== voteMessage.id ||
+                    activeVote.messageId !==
+                        voteMessage.id ||
                     activeVote.completed
                 ) {
                     return;
@@ -249,15 +295,19 @@ module.exports = {
                         .spliceFields(2, 3)
                         .addFields(
                             {
-                                name: '📊 Final Vote Progress',
+                                name:
+                                    '📊 Final Vote Progress',
                                 value:
                                     `\`${attendingCount} / ${goal}\``,
                                 inline: true,
                             },
                             {
-                                name: '⏰ Voting Ended',
+                                name:
+                                    '⏰ Voting Ended',
                                 value:
-                                    `<t:${Math.floor(Date.now() / 1000)}:R>`,
+                                    `<t:${Math.floor(
+                                        Date.now() / 1000
+                                    )}:R>`,
                                 inline: true,
                             },
                             {
@@ -274,7 +324,9 @@ module.exports = {
                 try {
                     await voteMessage.edit({
                         embeds: [expiredEmbed],
-                        components: [disabledButtons],
+                        components: [
+                            disabledButtons,
+                        ],
                     });
                 } catch (error) {
                     console.error(
@@ -293,7 +345,7 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    '❌ I could not create the server vote. Make sure I can view the channel, send messages, mention the role, use external emojis, and embed links.',
+                    '❌ I could not create the server vote. Make sure I can view the channel, send messages, mention the role, attach files, use external emojis, and embed links.',
             });
         }
     },
@@ -309,7 +361,9 @@ function createDisabledVoteButtons() {
             .setDisabled(true),
 
         new ButtonBuilder()
-            .setCustomId('ssu_not_attending_closed')
+            .setCustomId(
+                'ssu_not_attending_closed'
+            )
             .setLabel("Can't Attend")
             .setEmoji('❌')
             .setStyle(ButtonStyle.Secondary)
