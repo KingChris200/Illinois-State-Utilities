@@ -33,15 +33,12 @@ const JOIN_CODE =
  * SESSION PING ROLE
  * ==========================================
  *
- * This currently uses the Bot Tester role
- * while the Session Startup system is tested.
- *
- * Replace this ID later with the official
- * Session Ping role ID.
+ * Official Illinois State Roleplay Session Ping role.
+ * The startup announcement also intentionally uses @here.
  */
 
 const SESSION_PING_ROLE_ID =
-    '1532533275745062932';
+    '1377126063926411334';
 
 /*
  * ==========================================
@@ -405,7 +402,7 @@ module.exports = {
             const voteMessage =
                 await interaction.channel.send({
                     content:
-                        `📢 <@&${SESSION_PING_ROLE_ID}> — ` +
+                        `📢 <@&${SESSION_PING_ROLE_ID}> @here — ` +
                         '**a new server vote has started!**',
 
                     files: [
@@ -425,7 +422,9 @@ module.exports = {
                             SESSION_PING_ROLE_ID,
                         ],
                         users: [],
-                        parse: [],
+                        parse: [
+                            'everyone',
+                        ],
                     },
                 });
 
