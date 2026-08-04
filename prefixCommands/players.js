@@ -1,25 +1,18 @@
 const erlcService = require('../services/erlcService');
 const createEmbed = require('../utils/createEmbed');
+const {
+    parsePlayerRecord,
+} = require('../utils/playerResolver');
 
 function formatPlayer(player, index) {
-    const rawPlayer = String(
-        player.Player || player.Username || 'Unknown'
-    );
-    const separatorIndex = rawPlayer.lastIndexOf(':');
-    const username =
-        separatorIndex > 0
-            ? rawPlayer.slice(0, separatorIndex)
-            : rawPlayer;
-    const userId =
-        separatorIndex > 0
-            ? rawPlayer.slice(separatorIndex + 1)
-            : null;
-    const permission = player.Permission || 'Normal';
+    const parsedPlayer = parsePlayerRecord(player);
 
     return [
-        `**${index + 1}. ${username}**`,
-        userId ? ` · \`${userId}\`` : '',
-        ` — ${permission}`,
+        `**${index + 1}. ${parsedPlayer.username}**`,
+        parsedPlayer.userId
+            ? ` · \`${parsedPlayer.userId}\``
+            : '',
+        ` — ${parsedPlayer.permission}`,
     ].join('');
 }
 
