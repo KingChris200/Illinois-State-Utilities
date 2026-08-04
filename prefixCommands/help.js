@@ -1,3 +1,5 @@
+const createEmbed = require('../utils/createEmbed');
+
 module.exports = {
     name: 'help',
     description: 'Shows remote-command help.',
@@ -17,18 +19,34 @@ module.exports = {
                 (command) =>
                     `\`${command.usage || `${config.prefix}${command.name}`}\` — ${command.description}`
             );
+        const mode = config.mockMode
+            ? '🧪 Mock Mode'
+            : config.dryRun
+              ? '🛡️ Dry-Run Mode'
+              : '🟢 Live Mode';
+        const embed = createEmbed('Remote Command Center')
+            .setDescription(
+                [
+                    'Manage and monitor the Illinois State Roleplay private server.',
+                    '',
+                    commandLines.join('\n'),
+                ].join('\n')
+            )
+            .addFields(
+                {
+                    name: 'Current Mode',
+                    value: mode,
+                    inline: true,
+                },
+                {
+                    name: 'Prefix',
+                    value: `\`${config.prefix}\``,
+                    inline: true,
+                }
+            );
 
         await message.reply({
-            content: [
-                '**Illinois State Utilities — Remote Commands**',
-                ...commandLines,
-                '',
-                config.mockMode
-                    ? 'Status: Mock mode (sample server data; no ER:LC commands are sent).'
-                    : config.dryRun
-                      ? 'Status: Dry-run mode (no ER:LC commands are sent).'
-                      : 'Status: Live mode.',
-            ].join('\n'),
+            embeds: [embed],
             allowedMentions: { parse: [] },
         });
     },

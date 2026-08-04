@@ -1,4 +1,5 @@
 const erlcService = require('../services/erlcService');
+const createEmbed = require('../utils/createEmbed');
 
 module.exports = {
     name: 'm',
@@ -18,11 +19,23 @@ module.exports = {
             `:m ${text}`,
             { dryRun: config.dryRun }
         );
-
-        await message.reply(
+        const embed = createEmbed(
             result.dryRun
-                ? `Dry run: would execute \`${result.command}\`.`
-                : 'Server message sent successfully.'
-        );
+                ? 'Message Preview'
+                : 'Server Message Sent',
+            'isrp'
+        )
+            .setDescription(`> ${text}`)
+            .addFields({
+                name: 'Status',
+                value: result.dryRun
+                    ? '🧪 Mock/Dry run — nothing was sent in-game.'
+                    : '✅ Delivered to the ER:LC server.',
+            });
+
+        await message.reply({
+            embeds: [embed],
+            allowedMentions: { parse: [] },
+        });
     },
 };
