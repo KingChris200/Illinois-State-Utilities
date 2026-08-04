@@ -15,6 +15,9 @@ module.exports = {
     allowedRoleIds: splitIds(
         process.env.ERLC_COMMAND_ROLE_IDS
     ),
+    seniorRoleIds: splitIds(
+        process.env.ERLC_SENIOR_MOD_ROLE_IDS
+    ),
     allowedChannelIds: splitIds(
         process.env.ERLC_COMMAND_CHANNEL_IDS
     ),

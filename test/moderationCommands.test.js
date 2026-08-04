@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 
 const kickCommand = require('../prefixCommands/kick');
 const respawnCommand = require('../prefixCommands/respawn');
+const banCommand = require('../prefixCommands/ban');
+const unbanCommand = require('../prefixCommands/unban');
 const {
     handleModerationButton,
     removeConfirmation,
@@ -165,6 +167,79 @@ test('cancel completes without executing a command', async () => {
         'Kick Cancelled'
     );
     assert.equal(update.components.length, 0);
+
+    restoreMockMode(previousMockMode);
+});
+
+test('ban requires a reason and creates a confirmation', async () => {
+    const previousMockMode = process.env.ERLC_MOCK_MODE;
+    process.env.ERLC_MOCK_MODE = 'true';
+    const { message, replies } = createMessage();
+
+    await banCommand.execute({
+        message,
+        args: ['MockPlayer', 'Exploiting'],
+        config: { mockMode: true, dryRun: true },
+    });
+
+    const embed = replies[0].embeds[0].toJSON();
+    const buttonData = getButtonData(replies[0]);
+    assert.equal(embed.title, 'Ban Confirmation');
+    assert.match(
+        embed.fields.find((field) => field.name === 'Reason').value,
+        /Exploiting/
+    );
+
+    removeConfirmation(buttonData.id);
+    restoreMockMode(previousMockMode);
+});
+
+test('unban validates complete numeric Roblox IDs', async () => {
+    const { message, replies } = createMessage();
+
+    await unbanCommand.execute({
+        message,
+        args: ['not-an-id', 'Appeal', 'accepted'],
+        config: { mockMode: true, dryRun: true },
+    });
+
+    assert.equal(
+        replies[0],
+        'Provide a complete numeric Roblox user ID.'
+    );
+});
+
+test('unban confirms without requiring an online player', async () => {
+    const previousMockMode = process.env.ERLC_MOCK_MODE;
+    process.env.ERLC_MOCK_MODE = 'true';
+    const { message, replies } = createMessage();
+
+    await unbanCommand.execute({
+        message,
+        args: ['987654321', 'Appeal', 'accepted'],
+        config: { mockMode: true, dryRun: true },
+    });
+
+    const buttonData = getButtonData(replies[0]);
+    let editedReply;
+    await handleModerationButton({
+        customId: buttonData.customId,
+        user: { id: '1234' },
+        deferUpdate: async () => null,
+        editReply: async (payload) => {
+            editedReply = payload;
+        },
+    });
+
+    const embed = editedReply.embeds[0].toJSON();
+    assert.equal(
+        embed.title,
+        'Unban Mock Confirmation Complete'
+    );
+    assert.match(
+        embed.fields.find((field) => field.name === 'Target').value,
+        /987654321/
+    );
 
     restoreMockMode(previousMockMode);
 });

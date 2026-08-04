@@ -1,7 +1,10 @@
-const { Events, PermissionFlagsBits } = require('discord.js');
+const { Events } = require('discord.js');
 const config = require('../config/prefixCommands');
 const loadPrefixCommands = require('../handlers/prefixCommandHandler');
 const logPrefixCommand = require('../utils/prefixCommandLogger');
+const {
+    memberCanUseCommand,
+} = require('../utils/prefixCommandPermissions');
 
 const cooldowns = new Map();
 
@@ -37,17 +40,12 @@ module.exports = {
             return;
         }
 
-        const isAdministrator = message.member.permissions.has(
-            PermissionFlagsBits.Administrator
-        );
-        const hasAllowedRole = config.allowedRoleIds.some((roleId) =>
-            message.member.roles.cache.has(roleId)
-        );
-
         if (
-            command.staffOnly !== false &&
-            !isAdministrator &&
-            !hasAllowedRole
+            !memberCanUseCommand(
+                message.member,
+                command,
+                config
+            )
         ) {
             await message.reply(
                 'You do not have permission to use this command.'

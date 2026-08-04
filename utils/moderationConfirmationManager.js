@@ -114,18 +114,20 @@ async function handleModerationButton(interaction) {
     await interaction.deferUpdate();
 
     try {
-        const players = await erlcService.getPlayers();
-        const targetQuery =
-            pending.player.userId || pending.player.username;
-        const resolved = resolvePlayer(players, targetQuery);
+        if (pending.requiresOnlineRecheck !== false) {
+            const players = await erlcService.getPlayers();
+            const targetQuery =
+                pending.player.userId || pending.player.username;
+            const resolved = resolvePlayer(players, targetQuery);
 
-        if (
-            resolved.player.username.toLowerCase() !==
-            pending.player.username.toLowerCase()
-        ) {
-            throw new Error(
-                'The resolved player identity changed before confirmation.'
-            );
+            if (
+                resolved.player.username.toLowerCase() !==
+                pending.player.username.toLowerCase()
+            ) {
+                throw new Error(
+                    'The resolved player identity changed before confirmation.'
+                );
+            }
         }
 
         const result = await erlcService.executeCommand(
@@ -171,8 +173,14 @@ async function handleModerationButton(interaction) {
 }
 
 function createButtons(id, action, disabled = false) {
+    const actionLabels = {
+        kick: 'Confirm Kick',
+        respawn: 'Confirm Respawn',
+        ban: 'Confirm Ban',
+        unban: 'Confirm Unban',
+    };
     const actionLabel =
-        action === 'kick' ? 'Confirm Kick' : 'Confirm Respawn';
+        actionLabels[action] || 'Confirm Action';
 
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -212,8 +220,14 @@ async function expireConfirmation(id) {
 }
 
 function createResultEmbed(pending, outcome, error = null) {
+    const actionNames = {
+        kick: 'Kick',
+        respawn: 'Respawn',
+        ban: 'Ban',
+        unban: 'Unban',
+    };
     const actionName =
-        pending.action === 'kick' ? 'Kick' : 'Respawn';
+        actionNames[pending.action] || 'Moderation Action';
     const outcomes = {
         cancelled: {
             title: `${actionName} Cancelled`,
