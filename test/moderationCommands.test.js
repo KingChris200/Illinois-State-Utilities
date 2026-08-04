@@ -3,20 +3,46 @@ const assert = require('node:assert/strict');
 
 const kickCommand = require('../prefixCommands/kick');
 const respawnCommand = require('../prefixCommands/respawn');
+const {
+    handleModerationButton,
+    removeConfirmation,
+} = require('../utils/moderationConfirmationManager');
 
 function createMessage() {
     const replies = [];
+    const author = {
+        id: '1234',
+        toString: () => '<@1234>',
+    };
 
     return {
         message: {
-            author: '<@1234>',
-            reply: async (payload) => replies.push(payload),
+            author,
+            reply: async (payload) => {
+                replies.push(payload);
+                return {
+                    edit: async () => null,
+                };
+            },
         },
         replies,
     };
 }
 
-test('kick creates a safe mock preview with a reason', async () => {
+function getButtonData(reply, choice = 'confirm') {
+    const row = reply.components[0].toJSON();
+    const button = row.components.find((component) =>
+        component.custom_id.includes(`:${choice}:`)
+    );
+    const id = button.custom_id.split(':')[2];
+
+    return {
+        customId: button.custom_id,
+        id,
+    };
+}
+
+test('kick creates an executor confirmation with a reason', async () => {
     const previousMockMode = process.env.ERLC_MOCK_MODE;
     process.env.ERLC_MOCK_MODE = 'true';
     const { message, replies } = createMessage();
@@ -28,13 +54,16 @@ test('kick creates a safe mock preview with a reason', async () => {
     });
 
     const embed = replies[0].embeds[0].toJSON();
-    assert.equal(embed.title, 'Kick Preview');
-    assert.match(embed.description, /nothing was sent/i);
+    const buttonData = getButtonData(replies[0]);
+    assert.equal(embed.title, 'Kick Confirmation');
+    assert.match(embed.description, /mock confirmation/i);
     assert.match(
         embed.fields.find((field) => field.name === 'Reason').value,
         /Fail roleplay/
     );
+    assert.equal(replies[0].components[0].components.length, 2);
 
+    removeConfirmation(buttonData.id);
     restoreMockMode(previousMockMode);
 });
 
@@ -50,7 +79,7 @@ test('kick requires a reason', async () => {
     assert.equal(replies[0], 'Usage: `?kick <player> <reason>`');
 });
 
-test('respawn supports safe player resolution', async () => {
+test('confirmation buttons reject other users', async () => {
     const previousMockMode = process.env.ERLC_MOCK_MODE;
     process.env.ERLC_MOCK_MODE = 'true';
     const { message, replies } = createMessage();
@@ -61,29 +90,83 @@ test('respawn supports safe player resolution', async () => {
         config: { mockMode: true, dryRun: true },
     });
 
-    const embed = replies[0].embeds[0].toJSON();
-    assert.equal(embed.title, 'Respawn Preview');
-    assert.match(
-        embed.fields.find(
-            (field) => field.name === 'In-Game Command'
-        ).value,
-        /:respawn MockPlayer/
+    const buttonData = getButtonData(replies[0]);
+    let response;
+    await handleModerationButton({
+        customId: buttonData.customId,
+        user: { id: 'someone-else' },
+        reply: async (payload) => {
+            response = payload;
+        },
+    });
+
+    assert.equal(response.ephemeral, true);
+    assert.match(response.content, /only the staff member/i);
+
+    removeConfirmation(buttonData.id);
+    restoreMockMode(previousMockMode);
+});
+
+test('confirm rechecks the player and completes in mock mode', async () => {
+    const previousMockMode = process.env.ERLC_MOCK_MODE;
+    process.env.ERLC_MOCK_MODE = 'true';
+    const { message, replies } = createMessage();
+
+    await respawnCommand.execute({
+        message,
+        args: ['mock'],
+        config: { mockMode: true, dryRun: true },
+    });
+
+    const buttonData = getButtonData(replies[0]);
+    let editedReply;
+    await handleModerationButton({
+        customId: buttonData.customId,
+        user: { id: '1234' },
+        deferUpdate: async () => null,
+        editReply: async (payload) => {
+            editedReply = payload;
+        },
+    });
+
+    const embed = editedReply.embeds[0].toJSON();
+    assert.equal(
+        embed.title,
+        'Respawn Mock Confirmation Complete'
     );
+    assert.equal(editedReply.components.length, 0);
 
     restoreMockMode(previousMockMode);
 });
 
-test('live moderation remains locked before confirmations', async () => {
+test('cancel completes without executing a command', async () => {
+    const previousMockMode = process.env.ERLC_MOCK_MODE;
+    process.env.ERLC_MOCK_MODE = 'true';
     const { message, replies } = createMessage();
 
     await kickCommand.execute({
         message,
-        args: ['Someone', 'Test'],
-        config: { mockMode: false, dryRun: false },
+        args: ['MockPlayer', 'Testing'],
+        config: { mockMode: true, dryRun: true },
     });
 
-    const embed = replies[0].embeds[0].toJSON();
-    assert.equal(embed.title, 'Live Moderation Locked');
+    const buttonData = getButtonData(replies[0], 'cancel');
+    let update;
+    await handleModerationButton({
+        customId: buttonData.customId,
+        user: { id: '1234' },
+        update: async (payload) => {
+            update = payload;
+        },
+    });
+
+    assert.equal(
+        update.embeds[0].toJSON().title,
+        'Kick Cancelled'
+    );
+    assert.equal(update.components.length, 0);
+
+    restoreMockMode(previousMockMode);
 });
 
 function restoreMockMode(previousMockMode) {

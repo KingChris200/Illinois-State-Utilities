@@ -11,6 +11,9 @@ const path = require('path');
 const fs = require('fs');
 
 const sessionManager = require('../utils/sessionManager');
+const {
+    handleModerationButton,
+} = require('../utils/moderationConfirmationManager');
 
 /*
  * ==========================================
@@ -54,6 +57,17 @@ module.exports = {
          */
 
         if (!interaction.isButton()) {
+            return;
+        }
+
+        if (
+            interaction.customId.startsWith(
+                'erlc_mod:'
+            )
+        ) {
+            await handleModerationButton(
+                interaction
+            );
             return;
         }
 

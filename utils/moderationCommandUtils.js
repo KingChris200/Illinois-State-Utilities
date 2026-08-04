@@ -10,10 +10,6 @@ async function resolveOnlinePlayer(query) {
     return resolvePlayer(players, query);
 }
 
-function isSafePreviewMode(config) {
-    return Boolean(config.mockMode || config.dryRun);
-}
-
 async function replyWithResolverError(message, error) {
     if (!(error instanceof PlayerResolverError)) {
         throw error;
@@ -40,14 +36,15 @@ function createModerationPreview({
     executor,
     reason = null,
     command,
+    mockMode,
+    expiresInSeconds,
 }) {
-    const embed = createEmbed(
-        `${action} Preview`,
-        'isrp'
-    )
+    const embed = createEmbed(`${action} Confirmation`, 'isrp')
         .setColor('#D68910')
         .setDescription(
-            '🧪 **Safe preview only** — nothing was sent to ER:LC.'
+            mockMode
+                ? '🧪 **Mock confirmation** — confirming will not contact ER:LC.'
+                : '⚠️ Review the target carefully before confirming this live action.'
         )
         .addFields(
             {
@@ -69,6 +66,11 @@ function createModerationPreview({
             {
                 name: 'In-Game Command',
                 value: `\`${command}\``,
+            },
+            {
+                name: 'Confirmation Window',
+                value: `${expiresInSeconds} seconds`,
+                inline: true,
             }
         );
 
@@ -82,30 +84,8 @@ function createModerationPreview({
     return embed;
 }
 
-async function replyLiveModerationLocked(message) {
-    const embed = createEmbed(
-        'Live Moderation Locked',
-        'isrp'
-    )
-        .setColor('#C0392B')
-        .setDescription(
-            'Live moderation is intentionally disabled until the confirmation system is installed.'
-        )
-        .addFields({
-            name: 'Result',
-            value: 'No ER:LC command was executed.',
-        });
-
-    await message.reply({
-        embeds: [embed],
-        allowedMentions: { parse: [] },
-    });
-}
-
 module.exports = {
     createModerationPreview,
-    isSafePreviewMode,
-    replyLiveModerationLocked,
     replyWithResolverError,
     resolveOnlinePlayer,
 };
