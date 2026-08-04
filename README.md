@@ -22,6 +22,9 @@ ERLC_SENIOR_MOD_ROLE_IDS=567890123456789012
 # Optional Discord channel for command audit messages
 ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 
+# Optional channel for detailed moderation lifecycle embeds
+ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
+
 # Set true to test ?m and ?h without sending anything to ER:LC
 ERLC_DRY_RUN=true
 

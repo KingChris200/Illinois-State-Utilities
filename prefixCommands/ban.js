@@ -94,7 +94,10 @@ async function sendConfirmation({
             components: [confirmation.components],
             allowedMentions: { parse: [] },
         });
-        attachPromptMessage(confirmation.id, promptMessage);
+        await attachPromptMessage(
+            confirmation.id,
+            promptMessage
+        );
     } catch (error) {
         removeConfirmation(confirmation.id);
         throw error;

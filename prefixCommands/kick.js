@@ -71,7 +71,7 @@ module.exports = {
                 components: [confirmation.components],
                 allowedMentions: { parse: [] },
             });
-            attachPromptMessage(
+            await attachPromptMessage(
                 confirmation.id,
                 promptMessage
             );

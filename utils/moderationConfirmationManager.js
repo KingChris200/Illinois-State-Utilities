@@ -8,6 +8,9 @@ const {
 const createEmbed = require('./createEmbed');
 const erlcService = require('../services/erlcService');
 const { resolvePlayer } = require('./playerResolver');
+const {
+    logModerationAudit,
+} = require('./moderationAuditLogger');
 
 const CONFIRMATION_TTL_MS = 60_000;
 const pendingActions = new Map();
@@ -36,11 +39,15 @@ function createConfirmation(data) {
     };
 }
 
-function attachPromptMessage(id, promptMessage) {
+async function attachPromptMessage(id, promptMessage) {
     const pending = pendingActions.get(id);
 
     if (pending) {
         pending.promptMessage = promptMessage;
+        pending.client = promptMessage.client || null;
+        pending.guildId = promptMessage.guildId || null;
+        pending.channelId = promptMessage.channelId || null;
+        await logModerationAudit(pending, 'requested');
     }
 }
 
@@ -108,10 +115,12 @@ async function handleModerationButton(interaction) {
             embeds: [embed],
             components: [],
         });
+        await logModerationAudit(pending, 'cancelled');
         return true;
     }
 
     await interaction.deferUpdate();
+    await logModerationAudit(pending, 'confirmed');
 
     try {
         if (pending.requiresOnlineRecheck !== false) {
@@ -147,6 +156,10 @@ async function handleModerationButton(interaction) {
             embeds: [embed],
             components: [],
         });
+        await logModerationAudit(
+            pending,
+            result.dryRun ? 'mock_complete' : 'complete'
+        );
 
         console.log(
             `[ER:LC MODERATION] action=${pending.action} target=${pending.player.username} executor=${pending.executorId} outcome=${result.dryRun ? 'mock_complete' : 'complete'}`
@@ -167,6 +180,11 @@ async function handleModerationButton(interaction) {
             embeds: [embed],
             components: [],
         });
+        await logModerationAudit(
+            pending,
+            'failed',
+            error
+        );
     }
 
     return true;
@@ -205,6 +223,7 @@ async function expireConfirmation(id) {
 
     pending.status = 'expired';
     pendingActions.delete(id);
+    await logModerationAudit(pending, 'expired');
 
     if (!pending.promptMessage) {
         return;

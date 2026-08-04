@@ -23,5 +23,7 @@ module.exports = {
     ),
     logChannelId:
         process.env.ERLC_COMMAND_LOG_CHANNEL_ID || null,
+    moderationLogChannelId:
+        process.env.ERLC_MODERATION_LOG_CHANNEL_ID || null,
     defaultCooldownSeconds: 3,
 };
