@@ -15,11 +15,11 @@ module.exports = {
               ? '🛡️ Dry-Run Mode'
               : '🟢 Live Mode';
         const apiConfigured = erlcService.isConfigured();
-        const erlcStatus = config.mockMode
-            ? 'Sample data enabled'
-            : apiConfigured
-              ? 'Ready for live requests'
-              : 'API key not configured';
+        const health = erlcService.getApiHealth();
+        const healthLabel = getHealthLabel(
+            health,
+            config.mockMode
+        );
         let playerCount = 'Unavailable';
 
         if (config.mockMode) {
@@ -51,8 +51,8 @@ module.exports = {
                     inline: true,
                 },
                 {
-                    name: 'ER:LC Readiness',
-                    value: erlcStatus,
+                    name: 'Remembered API Health',
+                    value: healthLabel,
                     inline: true,
                 },
                 {
@@ -64,6 +64,10 @@ module.exports = {
                     name: 'Latency',
                     value: `${Math.max(0, Math.round(message.client.ws.ping))} ms`,
                     inline: true,
+                },
+                {
+                    name: 'Read-Only Connection Test',
+                    value: 'Run `?apicheck` when you intentionally want to test the API.',
                 }
             );
 
@@ -73,3 +77,30 @@ module.exports = {
         });
     },
 };
+
+function getHealthLabel(health, mockMode) {
+    if (mockMode) {
+        return '🧪 Mock data enabled';
+    }
+
+    if (health.state === 'healthy') {
+        return `🟢 Healthy ${formatTimestamp(health.lastSuccessAt)}`;
+    }
+
+    if (health.state === 'unhealthy') {
+        const code = health.lastPrcCode
+            ? ` · PRC ${health.lastPrcCode}`
+            : '';
+        return `🔴 Unhealthy${code} ${formatTimestamp(health.lastFailureAt)}`;
+    }
+
+    return '⚪ Not checked since startup';
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) {
+        return '';
+    }
+
+    return `<t:${Math.floor(timestamp / 1000)}:R>`;
+}

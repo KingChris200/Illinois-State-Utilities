@@ -8,10 +8,12 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 11);
+    assert.equal(count, 12);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
+            'api',
+            'apicheck',
             'ban',
             'h',
             'help',

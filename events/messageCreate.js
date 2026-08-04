@@ -5,6 +5,7 @@ const logPrefixCommand = require('../utils/prefixCommandLogger');
 const {
     memberCanUseCommand,
 } = require('../utils/prefixCommandPermissions');
+const erlcService = require('../services/erlcService');
 
 const cooldowns = new Map();
 
@@ -114,8 +115,8 @@ module.exports = {
             );
 
             const response =
-                error.code === 'API_KEY_NOT_CONFIGURED'
-                    ? error.message
+                error instanceof erlcService.ErlcServiceError
+                    ? erlcService.getPublicErrorMessage(error)
                     : 'An unexpected error occurred while running this command.';
 
             await message.reply(response).catch(() => null);
