@@ -26,6 +26,8 @@ function createVote(data) {
         hostId: data.hostId,
         hostUsername: data.hostUsername,
         goal: data.goal,
+        roleplayZone: data.roleplayZone ?? 'Statewide',
+        notes: data.notes ?? null,
         startedAt: data.startedAt ?? Date.now(),
         endsAt: data.endsAt,
         votes: new Map(),
@@ -119,6 +121,8 @@ function startSession(data) {
         hostUsername: data.hostUsername,
         startupMessageId: data.startupMessageId ?? null,
         attendeeIds: data.attendeeIds ?? [],
+        roleplayZone: data.roleplayZone ?? 'Statewide',
+        notes: data.notes ?? null,
         startedAt: data.startedAt ?? Date.now(),
     };
 

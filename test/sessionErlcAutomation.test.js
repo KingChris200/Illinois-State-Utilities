@@ -23,8 +23,16 @@ test('builds commands for every supported session event', () => {
         EVENT_BUILDERS.session_started({
             hostUsername: 'Host',
             attendeeCount: 10,
+            roleplayZone: 'Springfield',
         }),
         /^:m .*ILLINOISrp/
+    );
+
+    assert.match(
+        EVENT_BUILDERS.session_started({
+            roleplayZone: 'Springfield',
+        }),
+        /Roleplay zone: Springfield/
     );
 });
 

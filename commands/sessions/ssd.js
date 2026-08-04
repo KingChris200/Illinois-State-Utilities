@@ -175,6 +175,21 @@ module.exports = {
             shutdownEmbed.setThumbnail(guildIcon);
         }
 
+        shutdownEmbed.addFields({
+            name: '🗺️ Roleplay Zone',
+            value:
+                endedSession.roleplayZone ??
+                'Statewide',
+            inline: true,
+        });
+
+        if (endedSession.notes) {
+            shutdownEmbed.addFields({
+                name: '📝 Session Notes',
+                value: endedSession.notes,
+            });
+        }
+
         try {
             const shutdownMessage =
                 await interaction.channel.send({
@@ -225,6 +240,9 @@ module.exports = {
                     endedSession.attendeeIds,
                 startedAt:
                     endedSession.startedAt,
+                roleplayZone:
+                    endedSession.roleplayZone,
+                notes: endedSession.notes,
             });
 
             await interaction.editReply({

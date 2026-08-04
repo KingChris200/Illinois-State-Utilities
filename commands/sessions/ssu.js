@@ -15,6 +15,9 @@ const sessionManager = require('../../utils/sessionManager');
 const {
     announceSessionEvent,
 } = require('../../services/sessionErlcAutomation');
+const sessionAutomationConfig = require(
+    '../../config/sessionAutomation'
+);
 
 /*
  * ==========================================
@@ -88,6 +91,26 @@ module.exports = {
                 .setRequired(false)
         )
 
+        .addStringOption((option) =>
+            option
+                .setName('roleplay-zone')
+                .setDescription(
+                    'The roleplay zone for this session.'
+                )
+                .setMaxLength(100)
+                .setRequired(false)
+        )
+
+        .addStringOption((option) =>
+            option
+                .setName('notes')
+                .setDescription(
+                    'Optional notes shown in the vote and startup.'
+                )
+                .setMaxLength(500)
+                .setRequired(false)
+        )
+
         /*
          * Vote duration option.
          */
@@ -123,6 +146,17 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ This command can only be used inside a server.',
+                ephemeral: true,
+            });
+        }
+
+        if (
+            interaction.channelId !==
+            sessionAutomationConfig.channelId
+        ) {
+            return interaction.reply({
+                content:
+                    `❌ The official session workflow must be started in <#${sessionAutomationConfig.channelId}>.`,
                 ephemeral: true,
             });
         }
@@ -191,6 +225,16 @@ module.exports = {
             interaction.options.getInteger(
                 'duration'
             ) ?? 5;
+
+        const roleplayZone =
+            interaction.options.getString(
+                'roleplay-zone'
+            ) ?? 'Statewide';
+
+        const notes =
+            interaction.options.getString(
+                'notes'
+            ) ?? null;
 
         const startedAt =
             Date.now();
@@ -324,6 +368,19 @@ module.exports = {
 
                 .setTimestamp();
 
+        voteEmbed.addFields({
+            name: '🗺️ Roleplay Zone',
+            value: roleplayZone,
+            inline: true,
+        });
+
+        if (notes) {
+            voteEmbed.addFields({
+                name: '📝 Session Notes',
+                value: notes,
+            });
+        }
+
         /*
          * Add the server icon as the thumbnail.
          */
@@ -452,6 +509,10 @@ module.exports = {
 
                 goal,
 
+                roleplayZone,
+
+                notes,
+
                 startedAt,
 
                 endsAt,
@@ -461,6 +522,8 @@ module.exports = {
                 sourceChannelId: interaction.channel.id,
                 hostUsername: interaction.user.username,
                 voteGoal: goal,
+                roleplayZone,
+                notes,
             });
 
             /*

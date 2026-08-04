@@ -5,8 +5,8 @@ const EVENT_BUILDERS = {
     vote_started: ({ hostUsername, voteGoal, roleplayZone }) =>
         `:h A session vote has started${hostUsername ? ` by ${hostUsername}` : ''}${voteGoal ? ` with a goal of ${voteGoal} attendees` : ''}${roleplayZone ? ` for ${roleplayZone}` : ''}.`,
 
-    session_started: ({ hostUsername, attendeeCount }) =>
-        `:m Illinois State Roleplay is now in session! Join code: ILLINOISrp.${hostUsername ? ` Hosted by ${hostUsername}.` : ''}${Number.isInteger(attendeeCount) ? ` Confirmed attendees: ${attendeeCount}.` : ''}`,
+    session_started: ({ hostUsername, attendeeCount, roleplayZone }) =>
+        `:m Illinois State Roleplay is now in session! Join code: ILLINOISrp.${hostUsername ? ` Hosted by ${hostUsername}.` : ''}${roleplayZone ? ` Roleplay zone: ${roleplayZone}.` : ''}${Number.isInteger(attendeeCount) ? ` Confirmed attendees: ${attendeeCount}.` : ''}`,
 
     session_shutdown: ({ duration }) =>
         `:m The Illinois State Roleplay session has concluded${duration ? ` after ${duration}` : ''}. Thank you for participating!`,

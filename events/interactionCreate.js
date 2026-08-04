@@ -536,6 +536,9 @@ async function completeServerVote(
             startupMessageId:
                 startupMessage.id,
             attendeeIds,
+            roleplayZone:
+                activeVote.roleplayZone,
+            notes: activeVote.notes,
             startedAt: Date.now(),
         });
 
@@ -549,6 +552,9 @@ async function completeServerVote(
                 hostUsername:
                     activeVote.hostUsername,
                 attendeeCount,
+                roleplayZone:
+                    activeVote.roleplayZone,
+                notes: activeVote.notes,
             }
         );
 
@@ -659,6 +665,8 @@ function createVoteEmbed({
         voteEmbed.setThumbnail(guildIcon);
     }
 
+    addSessionDetails(voteEmbed, activeVote);
+
     return voteEmbed;
 }
 
@@ -749,6 +757,11 @@ function createCompletedVoteEmbed({
             guildIcon
         );
     }
+
+    addSessionDetails(
+        completedEmbed,
+        activeVote
+    );
 
     return completedEmbed;
 }
@@ -843,7 +856,29 @@ function createStartupEmbed({
         );
     }
 
+    addSessionDetails(
+        startupEmbed,
+        activeVote
+    );
+
     return startupEmbed;
+}
+
+function addSessionDetails(embed, session) {
+    embed.addFields({
+        name: '🗺️ Roleplay Zone',
+        value: session.roleplayZone ?? 'Statewide',
+        inline: true,
+    });
+
+    if (session.notes) {
+        embed.addFields({
+            name: '📝 Session Notes',
+            value: session.notes,
+        });
+    }
+
+    return embed;
 }
 
 /*
