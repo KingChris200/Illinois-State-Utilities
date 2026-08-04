@@ -12,6 +12,9 @@ const path = require('path');
 const fs = require('fs');
 
 const sessionManager = require('../../utils/sessionManager');
+const {
+    announceSessionEvent,
+} = require('../../services/sessionErlcAutomation');
 
 /*
  * ==========================================
@@ -453,6 +456,12 @@ module.exports = {
                 startedAt,
 
                 endsAt,
+            });
+
+            await announceSessionEvent('vote_started', {
+                sourceChannelId: interaction.channel.id,
+                hostUsername: interaction.user.username,
+                voteGoal: goal,
             });
 
             /*

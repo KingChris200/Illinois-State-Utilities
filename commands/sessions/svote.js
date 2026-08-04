@@ -4,6 +4,10 @@ const {
     ChannelType,
 } = require('discord.js');
 
+const {
+    announceSessionEvent,
+} = require('../../services/sessionErlcAutomation');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('svote')
@@ -148,6 +152,14 @@ module.exports = {
 
             await voteMessage.react('✅');
             await voteMessage.react('❌');
+
+            await announceSessionEvent('vote_started', {
+                sourceChannelId: channel.id,
+                hostUsername: interaction.user.username,
+                voteGoal: votesNeeded,
+                roleplayZone,
+                notes,
+            });
 
             await interaction.reply({
                 content:

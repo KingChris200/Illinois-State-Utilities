@@ -25,6 +25,12 @@ ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 # Optional channel for detailed moderation lifecycle embeds
 ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
 
+# Session automation is restricted to this Discord channel
+ERLC_SESSION_CHANNEL_ID=1490731232311378010
+
+# Required only when enabling live session-to-ER:LC announcements
+ERLC_SESSION_AUTOMATION_ENABLED=false
+
 # Set true to test ?m and ?h without sending anything to ER:LC
 ERLC_DRY_RUN=true
 

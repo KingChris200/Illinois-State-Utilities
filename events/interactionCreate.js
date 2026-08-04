@@ -14,6 +14,9 @@ const sessionManager = require('../utils/sessionManager');
 const {
     handleModerationButton,
 } = require('../utils/moderationConfirmationManager');
+const {
+    announceSessionEvent,
+} = require('../services/sessionErlcAutomation');
 
 /*
  * ==========================================
@@ -537,6 +540,17 @@ async function completeServerVote(
         });
 
         sessionManager.clearVote();
+
+        await announceSessionEvent(
+            'session_started',
+            {
+                sourceChannelId:
+                    activeVote.channelId,
+                hostUsername:
+                    activeVote.hostUsername,
+                attendeeCount,
+            }
+        );
 
         console.log(
             `🚓 Session automatically started with ${attendeeCount} confirmed attendee(s).`

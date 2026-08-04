@@ -5,6 +5,9 @@ const {
 } = require('discord.js');
 
 const sessionManager = require('../../utils/sessionManager');
+const {
+    announceSessionEvent,
+} = require('../../services/sessionErlcAutomation');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const SERVER_CODE = 'ILLINOISrp';
@@ -177,6 +180,19 @@ module.exports = {
                 await interaction.channel.send({
                     embeds: [shutdownEmbed],
                 });
+
+            await announceSessionEvent(
+                'session_shutdown',
+                {
+                    sourceChannelId:
+                        interaction.channel.id,
+                    hostUsername:
+                        endedSession.hostUsername,
+                    shutdownBy:
+                        interaction.user.username,
+                    duration: sessionDuration,
+                }
+            );
 
             await interaction.editReply({
                 content:

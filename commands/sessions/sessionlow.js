@@ -4,6 +4,10 @@ const {
     ChannelType,
 } = require('discord.js');
 
+const {
+    announceSessionEvent,
+} = require('../../services/sessionErlcAutomation');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('sessionlow')
@@ -114,6 +118,13 @@ module.exports = {
                 allowedMentions: {
                     roles: pingRole ? [pingRole.id] : [],
                 },
+            });
+
+            await announceSessionEvent('session_low', {
+                sourceChannelId: destinationChannel.id,
+                playerCount,
+                hostUsername: interaction.user.username,
+                notes,
             });
 
             await interaction.reply({
