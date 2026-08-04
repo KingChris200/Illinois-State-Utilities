@@ -196,6 +196,9 @@ function createButtons(id, action, disabled = false) {
         respawn: 'Confirm Respawn',
         ban: 'Confirm Ban',
         unban: 'Confirm Unban',
+        heal: 'Confirm Heal',
+        wanted: 'Confirm Wanted',
+        unwanted: 'Confirm Unwanted',
     };
     const actionLabel =
         actionLabels[action] || 'Confirm Action';
@@ -244,6 +247,9 @@ function createResultEmbed(pending, outcome, error = null) {
         respawn: 'Respawn',
         ban: 'Ban',
         unban: 'Unban',
+        heal: 'Heal',
+        wanted: 'Wanted',
+        unwanted: 'Unwanted',
     };
     const actionName =
         actionNames[pending.action] || 'Moderation Action';

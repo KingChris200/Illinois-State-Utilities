@@ -37,6 +37,9 @@ const ACTION_NAMES = {
     respawn: 'Respawn',
     ban: 'Ban',
     unban: 'Unban',
+    heal: 'Heal',
+    wanted: 'Wanted',
+    unwanted: 'Unwanted',
 };
 
 function buildAuditEmbed(pending, eventName, error = null) {
