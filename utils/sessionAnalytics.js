@@ -211,9 +211,197 @@ function summarizeSessionAnalytics(
     };
 }
 
+function normalizeSessionHistory(records) {
+    if (!Array.isArray(records)) {
+        return [];
+    }
+
+    return records
+        .filter(
+            (record) =>
+                record &&
+                typeof record === 'object' &&
+                !Array.isArray(record)
+        )
+        .map((record) => ({
+            ...record,
+            attendeeCount: toNonNegativeNumber(
+                record.attendeeCount
+            ),
+            peakPlayerCount: toOptionalCount(
+                record.peakPlayerCount
+            ),
+            averagePlayerCount: toOptionalCount(
+                record.averagePlayerCount
+            ),
+            peakQueueCount: toOptionalCount(
+                record.peakQueueCount
+            ),
+            durationMilliseconds:
+                toNonNegativeNumber(
+                    record.durationMilliseconds
+                ),
+            attendanceDifference:
+                record.attendanceDifference !== null &&
+                record.attendanceDifference !== undefined &&
+                Number.isFinite(
+                    Number(record.attendanceDifference)
+                )
+                    ? Number(
+                          record.attendanceDifference
+                      )
+                    : null,
+        }))
+        .sort(
+            (first, second) =>
+                getHistoryTimestamp(second) -
+                getHistoryTimestamp(first)
+        );
+}
+
+function getHistoryTimestamp(record) {
+    const timestamp = new Date(
+        record.endedAt ||
+            record.createdAt ||
+            record.startedAt ||
+            0
+    ).getTime();
+
+    return Number.isFinite(timestamp)
+        ? timestamp
+        : 0;
+}
+
+function averageAvailable(records, fieldName) {
+    const values = records
+        .map((record) => record[fieldName])
+        .filter((value) => Number.isFinite(value));
+
+    if (values.length === 0) {
+        return null;
+    }
+
+    return (
+        values.reduce(
+            (total, value) => total + value,
+            0
+        ) / values.length
+    );
+}
+
+function summarizeSessionHistory(records) {
+    const history = normalizeSessionHistory(records);
+
+    if (history.length === 0) {
+        return {
+            sessionCount: 0,
+            totalDurationMilliseconds: 0,
+            averageDurationMilliseconds: null,
+            totalConfirmedAttendance: 0,
+            averageConfirmedAttendance: null,
+            averagePeakPlayerCount: null,
+            averagePlayerCount: null,
+            newestSession: null,
+            oldestSession: null,
+        };
+    }
+
+    const totalDurationMilliseconds =
+        history.reduce(
+            (total, record) =>
+                total + record.durationMilliseconds,
+            0
+        );
+    const totalConfirmedAttendance =
+        history.reduce(
+            (total, record) =>
+                total + record.attendeeCount,
+            0
+        );
+
+    return {
+        sessionCount: history.length,
+        totalDurationMilliseconds,
+        averageDurationMilliseconds:
+            totalDurationMilliseconds /
+            history.length,
+        totalConfirmedAttendance,
+        averageConfirmedAttendance:
+            totalConfirmedAttendance /
+            history.length,
+        averagePeakPlayerCount:
+            averageAvailable(
+                history,
+                'peakPlayerCount'
+            ),
+        averagePlayerCount: averageAvailable(
+            history,
+            'averagePlayerCount'
+        ),
+        newestSession: history[0],
+        oldestSession:
+            history[history.length - 1],
+    };
+}
+
+function selectMaximumRecord(
+    records,
+    fieldName
+) {
+    return records.reduce((best, record) => {
+        if (!Number.isFinite(record[fieldName])) {
+            return best;
+        }
+
+        if (
+            !best ||
+            record[fieldName] > best[fieldName]
+        ) {
+            return record;
+        }
+
+        return best;
+    }, null);
+}
+
+function findSessionRecords(records) {
+    const history = normalizeSessionHistory(records);
+
+    return {
+        highestPeak: selectMaximumRecord(
+            history,
+            'peakPlayerCount'
+        ),
+        highestAverage: selectMaximumRecord(
+            history,
+            'averagePlayerCount'
+        ),
+        longestSession: selectMaximumRecord(
+            history,
+            'durationMilliseconds'
+        ),
+        largestQueue: selectMaximumRecord(
+            history,
+            'peakQueueCount'
+        ),
+        highestConfirmedAttendance:
+            selectMaximumRecord(
+                history,
+                'attendeeCount'
+            ),
+        strongestTurnout: selectMaximumRecord(
+            history,
+            'attendanceDifference'
+        ),
+    };
+}
+
 module.exports = {
     createSessionAnalytics,
     recordSessionSample,
     calculateAttendanceComparison,
     summarizeSessionAnalytics,
+    normalizeSessionHistory,
+    summarizeSessionHistory,
+    findSessionRecords,
 };
