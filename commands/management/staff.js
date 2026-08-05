@@ -2,11 +2,20 @@ const {
     SlashCommandBuilder,
     EmbedBuilder,
     MessageFlags,
+    PermissionFlagsBits,
 } = require('discord.js');
 
 const {
     readDatabase,
 } = require('../../utils/database');
+
+const {
+    memberCanReviewMovements,
+} = require('../../config/serverConfigs');
+
+const {
+    analyzeStaffProfile,
+} = require('../../utils/staffProfileIntelligence');
 
 function convertHexToDecimal(hexColor) {
     if (typeof hexColor !== 'string') {
@@ -95,6 +104,21 @@ function getActionInformation(record) {
         };
     }
 
+    if (
+        recordType === 'award' ||
+        String(recordType).startsWith('award')
+    ) {
+        return {
+            emoji: record.awardEmoji || '🏆',
+            label:
+                record.awardName ||
+                'Staff Award',
+            summary:
+                record.reason ||
+                'Recognition recorded',
+        };
+    }
+
     const infractionLabels = {
         notice: 'Notice',
         inactivity_notice: 'Inactivity Notice',
@@ -148,6 +172,64 @@ function truncateText(text, maximumLength) {
     return `${value.slice(0, maximumLength - 3)}...`;
 }
 
+function canViewPrivateInsights(interaction) {
+    const member = interaction.member;
+
+    return Boolean(
+        interaction.guild?.ownerId ===
+            interaction.user.id ||
+        member?.permissions?.has(
+            PermissionFlagsBits.Administrator
+        ) ||
+        member?.permissions?.has(
+            PermissionFlagsBits.ManageGuild
+        ) ||
+        memberCanReviewMovements(
+            member,
+            interaction.guildId
+        )
+    );
+}
+
+function formatTimeline(records, emptyMessage) {
+    if (!Array.isArray(records) || records.length === 0) {
+        return emptyMessage;
+    }
+
+    return records
+        .slice(0, 5)
+        .map((record) => {
+            const action = getActionInformation({
+                ...record,
+                historyType:
+                    record.eventType ||
+                    record.historyType,
+            });
+
+            const status = [
+                'revoked',
+                'resolved',
+                'dismissed',
+                'expired',
+                'closed',
+            ].includes(
+                String(record.status || '')
+                    .toLowerCase()
+            )
+                ? ` • ${record.status}`
+                : '';
+
+            return [
+                `${action.emoji} **${action.label}**${status} — ${createDiscordTimestamp(
+                    record.createdAt,
+                    'd'
+                )}`,
+                truncateText(action.summary, 140),
+            ].join('\n');
+        })
+        .join('\n\n');
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staff')
@@ -199,10 +281,21 @@ module.exports = {
                     true
                 );
 
-            const visibility =
+            const hasPrivateAccess =
+                canViewPrivateInsights(
+                    interaction
+                );
+
+            const requestedVisibility =
                 interaction.options.getString(
                     'visibility'
-                ) || 'private';
+                );
+
+            const visibility =
+                requestedVisibility ||
+                (hasPrivateAccess
+                    ? 'private'
+                    : 'public');
 
             const isPrivate =
                 visibility === 'private';
@@ -212,6 +305,16 @@ module.exports = {
                     ? MessageFlags.Ephemeral
                     : undefined,
             });
+
+            if (
+                isPrivate &&
+                !hasPrivateAccess
+            ) {
+                return interaction.editReply({
+                    content:
+                        '❌ Private staff intelligence is limited to authorized management, Internal Affairs, directors, and ownership. Use `visibility:Public` for the safe staff résumé.',
+                });
+            }
 
             const configurations =
                 await readDatabase(
@@ -317,21 +420,15 @@ module.exports = {
                       ][staffMember.id]
                     : [];
 
-            const recentActions =
-                [...staffHistory]
-                    .sort(
-                        (
-                            firstRecord,
-                            secondRecord
-                        ) =>
-                            new Date(
-                                secondRecord.createdAt
-                            ).getTime() -
-                            new Date(
-                                firstRecord.createdAt
-                            ).getTime()
-                    )
-                    .slice(0, 5);
+            const profileAnalysis =
+                analyzeStaffProfile({
+                    profile: staffProfile,
+                    history: staffHistory,
+                });
+
+            const recentActions = isPrivate
+                ? profileAnalysis.events.slice(0, 5)
+                : profileAnalysis.careerTimeline;
 
             const staffStatus =
                 staffProfile.staffStatus ||
@@ -350,14 +447,10 @@ module.exports = {
                       'Active LOA'
                     : 'None';
 
-            const totalDisciplinaryActions =
-                Number(
-                    staffProfile.totalInfractionCount ||
-                    0
-                );
-
             const profileDescription = [
-                `Below is the saved staff profile for ${staffMember}.`,
+                isPrivate
+                    ? `Private management review for ${staffMember}.`
+                    : `Public staff résumé for ${staffMember}.`,
                 '',
                 '**Current Rank**',
                 staffProfile.currentRank ||
@@ -366,45 +459,12 @@ module.exports = {
                 '**Staff Status**',
                 staffStatus,
                 '',
-                '**Blacklist Status**',
-                blacklistStatus,
-                '',
                 '**Leave of Absence**',
                 loaDisplay,
                 '',
                 '**Career Records**',
-                `Promotions: ${Number(
-                    staffProfile.promotionCount || 0
-                )}`,
-                `Demotions: ${Number(
-                    staffProfile.demotionCount || 0
-                )}`,
-                `Awards: ${Number(
-                    staffProfile.awardCount || 0
-                )}`,
-                '',
-                '**Disciplinary Records**',
-                `Notices: ${Number(
-                    staffProfile.noticeCount || 0
-                )}`,
-                `Inactivity Notices: ${Number(
-                    staffProfile
-                        .inactivityNoticeCount || 0
-                )}`,
-                `Warnings: ${Number(
-                    staffProfile.warningCount || 0
-                )}`,
-                `Strikes: ${Number(
-                    staffProfile.strikeCount || 0
-                )}`,
-                `Terminations: ${Number(
-                    staffProfile
-                        .terminationCount || 0
-                )}`,
-                `Blacklists: ${Number(
-                    staffProfile.blacklistCount || 0
-                )}`,
-                `Total Actions: ${totalDisciplinaryActions}`,
+                `Promotions: ${profileAnalysis.totals.promotions}`,
+                `Active Awards: ${profileAnalysis.totals.awards}`,
                 '',
                 '**Shift Activity**',
                 `Total Recorded Time: ${formatDuration(
@@ -427,45 +487,52 @@ module.exports = {
                 )}`,
             ];
 
-            if (recentActions.length > 0) {
+            if (isPrivate) {
                 profileDescription.push(
                     '',
-                    '**Recent Staff Actions**'
+                    '**Restricted Management Records**',
+                    `Blacklist Status: ${blacklistStatus}`,
+                    `Demotions: ${profileAnalysis.totals.demotions}`,
+                    `Notices: ${Number(
+                        staffProfile.noticeCount || 0
+                    )}`,
+                    `Inactivity Notices: ${Number(
+                        staffProfile
+                            .inactivityNoticeCount || 0
+                    )}`,
+                    `Warnings: ${Number(
+                        staffProfile.warningCount || 0
+                    )}`,
+                    `Strikes: ${Number(
+                        staffProfile.strikeCount || 0
+                    )}`,
+                    `Terminations: ${Number(
+                        staffProfile
+                            .terminationCount || 0
+                    )}`,
+                    `Blacklists: ${Number(
+                        staffProfile.blacklistCount || 0
+                    )}`,
+                    `Active Actions: ${profileAnalysis.totals.activeInfractions}`
                 );
+            }
 
-                for (
-                    let index = 0;
-                    index < recentActions.length;
-                    index += 1
-                ) {
-                    const record =
-                        recentActions[index];
-
-                    const action =
-                        getActionInformation(
-                            record
-                        );
-
-                    const actionDate =
-                        createDiscordTimestamp(
-                            record.createdAt,
-                            'd'
-                        );
-
-                    profileDescription.push(
-                        '',
-                        `${action.emoji} **${action.label}** — ${actionDate}`,
-                        truncateText(
-                            action.summary,
-                            180
-                        )
-                    );
-                }
+            if (isPrivate) {
+                profileDescription.push(
+                    '',
+                    '**Recent Activity Summary**',
+                    `${profileAnalysis.recent.actions30Days} action(s) within 30 days`,
+                    `${profileAnalysis.recent.actions90Days} action(s) within 90 days`,
+                    `${profileAnalysis.totals.activeInfractions} active disciplinary record(s)`
+                );
             } else {
                 profileDescription.push(
                     '',
-                    '**Recent Staff Actions**',
-                    'No unified staff-history records are available yet.'
+                    '**Recent Career Highlights**',
+                    formatTimeline(
+                        recentActions,
+                        'No recent promotions or active awards are recorded.'
+                    )
                 );
             }
 
@@ -482,7 +549,9 @@ module.exports = {
                 new EmbedBuilder()
                     .setColor(statusColor)
                     .setTitle(
-                        'ISRP | Staff Profile'
+                        isPrivate
+                            ? 'ISRP | Staff Management Profile'
+                            : 'ISRP | Public Staff Profile'
                     )
                     .setDescription(
                         profileDescription.join('\n')
@@ -504,17 +573,106 @@ module.exports = {
                     })
                     .setFooter({
                         text:
-                            'Illinois State Utilities • Staff Management System',
+                            isPrivate
+                                ? 'Illinois State Utilities • Private Management Review'
+                                : 'Illinois State Utilities • Public Staff Résumé',
 
                         iconURL:
                             interaction.client.user.displayAvatarURL(),
                     })
                     .setTimestamp();
 
+            const managementInsightsEmbed =
+                isPrivate
+                    ? new EmbedBuilder()
+                          .setColor(
+                              profileAnalysis
+                                  .standing.color
+                          )
+                          .setTitle(
+                              '🧠 Private Management Intelligence'
+                          )
+                          .setDescription(
+                              'Rule-based decision support generated from saved staff records. This does not replace leadership judgment or authorize an automatic promotion.'
+                          )
+                          .addFields(
+                              {
+                                  name: 'Overall Standing',
+                                  value: `${profileAnalysis.standing.emoji} **${profileAnalysis.standing.label}**\nReview index: **${profileAnalysis.score} / 100**`,
+                                  inline: true,
+                              },
+                              {
+                                  name: 'Promotion Guidance',
+                                  value: `${profileAnalysis.eligibility.emoji} **${profileAnalysis.eligibility.label}**\n${profileAnalysis.eligibility.recommendation}`,
+                                  inline: false,
+                              },
+                              {
+                                  name: 'Review Context',
+                                  value: [
+                                      `Recorded tenure: **${
+                                          profileAnalysis.tenureDays ===
+                                          null
+                                              ? 'Unknown'
+                                              : `${profileAnalysis.tenureDays} day(s)`
+                                      }**`,
+                                      `Last promotion: **${
+                                          profileAnalysis.daysSincePromotion ===
+                                          null
+                                              ? 'None recorded'
+                                              : `${profileAnalysis.daysSincePromotion} day(s) ago`
+                                      }**`,
+                                      `Active discipline: **${profileAnalysis.totals.activeInfractions}**`,
+                                  ].join('\n'),
+                                  inline: true,
+                              },
+                              {
+                                  name: 'Assessment Factors',
+                                  value: profileAnalysis.factors
+                                      .map(
+                                          (factor) =>
+                                              `• ${factor}`
+                                      )
+                                      .join('\n'),
+                                  inline: false,
+                              },
+                              {
+                                  name: 'Career Timeline',
+                                  value: formatTimeline(
+                                      profileAnalysis.careerTimeline,
+                                      'No promotions or active awards are recorded.'
+                                  ),
+                                  inline: false,
+                              },
+                              {
+                                  name: 'Disciplinary Timeline',
+                                  value: formatTimeline(
+                                      profileAnalysis.disciplinaryTimeline,
+                                      'No demotions or disciplinary actions are recorded.'
+                                  ),
+                                  inline: false,
+                              }
+                          )
+                          .setThumbnail(
+                              staffMember.displayAvatarURL({
+                                  size: 256,
+                              })
+                          )
+                          .setFooter({
+                              text:
+                                  'Illinois State Utilities • Authorized Management Only',
+                              iconURL:
+                                  interaction.client.user.displayAvatarURL(),
+                          })
+                          .setTimestamp()
+                    : null;
+
             await interaction.editReply({
-                embeds: [
-                    staffProfileEmbed,
-                ],
+                embeds: managementInsightsEmbed
+                    ? [
+                          staffProfileEmbed,
+                          managementInsightsEmbed,
+                      ]
+                    : [staffProfileEmbed],
 
                 allowedMentions: {
                     parse: [],
