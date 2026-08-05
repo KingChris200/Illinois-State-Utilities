@@ -8,6 +8,10 @@ const sessionManager = require('../../utils/sessionManager');
 const {
     announceSessionEvent,
 } = require('../../services/sessionErlcAutomation');
+const {
+    startSessionPlayerCountMonitor,
+    stopSessionPlayerCountMonitor,
+} = require('../../services/sessionPlayerCountMonitor');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const SERVER_CODE = 'ILLINOISrp';
@@ -175,6 +179,10 @@ module.exports = {
             shutdownEmbed.setThumbnail(guildIcon);
         }
 
+        stopSessionPlayerCountMonitor(
+            interaction.guildId
+        );
+
         shutdownEmbed.addFields({
             name: '🗺️ Roleplay Zone',
             value:
@@ -187,6 +195,19 @@ module.exports = {
             shutdownEmbed.addFields({
                 name: '📝 Session Notes',
                 value: endedSession.notes,
+            });
+        }
+
+        if (
+            Number.isFinite(
+                endedSession.livePlayerCount
+            )
+        ) {
+            shutdownEmbed.addFields({
+                name: '🎮 Final Live Player Count',
+                value:
+                    `\`${endedSession.livePlayerCount} / ${endedSession.maxPlayerCount ?? 40}\` players in-game`,
+                inline: true,
             });
         }
 
@@ -234,6 +255,8 @@ module.exports = {
                 guildId: endedSession.guildId,
                 channelId: endedSession.channelId,
                 hostId: endedSession.hostId,
+                hostUsername:
+                    endedSession.hostUsername,
                 startupMessageId:
                     endedSession.startupMessageId,
                 attendeeIds:
@@ -243,6 +266,20 @@ module.exports = {
                 roleplayZone:
                     endedSession.roleplayZone,
                 notes: endedSession.notes,
+                livePlayerCount:
+                    endedSession.livePlayerCount,
+                maxPlayerCount:
+                    endedSession.maxPlayerCount,
+                playerCountUpdatedAt:
+                    endedSession.playerCountUpdatedAt,
+            });
+
+            startSessionPlayerCountMonitor({
+                client: interaction.client,
+                guildId: endedSession.guildId,
+                channelId: endedSession.channelId,
+                messageId:
+                    endedSession.startupMessageId,
             });
 
             await interaction.editReply({

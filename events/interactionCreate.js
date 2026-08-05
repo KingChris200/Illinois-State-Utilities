@@ -17,6 +17,9 @@ const {
 const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
+const {
+    startSessionPlayerCountMonitor,
+} = require('../services/sessionPlayerCountMonitor');
 
 /*
  * ==========================================
@@ -44,6 +47,11 @@ module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
+        if (interaction.isAutocomplete()) {
+            await handleAutocomplete(interaction);
+            return;
+        }
+
         /*
          * ==========================================
          * SLASH COMMAND HANDLING
@@ -114,6 +122,32 @@ module.exports = {
         }
     },
 };
+
+async function handleAutocomplete(interaction) {
+    const command =
+        interaction.client.commands.get(
+            interaction.commandName
+        );
+
+    if (
+        !command ||
+        typeof command.autocomplete !== 'function'
+    ) {
+        await interaction.respond([]).catch(() => {});
+        return;
+    }
+
+    try {
+        await command.autocomplete(interaction);
+    } catch (error) {
+        console.error(
+            `Error while autocompleting /${interaction.commandName}:`,
+            error
+        );
+
+        await interaction.respond([]).catch(() => {});
+    }
+}
 
 /*
  * ==========================================
@@ -542,6 +576,13 @@ async function completeServerVote(
             startedAt: Date.now(),
         });
 
+        startSessionPlayerCountMonitor({
+            client: interaction.client,
+            guildId: activeVote.guildId,
+            channelId: activeVote.channelId,
+            messageId: startupMessage.id,
+        });
+
         sessionManager.clearVote();
 
         await announceSessionEvent(
@@ -859,6 +900,21 @@ function createStartupEmbed({
     addSessionDetails(
         startupEmbed,
         activeVote
+    );
+
+    startupEmbed.addFields(
+        {
+            name: '🎮 Live Player Count',
+            value:
+                '🟡 Connecting to ER:LC…',
+            inline: true,
+        },
+        {
+            name: '🔄 Player Count Updated',
+            value:
+                'Waiting for the first refresh.',
+            inline: true,
+        }
     );
 
     return startupEmbed;

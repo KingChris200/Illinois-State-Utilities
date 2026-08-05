@@ -3,6 +3,10 @@ const {
     EmbedBuilder,
     ChannelType,
     MessageFlags,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
 } = require('discord.js');
 
 const {
@@ -16,35 +20,17 @@ const {
     updateCase,
 } = require('../../utils/caseManager');
 
-const STAFF_RANKS = [
-    'Trial Moderator',
-    'Senior Moderator',
-    'Community Moderator',
+const {
+    getConfiguredChannelId,
+    memberCanReviewMovements,
+    getRankAutocompleteChoices,
+    findGuildRank,
+} = require('../../config/serverConfigs');
 
-    'Junior Supervisory',
-    'Senior Supervisory',
-    'Head Supervisory',
-
-    'Junior Manager',
-    'Manager',
-    'Senior Manager',
-
-    'Junior Internal Affairs',
-    'Senior Internal Affairs',
-    'Superior Internal Affairs',
-
-    'Assistant Server Director',
-    'Deputy Server Director',
-    'Server Director',
-
-    'Co Owner',
-    'Owner',
-];
-
-const RANK_CHOICES = STAFF_RANKS.map((rank) => ({
-    name: rank,
-    value: rank,
-}));
+const {
+    findRecentDuplicate,
+    analyzeInfractionHistory,
+} = require('../../utils/infractionIntelligence');
 
 const INFRACTION_TYPES = {
     notice: {
@@ -141,6 +127,38 @@ function getDisplayName(user) {
     return user.globalName || user.username;
 }
 
+function canIssueInfractions(interaction) {
+    const member = interaction.member;
+
+    return Boolean(
+        interaction.guild?.ownerId === interaction.user.id ||
+        member?.permissions?.has(
+            PermissionFlagsBits.Administrator
+        ) ||
+        member?.permissions?.has(
+            PermissionFlagsBits.ManageGuild
+        ) ||
+        memberCanReviewMovements(
+            member,
+            interaction.guildId
+        )
+    );
+}
+
+function hasRequiredChannelPermissions(channel, botMember) {
+    if (!channel || !botMember) {
+        return false;
+    }
+
+    const permissions = channel.permissionsFor(botMember);
+
+    return Boolean(
+        permissions?.has(PermissionFlagsBits.ViewChannel) &&
+        permissions?.has(PermissionFlagsBits.SendMessages) &&
+        permissions?.has(PermissionFlagsBits.EmbedLinks)
+    );
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('infraction')
@@ -197,7 +215,7 @@ module.exports = {
                 .setDescription(
                     'The staff member’s current or final staff rank.'
                 )
-                .addChoices(...RANK_CHOICES)
+                .setAutocomplete(true)
                 .setRequired(true)
         )
         .addStringOption((option) =>
@@ -260,6 +278,43 @@ module.exports = {
                 .setRequired(false)
         ),
 
+    async autocomplete(interaction) {
+        try {
+            if (!interaction.inGuild()) {
+                return interaction.respond([]);
+            }
+
+            const focusedOption =
+                interaction.options.getFocused(true);
+
+            if (
+                focusedOption.name !==
+                'current-rank'
+            ) {
+                return interaction.respond([]);
+            }
+
+            const choices =
+                getRankAutocompleteChoices(
+                    interaction.guildId,
+                    focusedOption.value
+                );
+
+            return interaction.respond(
+                choices.slice(0, 25)
+            );
+        } catch (error) {
+            console.error(
+                'Error handling /infraction autocomplete:',
+                error
+            );
+
+            return interaction
+                .respond([])
+                .catch(() => {});
+        }
+    },
+
     async execute(interaction) {
         try {
             if (!interaction.inGuild()) {
@@ -274,6 +329,13 @@ module.exports = {
                 flags: MessageFlags.Ephemeral,
             });
 
+            if (!canIssueInfractions(interaction)) {
+                return interaction.editReply({
+                    content:
+                        '❌ You need an authorized management, Internal Affairs, director, or ownership role to issue staff infractions.',
+                });
+            }
+
             const staffMember =
                 interaction.options.getUser(
                     'staff-member',
@@ -286,7 +348,7 @@ module.exports = {
                     true
                 );
 
-            const currentRank =
+            let currentRank =
                 interaction.options.getString(
                     'current-rank',
                     true
@@ -335,6 +397,13 @@ module.exports = {
                 });
             }
 
+            if (staffMember.id === interaction.user.id) {
+                return interaction.editReply({
+                    content:
+                        '❌ You cannot issue a disciplinary action to yourself.',
+                });
+            }
+
             /*
              * Load server configuration.
              */
@@ -351,6 +420,54 @@ module.exports = {
                 return interaction.editReply({
                     content:
                         '❌ Illinois State Utilities has not been configured in this server yet.\n\nRun `/setup` before using the discipline system.',
+                });
+            }
+
+            const configuredRank =
+                findGuildRank(
+                    interaction.guildId,
+                    currentRank
+                );
+
+            if (!configuredRank) {
+                return interaction.editReply({
+                    content:
+                        '❌ The selected rank is not configured for this server. Please choose one of the live rank suggestions.',
+                });
+            }
+
+            currentRank = configuredRank.name;
+
+            const targetMember =
+                await interaction.guild.members
+                    .fetch(staffMember.id)
+                    .catch(() => null);
+
+            if (!targetMember) {
+                return interaction.editReply({
+                    content:
+                        '❌ The selected user is not currently a member of this server.',
+                });
+            }
+
+            const executorIsOwner =
+                interaction.guild.ownerId ===
+                interaction.user.id;
+            const executorIsAdministrator =
+                interaction.member.permissions.has(
+                    PermissionFlagsBits.Administrator
+                );
+
+            if (
+                !executorIsOwner &&
+                !executorIsAdministrator &&
+                interaction.member.roles.highest.comparePositionTo(
+                    targetMember.roles.highest
+                ) <= 0
+            ) {
+                return interaction.editReply({
+                    content:
+                        '❌ You cannot issue an infraction to a member whose highest role is equal to or above yours.',
                 });
             }
 
@@ -390,8 +507,22 @@ module.exports = {
                       )
                     : null;
 
+            const configuredInfractionChannelId =
+                getConfiguredChannelId(
+                    interaction.guildId,
+                    'infractions'
+                );
+
+            const configuredInfractionChannel =
+                configuredInfractionChannelId
+                    ? interaction.guild.channels.cache.get(
+                          configuredInfractionChannelId
+                      )
+                    : null;
+
             const destinationChannel =
                 selectedChannel ||
+                configuredInfractionChannel ||
                 configuredSessionChannel ||
                 interaction.channel;
 
@@ -404,6 +535,198 @@ module.exports = {
                         '❌ I could not find a valid channel for this disciplinary announcement.',
                 });
             }
+
+            if (
+                !hasRequiredChannelPermissions(
+                    destinationChannel,
+                    interaction.guild.members.me
+                )
+            ) {
+                return interaction.editReply({
+                    content:
+                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${destinationChannel}.`,
+                });
+            }
+
+            const infractionsDatabase =
+                await readDatabase('infractions', {});
+            const guildInfractions =
+                Array.isArray(
+                    infractionsDatabase[
+                        interaction.guildId
+                    ]
+                )
+                    ? infractionsDatabase[
+                          interaction.guildId
+                      ]
+                    : [];
+
+            const duplicateInfraction =
+                findRecentDuplicate({
+                    records: guildInfractions,
+                    staffMemberId:
+                        staffMember.id,
+                    infractionType:
+                        infractionTypeKey,
+                    reason,
+                });
+
+            if (duplicateInfraction) {
+                return interaction.editReply({
+                    content:
+                        `⚠️ Smart duplicate protection stopped this request. An identical **${infractionType.label}** was issued to ${staffMember} within the last 10 minutes.\n\n` +
+                        `Existing record: \`${duplicateInfraction.id}\`\n` +
+                        'Review the existing record before trying again.',
+                    allowedMentions: {
+                        parse: [],
+                    },
+                });
+            }
+
+            const historyAnalysis =
+                analyzeInfractionHistory({
+                    records: guildInfractions,
+                    staffMemberId:
+                        staffMember.id,
+                    infractionType:
+                        infractionTypeKey,
+                });
+
+            const confirmationId =
+                `infraction_confirm:${interaction.id}`;
+            const cancellationId =
+                `infraction_cancel:${interaction.id}`;
+
+            const confirmationEmbed =
+                new EmbedBuilder()
+                    .setColor(
+                        infractionType.color
+                    )
+                    .setTitle(
+                        `Confirm ${infractionType.label}`
+                    )
+                    .setDescription(
+                        'Review the complete action below. Nothing will be recorded until you confirm.'
+                    )
+                    .addFields(
+                        {
+                            name: 'Staff Member',
+                            value: `${staffMember}`,
+                            inline: true,
+                        },
+                        {
+                            name: 'Current / Final Rank',
+                            value: currentRank,
+                            inline: true,
+                        },
+                        {
+                            name: 'Announcement Channel',
+                            value: `${destinationChannel}`,
+                            inline: true,
+                        },
+                        {
+                            name: 'Reason',
+                            value: reason,
+                        },
+                        {
+                            name: 'Smart Risk Review',
+                            value: [
+                                `**${historyAnalysis.level}** risk • ${historyAnalysis.activeCount} active record(s) • ${historyAnalysis.recentCount} record(s) in 30 days`,
+                                historyAnalysis.recommendation,
+                            ].join('\n'),
+                        },
+                    )
+                    .setThumbnail(
+                        staffMember.displayAvatarURL({
+                            size: 256,
+                        })
+                    )
+                    .setFooter({
+                        text:
+                            'Illinois State Utilities • Smart Discipline Review',
+                        iconURL:
+                            interaction.client.user.displayAvatarURL(),
+                    })
+                    .setTimestamp();
+
+            const confirmationButtons =
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(
+                            confirmationId
+                        )
+                        .setLabel(
+                            `Confirm ${infractionType.label}`
+                        )
+                        .setStyle(
+                            ButtonStyle.Danger
+                        ),
+                    new ButtonBuilder()
+                        .setCustomId(
+                            cancellationId
+                        )
+                        .setLabel('Cancel')
+                        .setStyle(
+                            ButtonStyle.Secondary
+                        )
+                );
+
+            await interaction.editReply({
+                embeds: [confirmationEmbed],
+                components: [confirmationButtons],
+                allowedMentions: {
+                    parse: [],
+                },
+            });
+
+            const confirmationMessage =
+                await interaction.fetchReply();
+
+            const confirmation =
+                await confirmationMessage
+                    .awaitMessageComponent({
+                        filter: (buttonInteraction) =>
+                            buttonInteraction.user.id ===
+                                interaction.user.id &&
+                            [
+                                confirmationId,
+                                cancellationId,
+                            ].includes(
+                                buttonInteraction.customId
+                            ),
+                        time: 60_000,
+                    })
+                    .catch(() => null);
+
+            if (!confirmation) {
+                return interaction.editReply({
+                    content:
+                        '⌛ This infraction preview expired after 60 seconds. Nothing was recorded.',
+                    embeds: [],
+                    components: [],
+                });
+            }
+
+            await confirmation.deferUpdate();
+
+            if (
+                confirmation.customId ===
+                cancellationId
+            ) {
+                return interaction.editReply({
+                    content:
+                        '✅ Infraction cancelled. Nothing was recorded or announced.',
+                    embeds: [],
+                    components: [],
+                });
+            }
+
+            await interaction.editReply({
+                content:
+                    '⏳ Confirmation received. Recording the official case and announcement…',
+                embeds: [],
+                components: [],
+            });
 
             const createdAt =
                 new Date().toISOString();
@@ -441,6 +764,16 @@ module.exports = {
                 evidence,
                 duration,
                 notes,
+                smartReview: {
+                    level:
+                        historyAnalysis.level,
+                    activePriorRecords:
+                        historyAnalysis.activeCount,
+                    recentRecords:
+                        historyAnalysis.recentCount,
+                    recommendation:
+                        historyAnalysis.recommendation,
+                },
 
                 issuedById: interaction.user.id,
                 issuedByUsername:
@@ -519,6 +852,12 @@ module.exports = {
                             infractionTypeKey,
                         infractionLabel:
                             infractionType.label,
+                        smartRiskLevel:
+                            historyAnalysis.level,
+                        activePriorRecords:
+                            historyAnalysis.activeCount,
+                        recentRecords:
+                            historyAnalysis.recentCount,
                     },
                 });
 
@@ -899,6 +1238,12 @@ module.exports = {
                     notes
                 );
             }
+
+            descriptionLines.push(
+                '',
+                '**Accountability Summary**',
+                `${historyAnalysis.level} risk • ${historyAnalysis.activeCount} prior active record(s) • ${historyAnalysis.recentCount} record(s) within 30 days`
+            );
 
             descriptionLines.push(
                 '',

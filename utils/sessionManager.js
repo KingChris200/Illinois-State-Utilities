@@ -28,6 +28,12 @@ function createVote(data) {
         goal: data.goal,
         roleplayZone: data.roleplayZone ?? 'Statewide',
         notes: data.notes ?? null,
+        livePlayerCount:
+            data.livePlayerCount ?? null,
+        maxPlayerCount:
+            data.maxPlayerCount ?? null,
+        playerCountUpdatedAt:
+            data.playerCountUpdatedAt ?? null,
         startedAt: data.startedAt ?? Date.now(),
         endsAt: data.endsAt,
         votes: new Map(),
@@ -137,6 +143,32 @@ function hasActiveSession() {
     return activeSession !== null;
 }
 
+function updateSessionPlayerCount({
+    guildId,
+    messageId,
+    currentPlayers,
+    maxPlayers,
+    updatedAt = Date.now(),
+}) {
+    if (
+        !activeSession ||
+        activeSession.guildId !== String(guildId) ||
+        activeSession.startupMessageId !==
+            String(messageId)
+    ) {
+        return false;
+    }
+
+    activeSession.livePlayerCount =
+        currentPlayers;
+    activeSession.maxPlayerCount =
+        maxPlayers;
+    activeSession.playerCountUpdatedAt =
+        updatedAt;
+
+    return true;
+}
+
 function endSession() {
     if (!activeSession) {
         return null;
@@ -179,6 +211,7 @@ module.exports = {
     startSession,
     getSession,
     hasActiveSession,
+    updateSessionPlayerCount,
     endSession,
 
     resetAll,
