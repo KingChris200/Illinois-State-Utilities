@@ -1,8 +1,11 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
-    ChannelType,
     MessageFlags,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
 } = require('discord.js');
 
 const {
@@ -10,69 +13,381 @@ const {
     updateDatabase,
     createRecordId,
 } = require('../../utils/database');
+const {
+    getServerConfig,
+    getGuildRankIndex,
+    getRankAutocompleteChoices,
+    getConfiguredChannelId,
+    memberCanReviewMovements,
+} = require('../../config/serverConfigs');
+const {
+    applyRankChange,
+    getRankChangeErrorMessage,
+} = require('../../utils/rankManager');
+const {
+    findRecentDemotionDuplicate,
+    analyzeDemotionContext,
+} = require('../../utils/demotionIntelligence');
 
-/*
- * ISRP hierarchy ordered from lowest to highest.
- */
-const STAFF_RANKS = [
-    'Trial Moderator',
-    'Senior Moderator',
-    'Community Moderator',
+const DEMOTION_COLOR = 0xc0392b;
+const FOOTER_TEXT =
+    'Illinois State Utilities • Staff Management System';
 
-    'Junior Supervisory',
-    'Senior Supervisory',
-    'Head Supervisory',
+function normalizeObject(value) {
+    return value &&
+        typeof value === 'object' &&
+        !Array.isArray(value)
+        ? value
+        : {};
+}
 
-    'Junior Manager',
-    'Manager',
-    'Senior Manager',
+function getDisplayName(user) {
+    return user.globalName || user.username;
+}
 
-    'Junior Internal Affairs',
-    'Senior Internal Affairs',
-    'Superior Internal Affairs',
+function canUseDemotionCommand(interaction) {
+    const member = interaction.member;
 
-    'Assistant Server Director',
-    'Deputy Server Director',
-    'Server Director',
+    return Boolean(
+        interaction.guild?.ownerId === interaction.user.id ||
+        member?.permissions?.has(
+            PermissionFlagsBits.Administrator
+        ) ||
+        member?.permissions?.has(
+            PermissionFlagsBits.ManageRoles
+        ) ||
+        memberCanReviewMovements(
+            member,
+            interaction.guildId
+        )
+    );
+}
 
-    'Co Owner',
-    'Owner',
-];
-
-const RANK_CHOICES = STAFF_RANKS.map((rank) => ({
-    name: rank,
-    value: rank,
-}));
-
-function convertHexToDecimal(hexColor) {
-    if (typeof hexColor !== 'string') {
-        return 0xc0392b;
+function botCanSendEmbeds(channel, botMember) {
+    if (!channel || !botMember) {
+        return false;
     }
 
-    const cleanedColor = hexColor
-        .trim()
-        .replace(/^#/, '')
-        .replace(/^0x/i, '');
+    const permissions = channel.permissionsFor(botMember);
 
-    const parsedColor = Number.parseInt(cleanedColor, 16);
+    return Boolean(
+        permissions?.has(PermissionFlagsBits.ViewChannel) &&
+        permissions?.has(PermissionFlagsBits.SendMessages) &&
+        permissions?.has(PermissionFlagsBits.EmbedLinks)
+    );
+}
 
-    if (Number.isNaN(parsedColor)) {
-        return 0xc0392b;
+async function fetchTextChannel(guild, channelId) {
+    if (!guild || !channelId) {
+        return null;
     }
 
-    return parsedColor;
+    const channel =
+        guild.channels.cache.get(channelId) ||
+        (await guild.channels.fetch(channelId).catch(() => null));
+
+    return channel?.isTextBased() ? channel : null;
+}
+
+async function rollbackDemotionRoles({
+    member,
+    removedRole,
+    addedRole,
+    reason,
+}) {
+    const errors = [];
+
+    try {
+        if (!member.roles.cache.has(removedRole.id)) {
+            await member.roles.add(removedRole, reason);
+        }
+    } catch (error) {
+        errors.push(error);
+    }
+
+    try {
+        if (member.roles.cache.has(addedRole.id)) {
+            await member.roles.remove(addedRole, reason);
+        }
+    } catch (error) {
+        errors.push(error);
+    }
+
+    return {
+        success: errors.length === 0,
+        errors,
+    };
+}
+
+async function cleanupFailedDemotion({
+    guildId,
+    staffMemberId,
+    demotionId,
+    originalStaffRecord,
+}) {
+    await updateDatabase(
+        'demotions',
+        (database) => {
+            database = normalizeObject(database);
+            database[guildId] = Array.isArray(database[guildId])
+                ? database[guildId].filter(
+                      (record) => record.id !== demotionId
+                  )
+                : [];
+            return database;
+        },
+        {}
+    );
+
+    await updateDatabase(
+        'staff-history',
+        (database) => {
+            database = normalizeObject(database);
+            database[guildId] = normalizeObject(database[guildId]);
+            database[guildId][staffMemberId] = Array.isArray(
+                database[guildId][staffMemberId]
+            )
+                ? database[guildId][staffMemberId].filter(
+                      (record) => record.id !== demotionId
+                  )
+                : [];
+            return database;
+        },
+        {}
+    );
+
+    await updateDatabase(
+        'staff-records',
+        (database) => {
+            database = normalizeObject(database);
+            database[guildId] = normalizeObject(database[guildId]);
+
+            if (originalStaffRecord) {
+                database[guildId][staffMemberId] =
+                    originalStaffRecord;
+            } else {
+                delete database[guildId][staffMemberId];
+            }
+
+            return database;
+        },
+        {}
+    );
+}
+
+async function requestDemotionConfirmation({
+    interaction,
+    staffMember,
+    previousRank,
+    newRank,
+    reason,
+    evidence,
+    destinationChannel,
+    contextAnalysis,
+    serverConfig,
+}) {
+    const confirmationId =
+        `demotion_confirm:${interaction.id}`;
+    const cancellationId =
+        `demotion_cancel:${interaction.id}`;
+    const previewEmbed = new EmbedBuilder()
+        .setColor(DEMOTION_COLOR)
+        .setTitle('Confirm Staff Demotion')
+        .setDescription(
+            'Review this action carefully. No roles or permanent records will change until you confirm.'
+        )
+        .addFields(
+            {
+                name: 'Staff Member',
+                value: `${staffMember}`,
+                inline: true,
+            },
+            {
+                name: 'Rank Movement',
+                value: `**${previousRank}** → **${newRank}**`,
+                inline: true,
+            },
+            {
+                name: 'Announcement Channel',
+                value: `${destinationChannel}`,
+                inline: true,
+            },
+            {
+                name: 'Reason',
+                value: reason,
+            },
+            {
+                name: 'Evidence Review',
+                value: evidence || 'No evidence was provided.',
+            },
+            {
+                name: 'Smart Context Review',
+                value: [
+                    `**${contextAnalysis.level}** • ${contextAnalysis.ranksDropped} rank level(s) removed`,
+                    `${contextAnalysis.recentDemotionCount} demotion(s) within 30 days • ${contextAnalysis.activeInfractionCount} active infraction(s)`,
+                    contextAnalysis.recommendation,
+                ].join('\n'),
+            }
+        )
+        .setThumbnail(
+            staffMember.displayAvatarURL({ size: 256 })
+        )
+        .setAuthor({
+            name: serverConfig.serverName,
+            iconURL:
+                interaction.guild.iconURL({ size: 256 }) ||
+                undefined,
+        })
+        .setFooter({
+            text:
+                'Illinois State Utilities • Smart Demotion Review',
+            iconURL:
+                interaction.client.user.displayAvatarURL({ size: 128 }),
+        })
+        .setTimestamp();
+
+    const buttons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(confirmationId)
+            .setLabel('Confirm Demotion')
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId(cancellationId)
+            .setLabel('Cancel')
+            .setStyle(ButtonStyle.Secondary)
+    );
+
+    await interaction.editReply({
+        embeds: [previewEmbed],
+        components: [buttons],
+        allowedMentions: { parse: [] },
+    });
+
+    const previewMessage = await interaction.fetchReply();
+    const response = await previewMessage
+        .awaitMessageComponent({
+            filter: (buttonInteraction) =>
+                buttonInteraction.user.id === interaction.user.id &&
+                [confirmationId, cancellationId].includes(
+                    buttonInteraction.customId
+                ),
+            time: 60_000,
+        })
+        .catch(() => null);
+
+    if (!response) {
+        await interaction.editReply({
+            content:
+                '⌛ This demotion preview expired after 60 seconds. No roles or records were changed.',
+            embeds: [],
+            components: [],
+        });
+        return 'expired';
+    }
+
+    await response.deferUpdate();
+
+    if (response.customId === cancellationId) {
+        await interaction.editReply({
+            content:
+                '✅ Demotion cancelled. No roles or records were changed.',
+            embeds: [],
+            components: [],
+        });
+        return 'cancelled';
+    }
+
+    await interaction.editReply({
+        content:
+            '⏳ Confirmation received. Updating the member’s rank and permanent records…',
+        embeds: [],
+        components: [],
+    });
+
+    return 'confirmed';
+}
+
+function buildDemotionEmbed({
+    interaction,
+    staffMember,
+    previousRank,
+    newRank,
+    reason,
+    evidence,
+    notes,
+    demotionId,
+    contextAnalysis,
+    serverConfig,
+}) {
+    const description = [
+        serverConfig.messages?.demotionOpening ||
+            'A staff rank adjustment has been formally issued.',
+        '',
+        `## ${staffMember}`,
+        '',
+        '**Previous Rank**',
+        previousRank,
+        '',
+        '**New Rank**',
+        newRank,
+        '',
+        '**Demotion Severity**',
+        `${contextAnalysis.level} • ${contextAnalysis.ranksDropped} rank level(s)`,
+        '',
+        '**Reason**',
+        reason,
+        '',
+        '**Issued By**',
+        `${interaction.user}`,
+    ];
+
+    if (evidence) {
+        description.push('', '**Evidence / Reference**', evidence);
+    }
+
+    if (notes) {
+        description.push('', '**Additional Notes**', notes);
+    }
+
+    description.push(
+        '',
+        `**Demotion Record:** \`${demotionId}\``,
+        '',
+        serverConfig.messages?.demotionClosing ||
+            'Please review all expectations associated with your newly assigned rank.'
+    );
+
+    return new EmbedBuilder()
+        .setColor(DEMOTION_COLOR)
+        .setTitle(
+            serverConfig.embedTitles?.demotion ||
+                'Staff Demotion'
+        )
+        .setDescription(description.join('\n').slice(0, 4096))
+        .setThumbnail(
+            staffMember.displayAvatarURL({ size: 256 })
+        )
+        .setAuthor({
+            name: serverConfig.serverName,
+            iconURL:
+                interaction.guild.iconURL({ size: 256 }) ||
+                undefined,
+        })
+        .setFooter({
+            text: FOOTER_TEXT,
+            iconURL:
+                interaction.client.user.displayAvatarURL({ size: 128 }),
+        })
+        .setTimestamp();
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('demote')
         .setDescription(
-            'Demote an Illinois State Roleplay staff member.'
+            'Demote a staff member with confirmation and permanent records.'
         )
-
-        /*
-         * Required options.
-         */
+        .setDMPermission(false)
         .addUserOption((option) =>
             option
                 .setName('staff-member')
@@ -84,60 +399,30 @@ module.exports = {
         .addStringOption((option) =>
             option
                 .setName('previous-rank')
-                .setDescription(
-                    'The staff member’s current rank.'
-                )
-                .addChoices(...RANK_CHOICES)
+                .setDescription('The member’s current rank.')
+                .setAutocomplete(true)
                 .setRequired(true)
         )
         .addStringOption((option) =>
             option
                 .setName('new-rank')
-                .setDescription(
-                    'The lower rank being assigned.'
-                )
-                .addChoices(...RANK_CHOICES)
+                .setDescription('The lower rank being assigned.')
+                .setAutocomplete(true)
                 .setRequired(true)
         )
         .addStringOption((option) =>
             option
                 .setName('reason')
-                .setDescription(
-                    'The reason for this demotion.'
-                )
+                .setDescription('The reason for this demotion.')
                 .setMinLength(3)
                 .setMaxLength(1000)
                 .setRequired(true)
-        )
-
-        /*
-         * Optional options.
-         */
-        .addChannelOption((option) =>
-            option
-                .setName('channel')
-                .setDescription(
-                    'The channel where the demotion will be announced.'
-                )
-                .addChannelTypes(
-                    ChannelType.GuildText,
-                    ChannelType.GuildAnnouncement
-                )
-                .setRequired(false)
-        )
-        .addRoleOption((option) =>
-            option
-                .setName('ping')
-                .setDescription(
-                    'An optional role to notify.'
-                )
-                .setRequired(false)
         )
         .addStringOption((option) =>
             option
                 .setName('evidence')
                 .setDescription(
-                    'Optional evidence link or reference.'
+                    'Optional evidence link or case reference.'
                 )
                 .setMaxLength(500)
                 .setRequired(false)
@@ -145,14 +430,65 @@ module.exports = {
         .addStringOption((option) =>
             option
                 .setName('notes')
-                .setDescription(
-                    'Optional management notes.'
-                )
+                .setDescription('Optional management notes.')
                 .setMaxLength(500)
                 .setRequired(false)
         ),
 
+    async autocomplete(interaction) {
+        try {
+            if (!interaction.inGuild()) {
+                return interaction.respond([]);
+            }
+
+            const focused = interaction.options.getFocused(true);
+
+            if (
+                focused.name !== 'previous-rank' &&
+                focused.name !== 'new-rank'
+            ) {
+                return interaction.respond([]);
+            }
+
+            let choices = getRankAutocompleteChoices(
+                interaction.guildId,
+                focused.value
+            );
+
+            if (focused.name === 'new-rank') {
+                const previousRank = interaction.options.getString(
+                    'previous-rank'
+                );
+                const previousIndex = getGuildRankIndex(
+                    interaction.guildId,
+                    previousRank
+                );
+
+                if (previousIndex !== -1) {
+                    choices = choices.filter(
+                        (choice) =>
+                            getGuildRankIndex(
+                                interaction.guildId,
+                                choice.value
+                            ) < previousIndex
+                    );
+                }
+            }
+
+            return interaction.respond(choices.slice(0, 25));
+        } catch (error) {
+            console.error(
+                'Error handling /demote autocomplete:',
+                error
+            );
+            return interaction.respond([]).catch(() => {});
+        }
+    },
+
     async execute(interaction) {
+        let completedRankResult = null;
+        let targetMember = null;
+
         try {
             if (!interaction.inGuild()) {
                 return interaction.reply({
@@ -166,40 +502,41 @@ module.exports = {
                 flags: MessageFlags.Ephemeral,
             });
 
-            const staffMember =
-                interaction.options.getUser(
-                    'staff-member',
-                    true
-                );
+            const serverConfig = getServerConfig(
+                interaction.guildId
+            );
 
-            const previousRank =
-                interaction.options.getString(
-                    'previous-rank',
-                    true
-                );
+            if (!serverConfig) {
+                return interaction.editReply({
+                    content:
+                        '❌ Illinois State Utilities is not configured to manage ranks in this server.',
+                });
+            }
 
-            const newRank =
-                interaction.options.getString(
-                    'new-rank',
-                    true
-                );
+            if (!canUseDemotionCommand(interaction)) {
+                return interaction.editReply({
+                    content:
+                        '❌ You do not have permission to issue staff demotions.',
+                });
+            }
 
-            const reason =
-                interaction.options
-                    .getString('reason', true)
-                    .trim();
-
-            const selectedChannel =
-                interaction.options.getChannel('channel');
-
-            const pingRole =
-                interaction.options.getRole('ping');
-
+            const staffMember = interaction.options.getUser(
+                'staff-member',
+                true
+            );
+            const previousRank = interaction.options
+                .getString('previous-rank', true)
+                .trim();
+            const newRank = interaction.options
+                .getString('new-rank', true)
+                .trim();
+            const reason = interaction.options
+                .getString('reason', true)
+                .trim();
             const evidence =
                 interaction.options
                     .getString('evidence')
                     ?.trim() || null;
-
             const notes =
                 interaction.options
                     .getString('notes')
@@ -212,11 +549,20 @@ module.exports = {
                 });
             }
 
-            const previousRankIndex =
-                STAFF_RANKS.indexOf(previousRank);
+            if (staffMember.id === interaction.user.id) {
+                return interaction.editReply({
+                    content: '❌ You cannot demote yourself.',
+                });
+            }
 
-            const newRankIndex =
-                STAFF_RANKS.indexOf(newRank);
+            const previousRankIndex = getGuildRankIndex(
+                interaction.guildId,
+                previousRank
+            );
+            const newRankIndex = getGuildRankIndex(
+                interaction.guildId,
+                newRank
+            );
 
             if (
                 previousRankIndex === -1 ||
@@ -224,566 +570,498 @@ module.exports = {
             ) {
                 return interaction.editReply({
                     content:
-                        '❌ One of the selected ranks is not recognized by the ISRP hierarchy.',
+                        '❌ One of the selected ranks is not configured for this server.',
                 });
             }
 
-            if (previousRank === newRank) {
+            if (newRankIndex >= previousRankIndex) {
                 return interaction.editReply({
                     content:
-                        '❌ The previous rank and new rank cannot be the same.',
+                        newRankIndex === previousRankIndex
+                            ? '❌ The previous and new rank cannot be the same.'
+                            : '❌ That change is a promotion. Please use `/promote` instead.',
                 });
             }
 
-            /*
-             * Since the hierarchy is lowest to highest,
-             * a demotion must move to a lower array index.
-             */
-            if (newRankIndex > previousRankIndex) {
+            targetMember = await interaction.guild.members
+                .fetch(staffMember.id)
+                .catch(() => null);
+
+            if (!targetMember) {
                 return interaction.editReply({
                     content:
-                        '❌ That would be a promotion, not a demotion. Please use `/promote` for rank increases.',
+                        '❌ The selected user is not currently in this server.',
                 });
             }
 
-            /*
-             * Load the configuration created through /setup.
-             */
+            const executorIsOwner =
+                interaction.guild.ownerId === interaction.user.id;
+            const executorIsAdministrator =
+                interaction.member.permissions.has(
+                    PermissionFlagsBits.Administrator
+                );
+
+            if (
+                !executorIsOwner &&
+                !executorIsAdministrator &&
+                interaction.member.roles.highest.comparePositionTo(
+                    targetMember.roles.highest
+                ) <= 0
+            ) {
+                return interaction.editReply({
+                    content:
+                        '❌ You cannot demote a member whose highest role is equal to or above yours.',
+                });
+            }
+
             const configurations = await readDatabase(
                 'guild-configs',
                 {}
             );
-
             const guildConfiguration =
-                configurations[interaction.guildId];
+                configurations[interaction.guildId] || {};
+            const staffRecords = await readDatabase(
+                'staff-records',
+                {}
+            );
+            const originalStaffRecord =
+                staffRecords[interaction.guildId]?.[staffMember.id] ||
+                null;
 
-            if (!guildConfiguration) {
+            if (
+                originalStaffRecord?.currentRank &&
+                originalStaffRecord.currentRank !== previousRank
+            ) {
                 return interaction.editReply({
                     content:
-                        '❌ Illinois State Utilities has not been configured in this server yet.\n\nPlease run `/setup` before using the demotion system.',
+                        `❌ The permanent staff profile lists ${staffMember} as **${originalStaffRecord.currentRank}**, not **${previousRank}**.`,
+                    allowedMentions: { parse: [] },
                 });
             }
 
-            /*
-             * Load the member's current staff profile.
-             */
-            const staffRecordsDatabase =
-                await readDatabase(
-                    'staff-records',
+            const destinationChannel = await fetchTextChannel(
+                interaction.guild,
+                getConfiguredChannelId(
+                    interaction.guildId,
+                    'demotions'
+                )
+            );
+
+            if (!destinationChannel) {
+                return interaction.editReply({
+                    content:
+                        '❌ I could not locate the configured demotion channel.',
+                });
+            }
+
+            const botMember = interaction.guild.members.me;
+
+            if (!botCanSendEmbeds(destinationChannel, botMember)) {
+                return interaction.editReply({
+                    content:
+                        `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${destinationChannel}.`,
+                });
+            }
+
+            const demotionsDatabase = await readDatabase(
+                'demotions',
+                {}
+            );
+            const infractionsDatabase = await readDatabase(
+                'infractions',
+                {}
+            );
+            const guildDemotions = Array.isArray(
+                demotionsDatabase[interaction.guildId]
+            )
+                ? demotionsDatabase[interaction.guildId]
+                : [];
+            const guildInfractions = Array.isArray(
+                infractionsDatabase[interaction.guildId]
+            )
+                ? infractionsDatabase[interaction.guildId]
+                : [];
+            const duplicate = findRecentDemotionDuplicate({
+                records: guildDemotions,
+                staffMemberId: staffMember.id,
+                previousRank,
+                newRank,
+            });
+
+            if (duplicate) {
+                return interaction.editReply({
+                    content:
+                        `⚠️ Smart duplicate protection stopped this request. The same demotion was recorded within the last 10 minutes.\n\nExisting record: \`${duplicate.id}\``,
+                });
+            }
+
+            const contextAnalysis = analyzeDemotionContext({
+                demotions: guildDemotions,
+                infractions: guildInfractions,
+                staffMemberId: staffMember.id,
+                previousRankIndex,
+                newRankIndex,
+            });
+            const confirmation = await requestDemotionConfirmation({
+                interaction,
+                staffMember,
+                previousRank,
+                newRank,
+                reason,
+                evidence,
+                destinationChannel,
+                contextAnalysis,
+                serverConfig,
+            });
+
+            if (confirmation !== 'confirmed') {
+                return;
+            }
+
+            const rankResult = await applyRankChange({
+                guild: interaction.guild,
+                member: targetMember,
+                previousRank,
+                newRank,
+                actionType: 'demotion',
+                reason:
+                    `${reason} | Demoted by ${interaction.user.username}`,
+            });
+
+            if (!rankResult.success) {
+                return interaction.editReply({
+                    content:
+                        `❌ ${getRankChangeErrorMessage(rankResult)}`,
+                });
+            }
+
+            completedRankResult = rankResult;
+            const demotionId = createRecordId('demotion');
+            const createdAt = new Date().toISOString();
+            const demotionRecord = {
+                id: demotionId,
+                type: 'demotion',
+                status: 'active',
+                guildId: interaction.guildId,
+                guildName: interaction.guild.name,
+                serverKey: serverConfig.key,
+                staffMemberId: staffMember.id,
+                staffUsername: staffMember.username,
+                staffDisplayName: getDisplayName(staffMember),
+                previousRank,
+                newRank,
+                previousRoleId: rankResult.removedRole.id,
+                newRoleId: rankResult.addedRole.id,
+                reason,
+                evidence,
+                notes,
+                contextReview: {
+                    ...contextAnalysis,
+                },
+                issuedById: interaction.user.id,
+                issuedByUsername: interaction.user.username,
+                issuedByDisplayName: getDisplayName(interaction.user),
+                announcementChannelId: destinationChannel.id,
+                announcementMessageId: null,
+                announcementMessageUrl: null,
+                createdAt,
+                updatedAt: createdAt,
+            };
+
+            try {
+                await updateDatabase(
+                    'demotions',
+                    (database) => {
+                        database = normalizeObject(database);
+                        database[interaction.guildId] = Array.isArray(
+                            database[interaction.guildId]
+                        )
+                            ? database[interaction.guildId]
+                            : [];
+                        database[interaction.guildId].push(
+                            demotionRecord
+                        );
+                        return database;
+                    },
                     {}
                 );
 
-            const existingStaffRecord =
-                staffRecordsDatabase[
-                    interaction.guildId
-                ]?.[staffMember.id] || null;
-
-            /*
-             * Protect database accuracy when a profile already exists.
-             */
-            if (
-                existingStaffRecord?.currentRank &&
-                existingStaffRecord.currentRank !==
-                    previousRank
-            ) {
-                return interaction.editReply({
-                    content:
-                        `❌ The saved staff profile lists ${staffMember} as **${existingStaffRecord.currentRank}**, not **${previousRank}**.\n\n` +
-                        'Please select their saved current rank before continuing.',
-                    allowedMentions: {
-                        parse: [],
+                await updateDatabase(
+                    'staff-history',
+                    (database) => {
+                        database = normalizeObject(database);
+                        database[interaction.guildId] = normalizeObject(
+                            database[interaction.guildId]
+                        );
+                        database[interaction.guildId][staffMember.id] =
+                            Array.isArray(
+                                database[interaction.guildId][staffMember.id]
+                            )
+                                ? database[interaction.guildId][staffMember.id]
+                                : [];
+                        database[interaction.guildId][staffMember.id].push({
+                            ...demotionRecord,
+                            historyType: 'demotion',
+                        });
+                        return database;
                     },
+                    {}
+                );
+
+                await updateDatabase(
+                    'staff-records',
+                    (database) => {
+                        database = normalizeObject(database);
+                        database[interaction.guildId] = normalizeObject(
+                            database[interaction.guildId]
+                        );
+                        const existing = normalizeObject(
+                            database[interaction.guildId][staffMember.id]
+                        );
+                        const demotionHistory = Array.isArray(
+                            existing.demotionHistory
+                        )
+                            ? [...existing.demotionHistory]
+                            : [];
+
+                        demotionHistory.push({
+                            demotionId,
+                            previousRank,
+                            newRank,
+                            reason,
+                            evidence,
+                            notes,
+                            contextReview: contextAnalysis,
+                            issuedById: interaction.user.id,
+                            createdAt,
+                        });
+
+                        database[interaction.guildId][staffMember.id] = {
+                            ...existing,
+                            staffMemberId: staffMember.id,
+                            username: staffMember.username,
+                            displayName: getDisplayName(staffMember),
+                            currentRank: newRank,
+                            demotionCount:
+                                Number(existing.demotionCount || 0) + 1,
+                            promotionCount: Number(
+                                existing.promotionCount || 0
+                            ),
+                            infractionCount: Number(
+                                existing.infractionCount || 0
+                            ),
+                            warningCount: Number(
+                                existing.warningCount || 0
+                            ),
+                            demotionHistory,
+                            joinedStaffAt:
+                                existing.joinedStaffAt || createdAt,
+                            createdAt: existing.createdAt || createdAt,
+                            updatedAt: createdAt,
+                        };
+                        return database;
+                    },
+                    {}
+                );
+            } catch (databaseError) {
+                console.error(
+                    'Demotion database save failed:',
+                    databaseError
+                );
+
+                const roleRollback = await rollbackDemotionRoles({
+                    member: targetMember,
+                    removedRole: rankResult.removedRole,
+                    addedRole: rankResult.addedRole,
+                    reason: 'Demotion database save failed',
                 });
-            }
 
-            const destinationChannel =
-                selectedChannel || interaction.channel;
+                await cleanupFailedDemotion({
+                    guildId: interaction.guildId,
+                    staffMemberId: staffMember.id,
+                    demotionId,
+                    originalStaffRecord,
+                }).catch((cleanupError) =>
+                    console.error(
+                        'Demotion database cleanup failed:',
+                        cleanupError
+                    )
+                );
 
-            if (
-                !destinationChannel ||
-                !destinationChannel.isTextBased()
-            ) {
+                completedRankResult = null;
+
                 return interaction.editReply({
-                    content:
-                        '❌ I could not find a valid channel for the demotion announcement.',
+                    content: roleRollback.success
+                        ? '❌ The demotion could not be saved, so the Discord role change was automatically reversed.'
+                        : '❌ The demotion failed and the role rollback was incomplete. Management must review this member’s roles immediately.',
                 });
             }
 
-            /*
-             * Demotions use red so disciplinary rank changes
-             * are visually distinct from promotions.
-             */
-            const demotionColor = 0xc0392b;
-
-            const brandColor = convertHexToDecimal(
-                guildConfiguration.brandColor
-            );
-
-            const demotionId =
-                createRecordId('demotion');
-
-            const createdAt =
-                new Date().toISOString();
-
-            const demotionRecord = {
-                id: demotionId,
-
-                type: 'demotion',
-
-                guildId: interaction.guildId,
-                guildName: interaction.guild.name,
-
-                staffMemberId: staffMember.id,
-                staffUsername: staffMember.username,
-                staffDisplayName:
-                    staffMember.globalName ||
-                    staffMember.username,
-
+            completedRankResult = null;
+            const demotionEmbed = buildDemotionEmbed({
+                interaction,
+                staffMember,
                 previousRank,
                 newRank,
                 reason,
                 evidence,
                 notes,
+                demotionId,
+                contextAnalysis,
+                serverConfig,
+            });
+            let announcementMessage = null;
 
-                issuedById: interaction.user.id,
-                issuedByUsername:
-                    interaction.user.username,
-                issuedByDisplayName:
-                    interaction.user.globalName ||
-                    interaction.user.username,
+            try {
+                announcementMessage = await destinationChannel.send({
+                    embeds: [demotionEmbed],
+                    allowedMentions: {
+                        users: [staffMember.id],
+                        roles: [],
+                    },
+                });
+            } catch (announcementError) {
+                console.error(
+                    'Demotion announcement failed:',
+                    announcementError
+                );
 
-                announcementChannelId:
-                    destinationChannel.id,
+                return interaction.editReply({
+                    content:
+                        `⚠️ ${staffMember} was demoted from **${previousRank}** to **${newRank}**, and the roles and permanent record were updated. I could not send the announcement.\n\nRecord: \`${demotionId}\``,
+                    allowedMentions: { parse: [] },
+                });
+            }
 
-                createdAt,
-            };
-
-            /*
-             * Save the complete demotion record.
-             */
             await updateDatabase(
                 'demotions',
-                (demotions) => {
-                    if (
-                        !demotions ||
-                        typeof demotions !== 'object' ||
-                        Array.isArray(demotions)
-                    ) {
-                        demotions = {};
-                    }
-
-                    if (
-                        !Array.isArray(
-                            demotions[interaction.guildId]
-                        )
-                    ) {
-                        demotions[interaction.guildId] =
-                            [];
-                    }
-
-                    demotions[
-                        interaction.guildId
-                    ].push(demotionRecord);
-
-                    return demotions;
-                },
-                {}
-            );
-
-            /*
-             * Save the action to the shared staff timeline.
-             *
-             * Future /history and /staff commands can use this
-             * to display promotions, demotions, infractions,
-             * warnings, awards, and other actions together.
-             */
-            await updateDatabase(
-                'staff-history',
-                (staffHistory) => {
-                    if (
-                        !staffHistory ||
-                        typeof staffHistory !== 'object' ||
-                        Array.isArray(staffHistory)
-                    ) {
-                        staffHistory = {};
-                    }
-
-                    if (
-                        !staffHistory[
-                            interaction.guildId
-                        ] ||
-                        typeof staffHistory[
-                            interaction.guildId
-                        ] !== 'object' ||
-                        Array.isArray(
-                            staffHistory[
-                                interaction.guildId
-                            ]
-                        )
-                    ) {
-                        staffHistory[
-                            interaction.guildId
-                        ] = {};
-                    }
-
-                    if (
-                        !Array.isArray(
-                            staffHistory[
-                                interaction.guildId
-                            ][staffMember.id]
-                        )
-                    ) {
-                        staffHistory[
-                            interaction.guildId
-                        ][staffMember.id] = [];
-                    }
-
-                    staffHistory[
-                        interaction.guildId
-                    ][staffMember.id].push(
-                        demotionRecord
+                (database) => {
+                    database = normalizeObject(database);
+                    const records = Array.isArray(
+                        database[interaction.guildId]
+                    )
+                        ? database[interaction.guildId]
+                        : [];
+                    const index = records.findIndex(
+                        (record) => record.id === demotionId
                     );
 
-                    return staffHistory;
-                },
-                {}
-            );
-
-            /*
-             * Create or update the member's staff profile.
-             */
-            await updateDatabase(
-                'staff-records',
-                (staffRecords) => {
-                    if (
-                        !staffRecords ||
-                        typeof staffRecords !== 'object' ||
-                        Array.isArray(staffRecords)
-                    ) {
-                        staffRecords = {};
+                    if (index !== -1) {
+                        records[index] = {
+                            ...records[index],
+                            announcementMessageId:
+                                announcementMessage.id,
+                            announcementMessageUrl:
+                                announcementMessage.url,
+                            updatedAt: new Date().toISOString(),
+                        };
                     }
 
-                    if (
-                        !staffRecords[
-                            interaction.guildId
-                        ] ||
-                        typeof staffRecords[
-                            interaction.guildId
-                        ] !== 'object' ||
-                        Array.isArray(
-                            staffRecords[
-                                interaction.guildId
-                            ]
-                        )
-                    ) {
-                        staffRecords[
-                            interaction.guildId
-                        ] = {};
-                    }
-
-                    const existingRecord =
-                        staffRecords[
-                            interaction.guildId
-                        ][staffMember.id];
-
-                    const demotionHistory =
-                        Array.isArray(
-                            existingRecord
-                                ?.demotionHistory
-                        )
-                            ? existingRecord
-                                  .demotionHistory
-                            : [];
-
-                    demotionHistory.push({
-                        demotionId,
-                        previousRank,
-                        newRank,
-                        reason,
-                        evidence,
-                        notes,
-                        issuedById:
-                            interaction.user.id,
-                        createdAt,
-                    });
-
-                    staffRecords[
-                        interaction.guildId
-                    ][staffMember.id] = {
-                        staffMemberId:
-                            staffMember.id,
-
-                        username:
-                            staffMember.username,
-
-                        displayName:
-                            staffMember.globalName ||
-                            staffMember.username,
-
-                        currentRank: newRank,
-
-                        promotionCount: Number(
-                            existingRecord
-                                ?.promotionCount || 0
-                        ),
-
-                        demotionCount:
-                            Number(
-                                existingRecord
-                                    ?.demotionCount || 0
-                            ) + 1,
-
-                        infractionCount: Number(
-                            existingRecord
-                                ?.infractionCount || 0
-                        ),
-
-                        warningCount: Number(
-                            existingRecord
-                                ?.warningCount || 0
-                        ),
-
-                        awardCount: Number(
-                            existingRecord
-                                ?.awardCount || 0
-                        ),
-
-                        totalShiftMilliseconds:
-                            Number(
-                                existingRecord
-                                    ?.totalShiftMilliseconds ||
-                                    0
-                            ),
-
-                        activeLoa:
-                            existingRecord
-                                ?.activeLoa || null,
-
-                        joinedStaffAt:
-                            existingRecord
-                                ?.joinedStaffAt ||
-                            createdAt,
-
-                        promotionHistory:
-                            Array.isArray(
-                                existingRecord
-                                    ?.promotionHistory
-                            )
-                                ? existingRecord
-                                      .promotionHistory
-                                : [],
-
-                        demotionHistory,
-
-                        createdAt:
-                            existingRecord
-                                ?.createdAt ||
-                            createdAt,
-
-                        updatedAt: createdAt,
-                    };
-
-                    return staffRecords;
+                    database[interaction.guildId] = records;
+                    return database;
                 },
                 {}
+            ).catch((error) =>
+                console.error(
+                    'Could not save demotion announcement details:',
+                    error
+                )
             );
 
-            const descriptionLines = [
-                `${staffMember} has received a staff rank adjustment within Illinois State Roleplay.`,
-                '',
-                '**Previous Rank**',
-                previousRank,
-                '',
-                '**New Rank**',
-                newRank,
-                '',
-                '**Reason**',
-                reason,
-                '',
-                '**Issued By**',
-                `${interaction.user}`,
-            ];
+            const logChannel = guildConfiguration.logChannelId
+                ? await fetchTextChannel(
+                      interaction.guild,
+                      guildConfiguration.logChannelId
+                  )
+                : null;
 
-            if (evidence) {
-                descriptionLines.push(
-                    '',
-                    '**Evidence / Reference**',
-                    evidence
-                );
-            }
-
-            if (notes) {
-                descriptionLines.push(
-                    '',
-                    '**Additional Notes**',
-                    notes
-                );
-            }
-
-            descriptionLines.push(
-                '',
-                'This action has been formally recorded within the Illinois State Utilities staff-management system.',
-                '',
-                '**Please review all expectations associated with your assigned rank.**'
-            );
-
-            const demotionEmbed =
-                new EmbedBuilder()
-                    .setColor(demotionColor)
-                    .setTitle(
-                        'ISRP | Staff Demotion'
-                    )
+            if (
+                logChannel &&
+                botCanSendEmbeds(logChannel, botMember)
+            ) {
+                const logEmbed = new EmbedBuilder()
+                    .setColor(DEMOTION_COLOR)
+                    .setTitle('Staff Demotion Recorded')
                     .setDescription(
-                        descriptionLines.join('\n')
+                        [
+                            `**Staff Member:** ${staffMember} (\`${staffMember.id}\`)`,
+                            `**Rank Movement:** ${previousRank} → ${newRank}`,
+                            `**Context Review:** ${contextAnalysis.level} (${contextAnalysis.ranksDropped} level(s))`,
+                            `**Reason:** ${reason}`,
+                            `**Evidence:** ${evidence || 'None provided'}`,
+                            `**Notes:** ${notes || 'None provided'}`,
+                            `**Issued By:** ${interaction.user}`,
+                            `**Role Removed:** ${rankResult.removedRole}`,
+                            `**Role Added:** ${rankResult.addedRole}`,
+                            `**Announcement:** ${announcementMessage.url}`,
+                            `**Record ID:** \`${demotionId}\``,
+                        ].join('\n')
                     )
                     .setThumbnail(
-                        staffMember.displayAvatarURL({
-                            size: 256,
-                        })
+                        staffMember.displayAvatarURL({ size: 256 })
                     )
-                    .setAuthor({
-                        name:
-                            guildConfiguration.serverName ||
-                            interaction.guild.name,
-                        iconURL:
-                            interaction.guild.iconURL({
-                                dynamic: true,
-                            }) || undefined,
-                    })
                     .setFooter({
                         text:
-                            'Illinois State Utilities • Staff Management System',
+                            'Illinois State Utilities • Management Logs',
                         iconURL:
-                            interaction.client.user.displayAvatarURL(),
+                            interaction.client.user.displayAvatarURL({
+                                size: 128,
+                            }),
                     })
                     .setTimestamp();
 
-            const announcementContent =
-                pingRole ? `${pingRole}` : undefined;
-
-            const announcementMessage =
-                await destinationChannel.send({
-                    content: announcementContent,
-                    embeds: [demotionEmbed],
-                    allowedMentions: {
-                        roles: pingRole
-                            ? [pingRole.id]
-                            : [],
-                        users: [staffMember.id],
-                    },
-                });
-
-            /*
-             * Send the private management log.
-             */
-            const logChannelId =
-                guildConfiguration.logChannelId;
-
-            if (logChannelId) {
-                const logChannel =
-                    interaction.guild.channels.cache.get(
-                        logChannelId
+                await logChannel
+                    .send({
+                        embeds: [logEmbed],
+                        allowedMentions: { parse: [] },
+                    })
+                    .catch((error) =>
+                        console.error(
+                            'Demotion saved, but logging failed:',
+                            error
+                        )
                     );
-
-                if (
-                    logChannel &&
-                    logChannel.isTextBased()
-                ) {
-                    const logDescription = [
-                        `**Staff Member:** ${staffMember}`,
-                        `**Previous Rank:** ${previousRank}`,
-                        `**New Rank:** ${newRank}`,
-                        `**Reason:** ${reason}`,
-                        `**Evidence / Reference:** ${
-                            evidence ||
-                            'None provided'
-                        }`,
-                        `**Additional Notes:** ${
-                            notes ||
-                            'None provided'
-                        }`,
-                        `**Issued By:** ${interaction.user}`,
-                        `**Announcement:** ${announcementMessage.url}`,
-                        `**Record ID:** \`${demotionId}\``,
-                    ];
-
-                    const logEmbed =
-                        new EmbedBuilder()
-                            .setColor(brandColor)
-                            .setTitle(
-                                'Staff Demotion Recorded'
-                            )
-                            .setDescription(
-                                logDescription.join(
-                                    '\n'
-                                )
-                            )
-                            .setThumbnail(
-                                staffMember.displayAvatarURL(
-                                    {
-                                        size: 256,
-                                    }
-                                )
-                            )
-                            .setFooter({
-                                text:
-                                    'Illinois State Utilities • Management Logs',
-                                iconURL:
-                                    interaction.client.user.displayAvatarURL(),
-                            })
-                            .setTimestamp();
-
-                    await logChannel
-                        .send({
-                            embeds: [logEmbed],
-                            allowedMentions: {
-                                parse: [],
-                            },
-                        })
-                        .catch((error) => {
-                            console.error(
-                                'Demotion saved, but the management log could not be sent:',
-                                error
-                            );
-                        });
-                }
             }
 
-            await interaction.editReply({
-                content:
-                    `✅ ${staffMember} was successfully demoted from **${previousRank}** to **${newRank}** in ${destinationChannel}.\n\n` +
-                    `Demotion record: \`${demotionId}\``,
-                allowedMentions: {
-                    parse: [],
-                },
+            return interaction.editReply({
+                content: [
+                    `✅ ${staffMember} was successfully demoted from **${previousRank}** to **${newRank}**.`,
+                    '',
+                    `**Demotion Channel:** ${destinationChannel}`,
+                    `**Announcement:** ${announcementMessage.url}`,
+                    `**Role Removed:** ${rankResult.removedRole}`,
+                    `**Role Added:** ${rankResult.addedRole}`,
+                    `**Demotion Record:** \`${demotionId}\``,
+                ].join('\n'),
+                allowedMentions: { parse: [] },
             });
         } catch (error) {
-            console.error(
-                'Error executing /demote:',
-                error
-            );
+            console.error('Error executing /demote:', error);
 
-            const errorMessage = {
+            if (completedRankResult && targetMember) {
+                await rollbackDemotionRoles({
+                    member: targetMember,
+                    removedRole: completedRankResult.removedRole,
+                    addedRole: completedRankResult.addedRole,
+                    reason: 'Unexpected demotion command failure',
+                }).catch(() => {});
+            }
+
+            const payload = {
                 content:
                     '❌ Something went wrong while processing this staff demotion.',
             };
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                await interaction
-                    .editReply(errorMessage)
-                    .catch(() => {});
-            } else {
-                await interaction
-                    .reply({
-                        ...errorMessage,
-                        flags:
-                            MessageFlags.Ephemeral,
-                    })
-                    .catch(() => {});
+            if (interaction.deferred || interaction.replied) {
+                return interaction.editReply(payload).catch(() => {});
             }
+
+            return interaction
+                .reply({
+                    ...payload,
+                    flags: MessageFlags.Ephemeral,
+                })
+                .catch(() => {});
         }
     },
 };
