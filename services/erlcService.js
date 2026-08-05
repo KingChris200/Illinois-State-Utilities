@@ -1,4 +1,4 @@
-const BASE_URL = 'https://api.policeroleplay.community/v1';
+const BASE_URL = 'https://api.erlc.gg';
 
 const PRC_ERROR_MESSAGES = {
     2000: 'The ER:LC server key was not provided.',
@@ -217,7 +217,7 @@ async function checkConnection() {
         };
     }
 
-    const server = await request('/server');
+    const server = await request('/v2/server');
     return {
         mode: 'live',
         server,
@@ -233,7 +233,7 @@ async function executeCommand(command, { dryRun = false } = {}) {
         };
     }
 
-    await request('/server/command', {
+    await request('/v1/server/command', {
         method: 'POST',
         body: JSON.stringify({ command }),
     });
@@ -258,7 +258,13 @@ async function getPlayers({ mockData = null } = {}) {
         ];
     }
 
-    return request('/server/players');
+    const server = await request(
+        '/v2/server?Players=true'
+    );
+
+    return Array.isArray(server?.Players)
+        ? server.Players
+        : [];
 }
 
 async function getServer({ mockData = null } = {}) {
@@ -276,7 +282,7 @@ async function getServer({ mockData = null } = {}) {
         };
     }
 
-    return request('/server');
+    return request('/v2/server');
 }
 
 module.exports = {

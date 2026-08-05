@@ -3,6 +3,9 @@ const {
     EmbedBuilder,
     MessageFlags,
     PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
 } = require('discord.js');
 
 const {
@@ -22,6 +25,11 @@ const {
     applyRankChange,
     getRankChangeErrorMessage,
 } = require('../../utils/rankManager');
+
+const {
+    findRecentPromotionDuplicate,
+    analyzePromotionProgression,
+} = require('../../utils/promotionIntelligence');
 
 /*
  * ============================================================
@@ -268,6 +276,147 @@ function canUsePromotionCommand(
         member,
         interaction.guildId
     );
+}
+
+async function requestPromotionConfirmation({
+    interaction,
+    staffMember,
+    previousRank,
+    newRank,
+    reason,
+    promotionChannel,
+    progressionAnalysis,
+    serverConfig,
+    guildConfiguration,
+}) {
+    const confirmationId =
+        `promotion_confirm:${interaction.id}`;
+    const cancellationId =
+        `promotion_cancel:${interaction.id}`;
+
+    const previewEmbed = new EmbedBuilder()
+        .setColor(
+            getBrandColor(
+                serverConfig,
+                guildConfiguration
+            )
+        )
+        .setTitle('Confirm Staff Promotion')
+        .setDescription(
+            'Review this promotion carefully. No roles or records will change until you confirm.'
+        )
+        .addFields(
+            {
+                name: 'Staff Member',
+                value: `${staffMember}`,
+                inline: true,
+            },
+            {
+                name: 'Rank Movement',
+                value:
+                    `**${previousRank}** → **${newRank}**`,
+                inline: true,
+            },
+            {
+                name: 'Announcement Channel',
+                value: `${promotionChannel}`,
+                inline: true,
+            },
+            {
+                name: 'Promotion Reason',
+                value: reason,
+            },
+            {
+                name: 'Smart Progression Review',
+                value: [
+                    `**${progressionAnalysis.classification}** • ${progressionAnalysis.ranksAdvanced} rank level(s) advanced`,
+                    `${progressionAnalysis.recentPromotionCount} promotion(s) recorded within 30 days`,
+                    progressionAnalysis.recommendation,
+                ].join('\n'),
+            }
+        )
+        .setThumbnail(
+            staffMember.displayAvatarURL({
+                size: 256,
+            })
+        )
+        .setFooter({
+            text:
+                'Illinois State Utilities • Smart Promotion Review',
+            iconURL:
+                interaction.client.user.displayAvatarURL({
+                    size: 128,
+                }),
+        })
+        .setTimestamp();
+
+    const buttons =
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(confirmationId)
+                .setLabel('Confirm Promotion')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId(cancellationId)
+                .setLabel('Cancel')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+    await interaction.editReply({
+        embeds: [previewEmbed],
+        components: [buttons],
+        allowedMentions: {
+            parse: [],
+        },
+    });
+
+    const previewMessage =
+        await interaction.fetchReply();
+    const response = await previewMessage
+        .awaitMessageComponent({
+            filter: (buttonInteraction) =>
+                buttonInteraction.user.id ===
+                    interaction.user.id &&
+                [
+                    confirmationId,
+                    cancellationId,
+                ].includes(
+                    buttonInteraction.customId
+                ),
+            time: 60_000,
+        })
+        .catch(() => null);
+
+    if (!response) {
+        await interaction.editReply({
+            content:
+                '⌛ This promotion preview expired after 60 seconds. No roles or records were changed.',
+            embeds: [],
+            components: [],
+        });
+        return 'expired';
+    }
+
+    await response.deferUpdate();
+
+    if (response.customId === cancellationId) {
+        await interaction.editReply({
+            content:
+                '✅ Promotion cancelled. No roles or records were changed.',
+            embeds: [],
+            components: [],
+        });
+        return 'cancelled';
+    }
+
+    await interaction.editReply({
+        content:
+            '⏳ Confirmation received. Updating the member’s rank and permanent records…',
+        embeds: [],
+        components: [],
+    });
+
+    return 'confirmed';
 }
 
 /*
@@ -607,6 +756,7 @@ async function updateStaffRecord({
     notes,
     promotionId,
     createdAt,
+    progressionAnalysis,
 }) {
     await updateDatabase(
         'staff-records',
@@ -651,6 +801,15 @@ async function updateStaffRecord({
 
                 reason,
                 notes,
+
+                progressionReview: {
+                    classification:
+                        progressionAnalysis.classification,
+                    ranksAdvanced:
+                        progressionAnalysis.ranksAdvanced,
+                    recentPromotionCount:
+                        progressionAnalysis.recentPromotionCount,
+                },
 
                 promotedById:
                     interaction.user.id,
@@ -849,6 +1008,7 @@ function buildPromotionEmbed({
     notes,
     serverConfig,
     guildConfiguration,
+    progressionAnalysis,
 }) {
     const brandColor =
         getBrandColor(
@@ -880,6 +1040,11 @@ function buildPromotionEmbed({
 
         '**New Rank**',
         newRank,
+
+        '',
+
+        '**Advancement Summary**',
+        `${progressionAnalysis.classification} • ${progressionAnalysis.ranksAdvanced} rank level(s) advanced`,
 
         '',
 
@@ -983,6 +1148,7 @@ function buildLogEmbed({
     announcementMessage,
     serverConfig,
     guildConfiguration,
+    progressionAnalysis,
 }) {
     const brandColor =
         getBrandColor(
@@ -998,6 +1164,10 @@ function buildLogEmbed({
         `**Previous Rank:** ${previousRank}`,
 
         `**New Rank:** ${newRank}`,
+
+        `**Progression Review:** ${progressionAnalysis.classification} (${progressionAnalysis.ranksAdvanced} level(s))`,
+
+        `**Promotions Within 30 Days:** ${progressionAnalysis.recentPromotionCount}`,
 
         `**Reason:** ${reason}`,
 
@@ -1517,6 +1687,27 @@ module.exports = {
                 });
             }
 
+            const executorIsOwner =
+                interaction.guild.ownerId ===
+                interaction.user.id;
+            const executorIsAdministrator =
+                interaction.member.permissions.has(
+                    PermissionFlagsBits.Administrator
+                );
+
+            if (
+                !executorIsOwner &&
+                !executorIsAdministrator &&
+                interaction.member.roles.highest.comparePositionTo(
+                    targetGuildMember.roles.highest
+                ) <= 0
+            ) {
+                return interaction.editReply({
+                    content:
+                        '❌ You cannot promote a member whose highest role is equal to or above yours.',
+                });
+            }
+
             /*
              * Load optional /setup settings.
              */
@@ -1524,6 +1715,30 @@ module.exports = {
                 await getGuildConfiguration(
                     interaction.guildId
                 );
+
+            const staffRecordsDatabase =
+                await readDatabase(
+                    'staff-records',
+                    {}
+                );
+            const savedStaffRecord =
+                staffRecordsDatabase[
+                    interaction.guildId
+                ]?.[staffMember.id] || null;
+
+            if (
+                savedStaffRecord?.currentRank &&
+                savedStaffRecord.currentRank !==
+                    previousRank
+            ) {
+                return interaction.editReply({
+                    content:
+                        `❌ The permanent staff profile lists ${staffMember} as **${savedStaffRecord.currentRank}**, not **${previousRank}**. Please review the profile before continuing.`,
+                    allowedMentions: {
+                        parse: [],
+                    },
+                });
+            }
 
             /*
              * Automatically resolve the official promotion channel.
@@ -1560,6 +1775,71 @@ module.exports = {
                     content:
                         `❌ I need **View Channel**, **Send Messages**, and **Embed Links** permissions in ${promotionChannel}.`,
                 });
+            }
+
+            const promotionsDatabase =
+                await readDatabase(
+                    'promotions',
+                    {}
+                );
+            const guildPromotions =
+                Array.isArray(
+                    promotionsDatabase[
+                        interaction.guildId
+                    ]
+                )
+                    ? promotionsDatabase[
+                          interaction.guildId
+                      ]
+                    : [];
+
+            const duplicatePromotion =
+                findRecentPromotionDuplicate({
+                    records: guildPromotions,
+                    staffMemberId:
+                        staffMember.id,
+                    previousRank,
+                    newRank,
+                });
+
+            if (duplicatePromotion) {
+                return interaction.editReply({
+                    content:
+                        `⚠️ Smart duplicate protection stopped this request. The same promotion was recorded for ${staffMember} within the last 10 minutes.\n\n` +
+                        `Existing promotion: \`${duplicatePromotion.id}\``,
+                    allowedMentions: {
+                        parse: [],
+                    },
+                });
+            }
+
+            const progressionAnalysis =
+                analyzePromotionProgression({
+                    records: guildPromotions,
+                    staffMemberId:
+                        staffMember.id,
+                    previousRankIndex,
+                    newRankIndex,
+                });
+
+            const confirmationOutcome =
+                await requestPromotionConfirmation({
+                    interaction,
+                    staffMember,
+                    previousRank,
+                    newRank,
+                    reason,
+                    promotionChannel,
+                    progressionAnalysis,
+                    serverConfig,
+                    guildConfiguration,
+                });
+
+            if (
+                confirmationOutcome !==
+                'confirmed'
+            ) {
+                return;
             }
 
             /*
@@ -1662,6 +1942,19 @@ module.exports = {
 
                 notes,
 
+                progressionReview: {
+                    classification:
+                        progressionAnalysis.classification,
+                    ranksAdvanced:
+                        progressionAnalysis.ranksAdvanced,
+                    recentPromotionCount:
+                        progressionAnalysis.recentPromotionCount,
+                    totalPriorPromotions:
+                        progressionAnalysis.totalPromotionCount,
+                    recommendation:
+                        progressionAnalysis.recommendation,
+                },
+
                 promotedById:
                     interaction.user.id,
 
@@ -1716,6 +2009,8 @@ module.exports = {
                     promotionId,
 
                     createdAt,
+
+                    progressionAnalysis,
                 });
             } catch (
                 databaseError
@@ -1787,6 +2082,7 @@ module.exports = {
                     serverConfig,
 
                     guildConfiguration,
+                    progressionAnalysis,
                 });
 
             /*
@@ -1909,6 +2205,8 @@ module.exports = {
                         serverConfig,
 
                         guildConfiguration,
+
+                        progressionAnalysis,
                     });
 
                 await logChannel
