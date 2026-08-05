@@ -19,6 +19,7 @@ const {
 } = require('../services/sessionErlcAutomation');
 const {
     startSessionPlayerCountMonitor,
+    createSessionDashboardEmbed,
 } = require('../services/sessionPlayerCountMonitor');
 const {
     saveSessionState,
@@ -536,7 +537,13 @@ async function completeServerVote(
 
     const startupMessagePayload = {
         content: attendanceNotification,
-        embeds: [startupEmbed],
+        embeds: [
+            startupEmbed,
+            createSessionDashboardEmbed({
+                guildIcon:
+                    getGuildIcon(interaction),
+            }),
+        ],
 
         allowedMentions: {
             users: usersToMention,
@@ -908,21 +915,6 @@ function createStartupEmbed({
     addSessionDetails(
         startupEmbed,
         activeVote
-    );
-
-    startupEmbed.addFields(
-        {
-            name: '🎮 Live Player Count',
-            value:
-                '🟡 Connecting to ER:LC…',
-            inline: true,
-        },
-        {
-            name: '🔄 Player Count Updated',
-            value:
-                'Waiting for the first refresh.',
-            inline: true,
-        }
     );
 
     return startupEmbed;

@@ -285,6 +285,32 @@ async function getServer({ mockData = null } = {}) {
     return request('/v2/server');
 }
 
+async function getSessionStatus({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return mockData;
+    }
+
+    if (isMockMode()) {
+        return {
+            Name: 'Illinois State Roleplay (Mock)',
+            CurrentPlayers: 1,
+            MaxPlayers: 40,
+            Queue: [],
+            Staff: {
+                Admins: {
+                    123456789: 'MockPlayer',
+                },
+                Mods: {},
+                Helpers: {},
+            },
+        };
+    }
+
+    return request(
+        '/v2/server?Staff=true&Queue=true'
+    );
+}
+
 module.exports = {
     ErlcServiceError,
     PRC_ERROR_MESSAGES,
@@ -295,6 +321,7 @@ module.exports = {
     getPlayers,
     getPublicErrorMessage,
     getServer,
+    getSessionStatus,
     isConfigured,
     isMockMode,
 };

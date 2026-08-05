@@ -9,8 +9,10 @@ const {
 const DEFAULT_REFRESH_MS = 30_000;
 const MINIMUM_REFRESH_MS = 15_000;
 const MAXIMUM_REFRESH_MS = 5 * 60_000;
-const LIVE_PLAYER_FIELD = '🎮 Live Player Count';
-const PLAYER_UPDATE_FIELD = '🔄 Player Count Updated';
+const DASHBOARD_TITLE =
+    '🎮 Illinois State Roleplay Live Status';
+const DASHBOARD_FOOTER =
+    'Illinois State Utilities • Live Session Dashboard';
 
 const monitors = new Map();
 
@@ -52,35 +54,146 @@ function parsePlayerCount(server) {
     };
 }
 
+function countStaffMembers(staff) {
+    if (Array.isArray(staff)) {
+        return staff.length;
+    }
+
+    if (!staff || typeof staff !== 'object') {
+        return 0;
+    }
+
+    const uniqueStaff = new Set();
+
+    for (const group of Object.values(staff)) {
+        if (Array.isArray(group)) {
+            for (const member of group) {
+                uniqueStaff.add(
+                    String(member?.Player ?? member?.Id ?? member)
+                );
+            }
+        } else if (group && typeof group === 'object') {
+            for (const memberId of Object.keys(group)) {
+                uniqueStaff.add(memberId);
+            }
+        }
+    }
+
+    return uniqueStaff.size;
+}
+
+function parseSessionDashboardStats(server) {
+    const counts = parsePlayerCount(server);
+    const queueCount = Array.isArray(server?.Queue)
+        ? server.Queue.length
+        : Number.isFinite(Number(server?.Queue))
+          ? Number(server.Queue)
+          : 0;
+
+    return {
+        ...counts,
+        staffCount: countStaffMembers(server?.Staff),
+        queueCount: Math.max(0, queueCount),
+    };
+}
+
+function createSessionDashboardEmbed({
+    guildIcon = null,
+    updatedAt = null,
+    currentPlayers = null,
+    maxPlayers = 40,
+    staffCount = null,
+    queueCount = null,
+} = {}) {
+    const embed = new EmbedBuilder()
+        .setColor('#24589B')
+        .setTitle(DASHBOARD_TITLE)
+        .setDescription(
+            updatedAt
+                ? `**Last Updated:** <t:${Math.floor(
+                      updatedAt / 1000
+                  )}:R>`
+                : '**Last Updated:** Waiting for ER:LC…'
+        )
+        .addFields(
+            {
+                name: 'Player Count',
+                value:
+                    currentPlayers === null
+                        ? '[Connecting…]'
+                        : `[${currentPlayers} / ${maxPlayers}]`,
+                inline: true,
+            },
+            {
+                name: 'Staff Members',
+                value:
+                    staffCount === null
+                        ? '[Connecting…]'
+                        : `[${staffCount}]`,
+                inline: true,
+            },
+            {
+                name: 'Queue',
+                value:
+                    queueCount === null
+                        ? '[Connecting…]'
+                        : `[${queueCount}]`,
+                inline: true,
+            }
+        )
+        .setFooter({
+            text: DASHBOARD_FOOTER,
+            iconURL: guildIcon || undefined,
+        });
+
+    if (guildIcon) {
+        embed.setThumbnail(guildIcon);
+    }
+
+    return embed;
+}
+
 function replacePlayerCountFields(
     embed,
-    { currentPlayers, maxPlayers, updatedAt }
+    {
+        currentPlayers,
+        maxPlayers,
+        staffCount = 0,
+        queueCount = 0,
+        updatedAt,
+    }
 ) {
-    const otherFields = (
-        embed.data.fields || []
-    ).filter(
-        (field) =>
-            field.name !== LIVE_PLAYER_FIELD &&
-            field.name !== PLAYER_UPDATE_FIELD
-    );
     const updatedTimestamp = Math.floor(
         updatedAt / 1000
     );
 
-    embed.setFields(
-        ...otherFields,
+    embed
+        .setTitle(DASHBOARD_TITLE)
+        .setDescription(
+            `**Last Updated:** <t:${updatedTimestamp}:R>`
+        )
+        .setFields(
         {
-            name: LIVE_PLAYER_FIELD,
-            value:
-                `🟢 **${currentPlayers} / ${maxPlayers}** players in-game`,
+            name: 'Player Count',
+            value: `[${currentPlayers} / ${maxPlayers}]`,
             inline: true,
         },
         {
-            name: PLAYER_UPDATE_FIELD,
-            value: `<t:${updatedTimestamp}:R>`,
+            name: 'Staff Members',
+            value: `[${staffCount}]`,
+            inline: true,
+        },
+        {
+            name: 'Queue',
+            value: `[${queueCount}]`,
             inline: true,
         }
-    );
+        )
+        .setFooter({
+            text: DASHBOARD_FOOTER,
+            iconURL:
+                embed.data.footer?.icon_url || undefined,
+        });
 
     return embed;
 }
@@ -90,11 +203,11 @@ async function refreshPlayerCountMessage({
     guildId,
     channelId,
     messageId,
-    fetchServer = () => erlcService.getServer(),
+    fetchServer = () => erlcService.getSessionStatus(),
     persistState = true,
 }) {
     const server = await fetchServer();
-    const counts = parsePlayerCount(server);
+    const stats = parseSessionDashboardStats(server);
     const channel = await client.channels
         .fetch(channelId)
         .catch(() => null);
@@ -109,30 +222,44 @@ async function refreshPlayerCountMessage({
         .fetch(messageId)
         .catch(() => null);
 
-    if (!message?.embeds?.[0]) {
+    if (!message) {
         throw new Error(
             'The active session startup message is unavailable.'
         );
     }
 
     const updatedAt = Date.now();
-    const embed = new EmbedBuilder(
-        message.embeds[0].toJSON()
+    const embeds = message.embeds.map(
+        (sourceEmbed) =>
+            new EmbedBuilder(sourceEmbed.toJSON())
+    );
+    let dashboardIndex = embeds.findIndex(
+        (embed) =>
+            embed.data.footer?.text ===
+            DASHBOARD_FOOTER
     );
 
-    replacePlayerCountFields(embed, {
-        ...counts,
+    if (dashboardIndex === -1) {
+        dashboardIndex = embeds.length;
+        embeds.push(createSessionDashboardEmbed());
+    }
+
+    const dashboardEmbed = embeds[dashboardIndex];
+
+    replacePlayerCountFields(dashboardEmbed, {
+        ...stats,
         updatedAt,
     });
 
     await message.edit({
-        embeds: [embed],
+        embeds,
     });
 
     sessionManager.updateSessionPlayerCount({
         guildId,
         messageId,
-        ...counts,
+        currentPlayers: stats.currentPlayers,
+        maxPlayers: stats.maxPlayers,
         updatedAt,
     });
     if (persistState) {
@@ -145,7 +272,7 @@ async function refreshPlayerCountMessage({
     }
 
     return {
-        ...counts,
+        ...stats,
         updatedAt,
     };
 }
@@ -243,10 +370,13 @@ function startSessionPlayerCountMonitor({
 module.exports = {
     DEFAULT_REFRESH_MS,
     MINIMUM_REFRESH_MS,
-    LIVE_PLAYER_FIELD,
-    PLAYER_UPDATE_FIELD,
+    DASHBOARD_TITLE,
+    DASHBOARD_FOOTER,
     getRefreshInterval,
     parsePlayerCount,
+    countStaffMembers,
+    parseSessionDashboardStats,
+    createSessionDashboardEmbed,
     replacePlayerCountFields,
     refreshPlayerCountMessage,
     startSessionPlayerCountMonitor,
