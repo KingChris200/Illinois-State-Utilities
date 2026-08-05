@@ -20,6 +20,9 @@ const {
 const {
     startSessionPlayerCountMonitor,
 } = require('../services/sessionPlayerCountMonitor');
+const {
+    saveSessionState,
+} = require('../services/sessionStateStore');
 
 /*
  * ==========================================
@@ -221,6 +224,7 @@ async function handleAttendanceVote(
 
     if (Date.now() >= activeVote.endsAt) {
         sessionManager.clearVote();
+        await saveSessionState();
 
         await interaction.message
             .edit({
@@ -252,6 +256,7 @@ async function handleAttendanceVote(
         interaction.user.id,
         selectedChoice
     );
+    await saveSessionState();
 
     const attendingCount =
         sessionManager.getAttendingCount();
@@ -330,6 +335,7 @@ async function handleAttendanceVote(
     }
 
     sessionManager.markVoteCompleted();
+    await saveSessionState();
 
     await completeServerVote(
         interaction,
@@ -584,6 +590,7 @@ async function completeServerVote(
         });
 
         sessionManager.clearVote();
+        await saveSessionState();
 
         await announceSessionEvent(
             'session_started',
@@ -614,6 +621,7 @@ async function completeServerVote(
          */
 
         activeVote.completed = false;
+        await saveSessionState();
 
         await interaction.channel
             .send({

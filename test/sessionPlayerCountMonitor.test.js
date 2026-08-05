@@ -65,6 +65,7 @@ test('updates the active session startup embed and state', async () => {
             CurrentPlayers: 12,
             MaxPlayers: 40,
         }),
+        persistState: false,
     });
 
     assert.equal(result.currentPlayers, 12);

@@ -18,6 +18,9 @@ const {
 const sessionAutomationConfig = require(
     '../../config/sessionAutomation'
 );
+const {
+    saveSessionState,
+} = require('../../services/sessionStateStore');
 
 /*
  * ==========================================
@@ -518,6 +521,8 @@ module.exports = {
                 endsAt,
             });
 
+            await saveSessionState();
+
             await announceSessionEvent('vote_started', {
                 sourceChannelId: interaction.channel.id,
                 hostUsername: interaction.user.username,
@@ -710,6 +715,7 @@ module.exports = {
                 }
 
                 sessionManager.clearVote();
+                await saveSessionState();
 
                 console.log(
                     '⌛ Server vote expired before reaching its goal.'

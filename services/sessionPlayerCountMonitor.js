@@ -2,6 +2,9 @@ const { EmbedBuilder } = require('discord.js');
 
 const erlcService = require('./erlcService');
 const sessionManager = require('../utils/sessionManager');
+const {
+    saveSessionState,
+} = require('./sessionStateStore');
 
 const DEFAULT_REFRESH_MS = 30_000;
 const MINIMUM_REFRESH_MS = 15_000;
@@ -88,6 +91,7 @@ async function refreshPlayerCountMessage({
     channelId,
     messageId,
     fetchServer = () => erlcService.getServer(),
+    persistState = true,
 }) {
     const server = await fetchServer();
     const counts = parsePlayerCount(server);
@@ -131,6 +135,14 @@ async function refreshPlayerCountMessage({
         ...counts,
         updatedAt,
     });
+    if (persistState) {
+        void saveSessionState().catch((error) => {
+            console.error(
+                '[SESSION PLAYER COUNT] Could not persist the latest count:',
+                error
+            );
+        });
+    }
 
     return {
         ...counts,

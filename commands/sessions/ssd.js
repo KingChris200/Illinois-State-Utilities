@@ -12,6 +12,9 @@ const {
     startSessionPlayerCountMonitor,
     stopSessionPlayerCountMonitor,
 } = require('../../services/sessionPlayerCountMonitor');
+const {
+    saveSessionState,
+} = require('../../services/sessionStateStore');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const SERVER_CODE = 'ILLINOISrp';
@@ -182,6 +185,7 @@ module.exports = {
         stopSessionPlayerCountMonitor(
             interaction.guildId
         );
+        await saveSessionState();
 
         shutdownEmbed.addFields({
             name: '🗺️ Roleplay Zone',
@@ -281,6 +285,7 @@ module.exports = {
                 messageId:
                     endedSession.startupMessageId,
             });
+            await saveSessionState();
 
             await interaction.editReply({
                 content:

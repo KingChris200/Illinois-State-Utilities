@@ -4,9 +4,8 @@
  *
  * Stores the currently active server vote and session.
  *
- * Important:
- * This information is stored in memory. If the bot restarts,
- * the active vote/session will be reset.
+ * Runtime state is stored here. The session state store serializes
+ * and restores this information when the bot restarts.
  */
 
 let activeVote = null;
@@ -28,12 +27,6 @@ function createVote(data) {
         goal: data.goal,
         roleplayZone: data.roleplayZone ?? 'Statewide',
         notes: data.notes ?? null,
-        livePlayerCount:
-            data.livePlayerCount ?? null,
-        maxPlayerCount:
-            data.maxPlayerCount ?? null,
-        playerCountUpdatedAt:
-            data.playerCountUpdatedAt ?? null,
         startedAt: data.startedAt ?? Date.now(),
         endsAt: data.endsAt,
         votes: new Map(),
@@ -129,6 +122,12 @@ function startSession(data) {
         attendeeIds: data.attendeeIds ?? [],
         roleplayZone: data.roleplayZone ?? 'Statewide',
         notes: data.notes ?? null,
+        livePlayerCount:
+            data.livePlayerCount ?? null,
+        maxPlayerCount:
+            data.maxPlayerCount ?? null,
+        playerCountUpdatedAt:
+            data.playerCountUpdatedAt ?? null,
         startedAt: data.startedAt ?? Date.now(),
     };
 
@@ -195,6 +194,56 @@ function resetAll() {
     activeSession = null;
 }
 
+function exportState() {
+    return {
+        activeVote: activeVote
+            ? {
+                  ...activeVote,
+                  votes: [
+                      ...activeVote.votes.entries(),
+                  ],
+              }
+            : null,
+        activeSession: activeSession
+            ? {
+                  ...activeSession,
+                  attendeeIds: [
+                      ...activeSession.attendeeIds,
+                  ],
+              }
+            : null,
+    };
+}
+
+function restoreState({
+    activeVote: savedVote = null,
+    activeSession: savedSession = null,
+} = {}) {
+    activeVote = savedVote
+        ? {
+              ...savedVote,
+              votes: new Map(
+                  Array.isArray(savedVote.votes)
+                      ? savedVote.votes
+                      : []
+              ),
+          }
+        : null;
+
+    activeSession = savedSession
+        ? {
+              ...savedSession,
+              attendeeIds: Array.isArray(
+                  savedSession.attendeeIds
+              )
+                  ? [...savedSession.attendeeIds]
+                  : [],
+          }
+        : null;
+
+    return exportState();
+}
+
 module.exports = {
     createVote,
     getVote,
@@ -215,4 +264,6 @@ module.exports = {
     endSession,
 
     resetAll,
+    exportState,
+    restoreState,
 };
