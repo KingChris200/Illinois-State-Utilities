@@ -11,6 +11,11 @@
 let activeVote = null;
 let activeSession = null;
 
+const {
+    createSessionAnalytics,
+    recordSessionSample,
+} = require('./sessionAnalytics');
+
 /*
  * ==========================================
  * SERVER VOTE
@@ -128,6 +133,9 @@ function startSession(data) {
             data.maxPlayerCount ?? null,
         playerCountUpdatedAt:
             data.playerCountUpdatedAt ?? null,
+        analytics: createSessionAnalytics(
+            data.analytics
+        ),
         startedAt: data.startedAt ?? Date.now(),
     };
 
@@ -147,6 +155,8 @@ function updateSessionPlayerCount({
     messageId,
     currentPlayers,
     maxPlayers,
+    staffCount = null,
+    queueCount = null,
     updatedAt = Date.now(),
 }) {
     if (
@@ -164,6 +174,16 @@ function updateSessionPlayerCount({
         maxPlayers;
     activeSession.playerCountUpdatedAt =
         updatedAt;
+    activeSession.analytics =
+        recordSessionSample(
+            activeSession.analytics,
+            {
+                currentPlayers,
+                staffCount,
+                queueCount,
+                sampledAt: updatedAt,
+            }
+        );
 
     return true;
 }
@@ -210,6 +230,9 @@ function exportState() {
                   attendeeIds: [
                       ...activeSession.attendeeIds,
                   ],
+                  analytics: createSessionAnalytics(
+                      activeSession.analytics
+                  ),
               }
             : null,
     };
@@ -238,6 +261,9 @@ function restoreState({
               )
                   ? [...savedSession.attendeeIds]
                   : [],
+              analytics: createSessionAnalytics(
+                  savedSession.analytics
+              ),
           }
         : null;
 

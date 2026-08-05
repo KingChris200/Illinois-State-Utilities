@@ -130,6 +130,21 @@ test('updates the active session startup embed and state', async () => {
         sessionManager.getSession().livePlayerCount,
         12
     );
+    assert.equal(
+        sessionManager.getSession().analytics
+            .startingPlayerCount,
+        12
+    );
+    assert.equal(
+        sessionManager.getSession().analytics
+            .peakStaffCount,
+        1
+    );
+    assert.equal(
+        sessionManager.getSession().analytics
+            .peakQueueCount,
+        2
+    );
 
     sessionManager.resetAll();
 });

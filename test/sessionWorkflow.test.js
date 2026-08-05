@@ -66,9 +66,23 @@ test('session details persist from vote through shutdown', () => {
 
     const session = sessionManager.startSession({
         ...vote,
+        startupMessageId: 'startup-message',
         attendeeIds: ['member'],
     });
     sessionManager.clearVote();
+
+    sessionManager.updateSessionPlayerCount({
+        guildId: 'guild',
+        messageId: 'startup-message',
+        currentPlayers: 8,
+        maxPlayers: 40,
+    });
+    sessionManager.updateSessionPlayerCount({
+        guildId: 'guild',
+        messageId: 'startup-message',
+        currentPlayers: 15,
+        maxPlayers: 40,
+    });
 
     assert.equal(session.roleplayZone, 'Springfield');
     assert.equal(session.notes, 'Use realistic liveries.');
@@ -78,6 +92,14 @@ test('session details persist from vote through shutdown', () => {
     assert.equal(
         endedSession.notes,
         'Use realistic liveries.'
+    );
+    assert.equal(
+        endedSession.analytics.startingPlayerCount,
+        8
+    );
+    assert.equal(
+        endedSession.analytics.peakPlayerCount,
+        15
     );
 
     sessionManager.resetAll();

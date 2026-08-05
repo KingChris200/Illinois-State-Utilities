@@ -260,6 +260,8 @@ async function refreshPlayerCountMessage({
         messageId,
         currentPlayers: stats.currentPlayers,
         maxPlayers: stats.maxPlayers,
+        staffCount: stats.staffCount,
+        queueCount: stats.queueCount,
         updatedAt,
     });
     if (persistState) {

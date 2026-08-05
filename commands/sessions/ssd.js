@@ -9,12 +9,17 @@ const {
     announceSessionEvent,
 } = require('../../services/sessionErlcAutomation');
 const {
+    refreshPlayerCountMessage,
     startSessionPlayerCountMonitor,
     stopSessionPlayerCountMonitor,
 } = require('../../services/sessionPlayerCountMonitor');
 const {
     saveSessionState,
 } = require('../../services/sessionStateStore');
+const {
+    createSessionRecapEmbed,
+    saveCompletedSessionAnalytics,
+} = require('../../services/sessionAnalyticsService');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const SERVER_CODE = 'ILLINOISrp';
@@ -60,6 +65,41 @@ module.exports = {
         await interaction.deferReply({
             ephemeral: true,
         });
+
+        /*
+         * Freeze the repeating monitor, then request one final
+         * best-effort ER:LC sample for the ending player count.
+         * API or message failures never prevent a safe shutdown.
+         */
+
+        const activeSession =
+            sessionManager.getSession();
+
+        stopSessionPlayerCountMonitor(
+            interaction.guildId
+        );
+
+        if (
+            activeSession?.startupMessageId &&
+            activeSession?.channelId
+        ) {
+            try {
+                await refreshPlayerCountMessage({
+                    client: interaction.client,
+                    guildId: activeSession.guildId,
+                    channelId:
+                        activeSession.channelId,
+                    messageId:
+                        activeSession.startupMessageId,
+                    persistState: false,
+                });
+            } catch (error) {
+                console.warn(
+                    '[SESSION ANALYTICS] Final live sample unavailable:',
+                    error.code || error.message
+                );
+            }
+        }
 
         /*
          * End the session and retrieve its saved information.
@@ -182,9 +222,6 @@ module.exports = {
             shutdownEmbed.setThumbnail(guildIcon);
         }
 
-        stopSessionPlayerCountMonitor(
-            interaction.guildId
-        );
         await saveSessionState();
 
         shutdownEmbed.addFields({
@@ -215,11 +252,42 @@ module.exports = {
             });
         }
 
+        const recapEmbed =
+            createSessionRecapEmbed({
+                session: endedSession,
+                endedAt,
+                durationDisplay:
+                    sessionDuration,
+                guildIcon,
+                serverName: SERVER_NAME,
+            });
+
         try {
             const shutdownMessage =
                 await interaction.channel.send({
-                    embeds: [shutdownEmbed],
+                    embeds: [
+                        shutdownEmbed,
+                        recapEmbed,
+                    ],
                 });
+
+            try {
+                await saveCompletedSessionAnalytics({
+                    session: endedSession,
+                    endedAt,
+                    shutdownById:
+                        interaction.user.id,
+                    recapMessageId:
+                        shutdownMessage.id,
+                    recapMessageUrl:
+                        shutdownMessage.url,
+                });
+            } catch (analyticsError) {
+                console.error(
+                    '[SESSION ANALYTICS] Could not save the completed recap:',
+                    analyticsError
+                );
+            }
 
             await announceSessionEvent(
                 'session_shutdown',
@@ -276,6 +344,8 @@ module.exports = {
                     endedSession.maxPlayerCount,
                 playerCountUpdatedAt:
                     endedSession.playerCountUpdatedAt,
+                analytics:
+                    endedSession.analytics,
             });
 
             startSessionPlayerCountMonitor({

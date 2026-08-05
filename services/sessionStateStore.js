@@ -5,7 +5,7 @@ const {
 const sessionManager = require('../utils/sessionManager');
 
 const DATABASE_NAME = 'active-session-state';
-const STATE_VERSION = 1;
+const STATE_VERSION = 2;
 
 let writeQueue = Promise.resolve();
 

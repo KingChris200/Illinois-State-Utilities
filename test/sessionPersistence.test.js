@@ -52,6 +52,15 @@ test('serializes live session recovery details', () => {
         maxPlayerCount: 40,
         playerCountUpdatedAt: 123456,
     });
+    sessionManager.updateSessionPlayerCount({
+        guildId: 'guild',
+        messageId: 'startup-message',
+        currentPlayers: 14,
+        maxPlayers: 40,
+        staffCount: 2,
+        queueCount: 3,
+        updatedAt: 123456,
+    });
 
     const snapshot = createSnapshot();
     sessionManager.resetAll();
@@ -64,6 +73,18 @@ test('serializes live session recovery details', () => {
     assert.equal(
         session.playerCountUpdatedAt,
         123456
+    );
+    assert.equal(
+        session.analytics.startingPlayerCount,
+        14
+    );
+    assert.equal(
+        session.analytics.peakStaffCount,
+        2
+    );
+    assert.equal(
+        session.analytics.peakQueueCount,
+        3
     );
 
     sessionManager.resetAll();
