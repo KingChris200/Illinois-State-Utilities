@@ -38,7 +38,7 @@ module.exports = {
             'isrp'
         )
             .setDescription(
-                'Automatic monitoring for unanswered moderator calls, queue surges, and unusual kill activity.'
+                'Automatic monitoring for queue surges and unusual kill activity. Moderator-call alerts are disabled.'
             )
             .addFields(
                 {
@@ -80,7 +80,6 @@ module.exports = {
                 {
                     name: 'Detection Thresholds',
                     value: [
-                        `Moderator call: unanswered for **${alertConfig.modCallDelaySeconds}s**`,
                         `Queue surge: **${alertConfig.queueThreshold}+ players**`,
                         `Kill spike: **${alertConfig.killThreshold}+ kills** within **${alertConfig.killWindowSeconds}s**`,
                         `Repeat cooldown: **${alertConfig.cooldownSeconds}s**`,
@@ -104,7 +103,7 @@ module.exports = {
                 {
                     name: 'Safe Preview',
                     value:
-                        'Run `?alerts test` to preview every alert without pinging a role or contacting ER:LC.',
+                        'Run `?alerts test` to preview the queue and kill alerts without pinging a role or contacting ER:LC.',
                 }
             );
 

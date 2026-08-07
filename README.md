@@ -37,6 +37,9 @@ ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
 # Session automation is restricted to this Discord channel
 ERLC_SESSION_CHANNEL_ID=1490731232311378010
 
+# New-member welcomes are sent here
+WELCOME_CHANNEL_ID=1490733409037975654
+
 # Required only when enabling live session-to-ER:LC announcements
 ERLC_SESSION_AUTOMATION_ENABLED=false
 
@@ -55,7 +58,6 @@ ERLC_SMART_ALERT_ROLE_ID=
 
 # Optional tuning (safe defaults shown)
 ERLC_SMART_ALERT_INTERVAL_MS=60000
-ERLC_MODCALL_ALERT_DELAY_SECONDS=60
 ERLC_QUEUE_ALERT_THRESHOLD=5
 ERLC_KILL_ALERT_THRESHOLD=5
 ERLC_KILL_ALERT_WINDOW_SECONDS=120
@@ -92,6 +94,20 @@ minutes to appear.
 
 Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
 stored in `assets/branding`. The generated Discord welcome artwork is at
-`assets/thumbnails/welcome-banner.png`. The welcome artwork is ready for
-a future member-join system; the automatic welcome handler and welcome
-channel configuration have not been added yet.
+`assets/thumbnails/welcome-banner.png`.
+
+## Welcome system
+
+New human members are welcomed automatically in channel
+`1490733409037975654` using the branded banner, a clickable member tag,
+the current server member count, and safe mention controls. Bot accounts
+are ignored. Override the destination with `WELCOME_CHANNEL_ID` if the
+channel changes.
+
+Enable **Server Members Intent** for the bot in the Discord Developer
+Portal so Discord sends member-join events. Restart the bot afterward;
+no slash-command deployment is required for the welcome system.
+
+Automatic unanswered moderator-call alerts are disabled to prevent
+repeated notifications. Staff can still check calls manually with
+`?modcalls`; queue-surge and unusual-kill smart alerts remain available.

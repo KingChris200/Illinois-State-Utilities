@@ -13,6 +13,9 @@ function getSmartAlertConfig(environment = process.env) {
         roleId: cleanId(
             environment.ERLC_SMART_ALERT_ROLE_ID
         ),
+        // Disabled to prevent repeated unanswered-call spam.
+        // Staff can still inspect calls manually with ?modcalls.
+        modCallAlertsEnabled: false,
         intervalMs: clampNumber(
             environment.ERLC_SMART_ALERT_INTERVAL_MS,
             DEFAULT_INTERVAL_MS,

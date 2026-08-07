@@ -164,7 +164,10 @@ function evaluateSmartAlerts(
 
     const alerts = [];
 
-    if (callsToAlert.length) {
+    if (
+        config.modCallAlertsEnabled === true &&
+        callsToAlert.length
+    ) {
         alerts.push({
             type: 'mod_calls',
             calls: callsToAlert.slice(0, 5),
@@ -535,7 +538,7 @@ function createKillAlertEmbed(alert) {
 
 function createMockAlertEvents(config = getSmartAlertConfig()) {
     const now = Math.floor(Date.now() / 1000);
-    return [
+    const alerts = [
         {
             type: 'mod_calls',
             total: 1,
@@ -564,6 +567,12 @@ function createMockAlertEvents(config = getSmartAlertConfig()) {
             ],
         },
     ];
+
+    return config.modCallAlertsEnabled === true
+        ? alerts
+        : alerts.filter(
+              (alert) => alert.type !== 'mod_calls'
+          );
 }
 
 function getSmartAlertStatus() {

@@ -16,6 +16,7 @@ const config = {
     enabled: true,
     channelId: '123456789012345678',
     roleId: '234567890123456789',
+    modCallAlertsEnabled: false,
     intervalMs: 60_000,
     modCallDelaySeconds: 60,
     queueThreshold: 3,
@@ -36,6 +37,7 @@ test('smart-alert configuration validates IDs and safe intervals', () => {
     assert.equal(parsed.enabled, true);
     assert.equal(parsed.channelId, '123456789012345678');
     assert.equal(parsed.roleId, null);
+    assert.equal(parsed.modCallAlertsEnabled, false);
     assert.equal(parsed.intervalMs, 30_000);
     assert.equal(parsed.queueThreshold, 40);
 });
@@ -60,7 +62,7 @@ test('first smart-alert check establishes a quiet baseline', () => {
     assert.equal(result.state.trackedModCalls[0].notified, true);
 });
 
-test('new unanswered moderator calls alert exactly once', () => {
+test('unanswered moderator calls never create automatic alerts', () => {
     const now = 2_000_000_000_000;
     const baseline = evaluateSmartAlerts(
         { ModCalls: [], Queue: [], KillLogs: [] },
@@ -86,7 +88,7 @@ test('new unanswered moderator calls alert exactly once', () => {
         now + 122_000
     );
 
-    assert.equal(first.alerts[0].type, 'mod_calls');
+    assert.equal(first.alerts.length, 0);
     assert.equal(second.alerts.length, 0);
 });
 
@@ -171,16 +173,15 @@ test('rate-limit reset time can extend the next poll delay', () => {
     );
 });
 
-test('smart-alert preview creates all three branded alerts', async () => {
+test('smart-alert preview excludes moderator-call alerts', async () => {
     const embeds = createSmartAlertEmbeds(
         createMockAlertEvents(config)
     );
     const replies = [];
 
-    assert.equal(embeds.length, 3);
-    assert.match(embeds[0].toJSON().title, /Moderator Call/);
-    assert.match(embeds[1].toJSON().title, /Queue Surge/);
-    assert.match(embeds[2].toJSON().title, /Kill Activity/);
+    assert.equal(embeds.length, 2);
+    assert.match(embeds[0].toJSON().title, /Queue Surge/);
+    assert.match(embeds[1].toJSON().title, /Kill Activity/);
 
     await alertsCommand.execute({
         message: {
@@ -189,7 +190,7 @@ test('smart-alert preview creates all three branded alerts', async () => {
         args: ['test'],
         config: { mockMode: true },
     });
-    assert.equal(replies[0].embeds.length, 3);
+    assert.equal(replies[0].embeds.length, 2);
     assert.deepEqual(replies[0].allowedMentions, { parse: [] });
 });
 
