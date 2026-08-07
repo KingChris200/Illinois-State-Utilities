@@ -20,6 +20,7 @@ function createMember({ bot = false } = {}) {
         id: '123456789012345678',
         user: { bot },
         guild: {
+            id: 'guild-1',
             name: 'Illinois State Roleplay | Strict',
             memberCount: 401,
             iconURL: () =>
@@ -54,6 +55,7 @@ test('welcome channel defaults to the supplied server channel', () => {
 });
 
 test('guild member event posts a safe branded welcome', async () => {
+    welcomeEvent.clearWelcomeDeduplication();
     const { member, sent } = createMember();
 
     assert.equal(
@@ -64,7 +66,11 @@ test('guild member event posts a safe branded welcome', async () => {
     await welcomeEvent.execute(member);
 
     assert.equal(sent.length, 1);
-    assert.equal(sent[0].embeds.length, 2);
+    assert.equal(sent[0].embeds.length, 1);
+    assert.equal(
+        sent[0].content,
+        '👋 Welcome, <@123456789012345678>!'
+    );
     assert.equal(sent[0].files.length, 1);
     assert.equal(
         sent[0].files[0].name,
@@ -75,7 +81,7 @@ test('guild member event posts a safe branded welcome', async () => {
         'attachment://welcome-banner.png'
     );
 
-    const details = sent[0].embeds[1].toJSON();
+    const details = sent[0].embeds[0].toJSON();
     assert.match(details.title, /Welcome to Illinois State Roleplay/i);
     assert.match(details.description, /#401 member/);
     assert.match(details.description, /<@123456789012345678>/);
@@ -84,6 +90,16 @@ test('guild member event posts a safe branded welcome', async () => {
         users: ['123456789012345678'],
         roles: [],
     });
+});
+
+test('duplicate member-join events are ignored briefly', async () => {
+    welcomeEvent.clearWelcomeDeduplication();
+    const { member, sent } = createMember();
+
+    await welcomeEvent.execute(member);
+    await welcomeEvent.execute(member);
+
+    assert.equal(sent.length, 1);
 });
 
 test('welcome system ignores bot accounts', async () => {

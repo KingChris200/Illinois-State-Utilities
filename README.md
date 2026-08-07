@@ -99,10 +99,10 @@ stored in `assets/branding`. The generated Discord welcome artwork is at
 ## Welcome system
 
 New human members are welcomed automatically in channel
-`1490733409037975654` using the branded banner, a clickable member tag,
-the current server member count, and safe mention controls. Bot accounts
-are ignored. Override the destination with `WELCOME_CHANNEL_ID` if the
-channel changes.
+`1490733409037975654` using one branded embed, a real restricted member
+ping, the current server member count, and safe mention controls. Bot
+accounts and duplicate join events are ignored. Override the destination
+with `WELCOME_CHANNEL_ID` if the channel changes.
 
 Enable **Server Members Intent** for the bot in the Discord Developer
 Portal so Discord sends member-join events. Restart the bot afterward;

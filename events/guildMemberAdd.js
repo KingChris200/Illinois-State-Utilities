@@ -16,12 +16,23 @@ const WELCOME_BANNER_PATH = path.join(
     __dirname,
     '../assets/thumbnails/welcome-banner.png'
 );
+const WELCOME_DEDUPLICATION_MS = 30_000;
+const recentWelcomes = new Map();
 
 module.exports = {
     name: Events.GuildMemberAdd,
 
     async execute(member) {
         if (member.user?.bot) {
+            return;
+        }
+
+        const welcomeKey = claimWelcome(member);
+
+        if (!welcomeKey) {
+            console.log(
+                `[WELCOME] member=${member.id} outcome=duplicate_ignored`
+            );
             return;
         }
 
@@ -39,6 +50,7 @@ module.exports = {
             console.error(
                 `[WELCOME] Channel ${channelId} is unavailable.`
             );
+            recentWelcomes.delete(welcomeKey);
             return;
         }
 
@@ -51,6 +63,7 @@ module.exports = {
                 `[WELCOME] member=${member.id} channel=${channelId} outcome=sent`
             );
         } catch (error) {
+            recentWelcomes.delete(welcomeKey);
             console.error(
                 `[WELCOME] member=${member.id} channel=${channelId} outcome=failed`,
                 error
@@ -59,6 +72,7 @@ module.exports = {
     },
 
     createWelcomePayload,
+    clearWelcomeDeduplication,
 };
 
 function createWelcomePayload(member) {
@@ -73,12 +87,6 @@ function createWelcomePayload(member) {
         1
     );
 
-    const bannerEmbed = new EmbedBuilder()
-        .setColor('#EDEFF2')
-        .setImage(
-            `attachment://${WELCOME_BANNER_NAME}`
-        );
-
     const welcomeEmbed = new EmbedBuilder()
         .setColor(brand.color)
         .setTitle(
@@ -91,6 +99,9 @@ function createWelcomePayload(member) {
                 'Start by reviewing the server rules and information, then complete verification and choose your roles so you never miss a session.',
             ].join('\n')
         )
+        .setImage(
+            `attachment://${WELCOME_BANNER_NAME}`
+        )
         .setFooter({
             text: `${guildName} • Welcome aboard`,
             ...(guildIcon
@@ -100,7 +111,8 @@ function createWelcomePayload(member) {
         .setTimestamp();
 
     return {
-        embeds: [bannerEmbed, welcomeEmbed],
+        content: `👋 Welcome, <@${member.id}>!`,
+        embeds: [welcomeEmbed],
         files: [
             new AttachmentBuilder(
                 WELCOME_BANNER_PATH,
@@ -115,4 +127,32 @@ function createWelcomePayload(member) {
             roles: [],
         },
     };
+}
+
+function claimWelcome(member, now = Date.now()) {
+    const key = `${member.guild?.id || 'unknown'}:${member.id}`;
+    const previousWelcome = recentWelcomes.get(key);
+
+    if (
+        Number.isFinite(previousWelcome) &&
+        now - previousWelcome < WELCOME_DEDUPLICATION_MS
+    ) {
+        return null;
+    }
+
+    recentWelcomes.set(key, now);
+
+    if (recentWelcomes.size > 500) {
+        for (const [storedKey, timestamp] of recentWelcomes) {
+            if (now - timestamp >= WELCOME_DEDUPLICATION_MS) {
+                recentWelcomes.delete(storedKey);
+            }
+        }
+    }
+
+    return key;
+}
+
+function clearWelcomeDeduplication() {
+    recentWelcomes.clear();
 }
