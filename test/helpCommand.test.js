@@ -86,6 +86,7 @@ test('configured staff see the live intelligence commands', async () => {
         (field) => field.name === 'Live Server Intelligence'
     ).value;
     assert.match(intelligence, /\?operations/);
+    assert.match(intelligence, /\?player/);
     assert.match(intelligence, /\?modcalls/);
     assert.match(intelligence, /\?joinlogs/);
     assert.match(intelligence, /\?kl/);

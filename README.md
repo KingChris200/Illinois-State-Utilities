@@ -10,7 +10,7 @@ Current prefix commands include:
 
 - Public: `?help`, `?id`, and `?status`
 - Server information: `?players`, `?server`, `?staff`, and `?queue`
-- Live intelligence: `?operations`, `?alerts`, `?modcalls`, `?joinlogs`, `?kl`, `?vehicles`, and `?logs`
+- Live intelligence: `?operations`, `?player`, `?alerts`, `?modcalls`, `?joinlogs`, `?kl`, `?vehicles`, and `?logs`
 - Announcements: `?m` and `?h`
 - Confirmed moderation: `?warn`, `?kick`, `?ban`, `?unban`, `?respawn`, `?heal`, `?wanted`, and `?unwanted`
 - Diagnostics: `?apicheck`

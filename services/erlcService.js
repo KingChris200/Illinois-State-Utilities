@@ -674,6 +674,106 @@ async function getSmartAlertSnapshot({ mockData = null } = {}) {
     return normalizeSmartAlertSnapshot(server);
 }
 
+async function getPlayerIntelligenceSnapshot({
+    mockData = null,
+} = {}) {
+    if (mockData !== null) {
+        return normalizePlayerIntelligenceSnapshot(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return normalizePlayerIntelligenceSnapshot({
+            Players: [
+                {
+                    Player: 'MockPlayer:123456789',
+                    Team: 'Civilian',
+                    Callsign: 'CIV-01',
+                    Permission: 'Server Administrator',
+                    WantedStars: 2,
+                    Location: {
+                        PostalCode: '205',
+                        StreetName: 'Freedom Avenue',
+                        BuildingNumber: '104',
+                        LocationX: 123.45,
+                        LocationZ: 678.9,
+                    },
+                },
+                {
+                    Player: 'MockOfficer:112233445',
+                    Team: 'Police',
+                    Callsign: '1A-12',
+                    Permission: 'Normal',
+                    WantedStars: 0,
+                    Location: {
+                        PostalCode: '101',
+                        StreetName: 'Main Street',
+                    },
+                },
+            ],
+            JoinLogs: [
+                {
+                    Join: true,
+                    Player: 'MockPlayer:123456789',
+                    Timestamp: now - 300,
+                },
+                {
+                    Join: true,
+                    Player: 'MockOfficer:112233445',
+                    Timestamp: now - 200,
+                },
+            ],
+            KillLogs: [
+                {
+                    Killer: 'MockPlayer:123456789',
+                    Killed: 'MockSuspect:556677889',
+                    Timestamp: now - 40,
+                },
+                {
+                    Killer: 'MockOfficer:112233445',
+                    Killed: 'MockPlayer:123456789',
+                    Timestamp: now - 90,
+                },
+            ],
+            ModCalls: [
+                {
+                    Caller: 'MockPlayer:123456789',
+                    Moderator: null,
+                    Timestamp: now - 75,
+                },
+                {
+                    Caller: 'MockCivilian:135792468',
+                    Moderator: 'MockPlayer:123456789',
+                    Timestamp: now - 180,
+                },
+            ],
+            Vehicles: [
+                {
+                    Name: 'Bullhorn Prancer',
+                    Owner: 'MockPlayer',
+                    Plate: 'MOCK-01',
+                    Texture: 'Standard',
+                    ColorName: 'Midnight Blue',
+                    ColorHex: '#101820',
+                },
+                {
+                    Name: 'Falcon Interceptor Utility',
+                    Owner: 'MockOfficer',
+                    Plate: 'ISP-12',
+                    Texture: 'Police',
+                    ColorName: 'Black',
+                    ColorHex: '#000000',
+                },
+            ],
+        });
+    }
+
+    const server = await request(
+        '/v2/server?Players=true&JoinLogs=true&KillLogs=true&ModCalls=true&Vehicles=true'
+    );
+    return normalizePlayerIntelligenceSnapshot(server);
+}
+
 function normalizeStaff(staff) {
     return {
         Admins: staff?.Admins || {},
@@ -715,6 +815,16 @@ function normalizeSmartAlertSnapshot(server) {
     };
 }
 
+function normalizePlayerIntelligenceSnapshot(server) {
+    return {
+        Players: normalizeArray(server?.Players),
+        JoinLogs: normalizeArray(server?.JoinLogs),
+        KillLogs: normalizeArray(server?.KillLogs),
+        ModCalls: normalizeArray(server?.ModCalls),
+        Vehicles: normalizeArray(server?.Vehicles),
+    };
+}
+
 module.exports = {
     ErlcServiceError,
     PRC_ERROR_MESSAGES,
@@ -730,6 +840,7 @@ module.exports = {
     getOperationsActivity,
     getOperationsOverview,
     getPlayers,
+    getPlayerIntelligenceSnapshot,
     getPublicErrorMessage,
     getQueue,
     getServer,

@@ -20,6 +20,7 @@ const CATEGORY_ORDER = [
         commands: [
             'operations',
             'alerts',
+            'player',
             'staff',
             'queue',
             'modcalls',
@@ -67,6 +68,7 @@ const READ_ONLY_COMMANDS = new Set([
     'staff',
     'operations',
     'alerts',
+    'player',
     'queue',
     'modcalls',
     'joinlogs',

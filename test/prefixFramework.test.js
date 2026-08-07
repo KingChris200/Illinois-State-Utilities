@@ -8,7 +8,7 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 25);
+    assert.equal(count, 26);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
@@ -28,6 +28,7 @@ test('loads the expected prefix commands', () => {
             'modcalls',
             'operations',
             'ops',
+            'player',
             'players',
             'queue',
             're',
@@ -78,6 +79,13 @@ test('mock data bypasses live ER:LC requests', async () => {
         ModCalls: modCalls,
         Queue: queue,
         KillLogs: killLogs,
+    };
+    const playerSnapshot = {
+        Players: players,
+        JoinLogs: joinLogs,
+        KillLogs: killLogs,
+        ModCalls: modCalls,
+        Vehicles: vehicles,
     };
 
     assert.equal(
@@ -146,6 +154,12 @@ test('mock data bypasses live ER:LC requests', async () => {
             mockData: alertSnapshot,
         }),
         alertSnapshot
+    );
+    assert.deepEqual(
+        await erlcService.getPlayerIntelligenceSnapshot({
+            mockData: playerSnapshot,
+        }),
+        playerSnapshot
     );
 });
 

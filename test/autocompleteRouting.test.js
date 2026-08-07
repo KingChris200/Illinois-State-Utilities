@@ -48,6 +48,24 @@ test('central interaction handler routes operations buttons', async () => {
     assert.match(reply.content, /expired/);
 });
 
+test('central interaction handler routes player profile buttons', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isButton: () => true,
+        customId:
+            'erlc_player:overview:00000000-0000-0000-0000-000000000000',
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.ephemeral, true);
+    assert.match(reply.content, /expired/);
+});
+
 test('infraction rank option uses live autocomplete', async () => {
     const command = infractionCommand.data.toJSON();
     const rankOption = command.options.find(

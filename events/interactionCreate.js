@@ -18,6 +18,9 @@ const {
     handleOperationsButton,
 } = require('../utils/operationsDashboardManager');
 const {
+    handlePlayerIntelligenceButton,
+} = require('../utils/playerIntelligenceManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -95,6 +98,17 @@ module.exports = {
             )
         ) {
             await handleOperationsButton(
+                interaction
+            );
+            return;
+        }
+
+        if (
+            interaction.customId.startsWith(
+                'erlc_player:'
+            )
+        ) {
+            await handlePlayerIntelligenceButton(
                 interaction
             );
             return;
