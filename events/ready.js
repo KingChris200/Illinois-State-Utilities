@@ -6,6 +6,9 @@ const {
 const {
     startSmartAlertMonitor,
 } = require('../services/erlcSmartAlertMonitor');
+const {
+    startWatchlistAlertMonitor,
+} = require('../services/watchlistAlertMonitor');
 
 module.exports = {
     name: Events.ClientReady,
@@ -36,6 +39,20 @@ module.exports = {
         } catch (error) {
             console.error(
                 '[ER:LC SMART ALERTS] Startup failed:',
+                error
+            );
+        }
+
+        try {
+            const watchlistAlerts =
+                await startWatchlistAlertMonitor(client);
+
+            console.log(
+                `[WATCHLIST ALERTS] ${watchlistAlerts.state}`
+            );
+        } catch (error) {
+            console.error(
+                '[WATCHLIST ALERTS] Startup failed:',
                 error
             );
         }

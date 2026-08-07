@@ -10,6 +10,7 @@ const {
     WatchlistError,
     addWatchlistEntry,
     findWatchlistEntries,
+    getActiveWatchlistEntries,
     getWatchlistEntry,
     normalizeDatabase,
     removeWatchlistEntry,
@@ -17,6 +18,9 @@ const {
     searchWatchlistEntries,
     updateWatchlistEntry,
 } = require('../utils/watchlistManager');
+const {
+    matchWatchlistPlayers,
+} = require('../utils/watchlistMatcher');
 
 function createMemoryStore(initialValue = null) {
     let database = initialValue;
@@ -66,7 +70,7 @@ function interactionForEmbeds() {
     };
 }
 
-test('/watchlist exposes six focused management actions', () => {
+test('/watchlist exposes seven focused management actions', () => {
     const command = watchlistCommand.data.toJSON();
 
     assert.equal(command.name, 'watchlist');
@@ -76,6 +80,7 @@ test('/watchlist exposes six focused management actions', () => {
             'add',
             'view',
             'search',
+            'scan',
             'update',
             'resolve',
             'remove',
@@ -235,6 +240,128 @@ test('watchlist search combines private filters safely', async () => {
 
     assert.equal(results.length, 1);
     assert.equal(results[0].robloxUsername, 'SecondPlayer');
+});
+
+test('active watchlist records can be loaded without a display limit', async () => {
+    const store = createMemoryStore();
+
+    for (let index = 0; index < 21; index += 1) {
+        await addWatchlistEntry(
+            entryDetails({
+                robloxUserId: String(100000000 + index),
+                robloxUsername: `Player${index}`,
+            }),
+            store
+        );
+    }
+
+    const records = await getActiveWatchlistEntries(
+        'guild-1',
+        store
+    );
+
+    assert.equal(records.length, 21);
+});
+
+test('live watchlist matching accepts exact identities and rejects partial or conflicting IDs', () => {
+    const records = [
+        {
+            ...entryDetails(),
+            id: 'watch-id-match',
+            status: 'active',
+        },
+        {
+            ...entryDetails({
+                robloxUserId: '222222222',
+                robloxUsername: 'FallbackPlayer',
+            }),
+            id: 'watch-name-match',
+            status: 'active',
+        },
+        {
+            ...entryDetails({
+                robloxUserId: '333333333',
+                robloxUsername: 'ConflictingPlayer',
+            }),
+            id: 'watch-conflict',
+            status: 'active',
+        },
+        {
+            ...entryDetails({
+                robloxUserId: '444444444',
+                robloxUsername: 'ResolvedPlayer',
+            }),
+            id: 'watch-resolved',
+            status: 'resolved',
+        },
+    ];
+    const matches = matchWatchlistPlayers(records, [
+        {
+            Player: 'RenamedPlayer:123456789',
+            Permission: 'Normal',
+        },
+        {
+            Player: 'FallbackPlayer',
+            Permission: 'Server Moderator',
+        },
+        {
+            Player: 'ConflictingPlayer:999999999',
+            Permission: 'Normal',
+        },
+        {
+            Player: 'Mock',
+            Permission: 'Normal',
+        },
+        {
+            Player: 'ResolvedPlayer:444444444',
+            Permission: 'Normal',
+        },
+    ]);
+
+    assert.deepEqual(
+        matches.map(({ record, matchedBy }) => [
+            record.id,
+            matchedBy,
+        ]),
+        [
+            ['watch-id-match', 'user_id'],
+            ['watch-name-match', 'username'],
+        ]
+    );
+});
+
+test('watchlist scan embed stays private and identifies verified matches', () => {
+    const record = {
+        ...entryDetails(),
+        id: 'watch-example',
+        status: 'active',
+    };
+    const embed = watchlistCommand
+        .createScanEmbed(
+            [
+                {
+                    record,
+                    player: {
+                        username: 'MockPlayer',
+                        userId: '123456789',
+                        permission: 'Server Administrator',
+                    },
+                    matchedBy: 'user_id',
+                },
+            ],
+            interactionForEmbeds(),
+            {
+                activeRecordCount: 2,
+                onlinePlayerCount: 5,
+                isMockMode: true,
+            }
+        )
+        .toJSON();
+
+    assert.match(embed.title, /Live Watchlist Scan/);
+    assert.match(embed.description, /1.*verified/i);
+    assert.match(embed.fields.at(-1).value, /exact Roblox ID/i);
+    assert.match(embed.footer.text, /No public alert was sent/i);
 });
 
 test('watchlist embeds clearly label records as private indicators', () => {

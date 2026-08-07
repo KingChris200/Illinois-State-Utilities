@@ -62,6 +62,11 @@ ERLC_QUEUE_ALERT_THRESHOLD=5
 ERLC_KILL_ALERT_THRESHOLD=5
 ERLC_KILL_ALERT_WINDOW_SECONDS=120
 ERLC_ALERT_COOLDOWN_SECONDS=300
+
+# Private automatic watchlist matching (use a management-only channel)
+WATCHLIST_ALERTS_ENABLED=false
+WATCHLIST_ALERT_CHANNEL_ID=
+WATCHLIST_ALERT_INTERVAL_MS=60000
 ```
 
 Administrators may use staff-only commands even when their role is not
@@ -125,15 +130,25 @@ Available actions:
   creates an active record with severity, reason, evidence, and notes.
 - `/watchlist view` opens the newest matching record privately.
 - `/watchlist search` filters records by text, status, and severity.
+- `/watchlist scan` privately compares every connected ER:LC player with
+  active records using exact Roblox IDs (or exact usernames as a fallback).
 - `/watchlist update` records field changes and the reason for the edit.
 - `/watchlist resolve` closes a concern with a documented outcome.
 - `/watchlist remove` archives an entry without deleting its audit trail.
 
-The system uses Roblox's public user API and does not require the ER:LC
-server key. Records are stored in the gitignored
+Adding and managing records uses Roblox's public user API and does not
+require the ER:LC server key. The live scan uses the configured ER:LC API,
+or safe sample players while `ERLC_MOCK_MODE=true`. Records are stored in the gitignored
 `data/private-watchlist.json` file. Keep the bot's `data` folder backed up
 because it contains live private records and must never be committed to
 GitHub.
+
+Automatic matching is disabled until `WATCHLIST_ALERTS_ENABLED=true` and
+`WATCHLIST_ALERT_CHANNEL_ID` points to a private management channel. The
+monitor checks once per minute by default, never pings members or roles,
+and stores its deduplication state in the gitignored `data` directory. A
+match is announced once while that player remains online; it becomes
+eligible for a fresh alert only after leaving and later rejoining.
 
 Run `npm run deploy-commands` after installing this feature, wait for the
 global slash-command update to appear, and restart the bot.

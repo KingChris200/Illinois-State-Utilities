@@ -10,16 +10,21 @@ const {
     memberCanReviewMovements,
 } = require('../../config/serverConfigs');
 const robloxService = require('../../services/robloxService');
+const erlcService = require('../../services/erlcService');
 const {
     WatchlistError,
     addWatchlistEntry,
     findWatchlistEntries,
+    getActiveWatchlistEntries,
     getWatchlistEntry,
     removeWatchlistEntry,
     resolveWatchlistEntry,
     searchWatchlistEntries,
     updateWatchlistEntry,
 } = require('../../utils/watchlistManager');
+const {
+    matchWatchlistPlayers,
+} = require('../../utils/watchlistMatcher');
 
 const SEVERITY_CHOICES = [
     { name: 'Low — Monitor only', value: 'low' },
@@ -136,6 +141,13 @@ module.exports = {
                         .setMinValue(1)
                         .setMaxValue(20)
                         .setRequired(false)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('scan')
+                .setDescription(
+                    'Privately compare online ER:LC players with active records.'
                 )
         )
         .addSubcommand((subcommand) =>
@@ -310,6 +322,9 @@ module.exports = {
                 case 'search':
                     await handleSearch(interaction);
                     break;
+                case 'scan':
+                    await handleScan(interaction);
+                    break;
                 case 'update':
                     await handleUpdate(interaction);
                     break;
@@ -343,6 +358,7 @@ module.exports = {
     },
 
     canManageWatchlist,
+    createScanEmbed,
     createWatchlistEmbed,
     createSearchEmbed,
 };
@@ -422,6 +438,54 @@ async function handleSearch(interaction) {
 
     await interaction.editReply({
         embeds: [createSearchEmbed(records, interaction)],
+        allowedMentions: { parse: [] },
+    });
+}
+
+async function handleScan(interaction) {
+    const records = await getActiveWatchlistEntries(
+        interaction.guildId
+    );
+
+    if (records.length === 0) {
+        await interaction.editReply({
+            embeds: [
+                createScanEmbed([], interaction, {
+                    activeRecordCount: 0,
+                    onlinePlayerCount: null,
+                    isMockMode: erlcService.isMockMode(),
+                }),
+            ],
+            allowedMentions: { parse: [] },
+        });
+        return;
+    }
+
+    let players;
+
+    try {
+        players = await erlcService.getPlayers();
+    } catch (error) {
+        throw new WatchlistError(
+            error.code || 'ERLC_SCAN_FAILED',
+            erlcService.getPublicErrorMessage(error)
+        );
+    }
+
+    const matches = matchWatchlistPlayers(records, players);
+
+    console.log(
+        `[WATCHLIST] action=scan active=${records.length} online=${players.length} matches=${matches.length} executor=${interaction.user.id} mode=${erlcService.isMockMode() ? 'mock' : 'live'} outcome=success`
+    );
+
+    await interaction.editReply({
+        embeds: [
+            createScanEmbed(matches, interaction, {
+                activeRecordCount: records.length,
+                onlinePlayerCount: players.length,
+                isMockMode: erlcService.isMockMode(),
+            }),
+        ],
         allowedMentions: { parse: [] },
     });
 }
@@ -727,6 +791,90 @@ function createSearchEmbed(records, interaction) {
                 truncate(record.reason, 180),
                 `Updated ${discordTimestamp(record.updatedAt, 'R')}`,
             ].join('\n'),
+        });
+    }
+
+    if (guildIcon) {
+        embed.setThumbnail(guildIcon);
+    }
+
+    return embed;
+}
+
+function createScanEmbed(
+    matches,
+    interaction,
+    {
+        activeRecordCount = 0,
+        onlinePlayerCount = 0,
+        isMockMode = false,
+    } = {}
+) {
+    const guildIcon = interaction.guild?.iconURL?.({
+        extension: 'png',
+        size: 256,
+    });
+    const visibleMatches = matches.slice(0, 10);
+    const embed = new EmbedBuilder()
+        .setColor(matches.length ? 0xed4245 : 0x57f287)
+        .setTitle('🔒 Live Watchlist Scan')
+        .setDescription(
+            activeRecordCount === 0
+                ? '✅ There are no active private watchlist records to scan.'
+                : matches.length
+                  ? `⚠️ Found **${matches.length}** verified active watchlist match${matches.length === 1 ? '' : 'es'} among the currently connected players.`
+                  : '✅ No active watchlist users are visible in the ER:LC server.'
+        )
+        .addFields(
+            {
+                name: 'Scan Coverage',
+                value: [
+                    `Active records: **${activeRecordCount}**`,
+                    onlinePlayerCount === null
+                        ? 'Online players: **Not checked**'
+                        : `Online players: **${onlinePlayerCount}**`,
+                    `Mode: **${isMockMode ? 'Mock' : 'Live'}**`,
+                ].join('\n'),
+                inline: true,
+            },
+            {
+                name: 'Safety',
+                value:
+                    'Exact Roblox IDs are matched first. Exact usernames are only used as a fallback; partial matches are never accepted.',
+                inline: true,
+            }
+        )
+        .setFooter({
+            text:
+                'Illinois State Utilities • Management access only • No public alert was sent',
+            ...(guildIcon ? { iconURL: guildIcon } : {}),
+        })
+        .setTimestamp();
+
+    for (const { record, player, matchedBy } of visibleMatches) {
+        const severity =
+            SEVERITY_PRESENTATION[record.severity] ||
+            SEVERITY_PRESENTATION.medium;
+        const profileUrl =
+            `https://www.roblox.com/users/${record.robloxUserId}/profile`;
+
+        embed.addFields({
+            name:
+                `${severity.emoji} ${safeText(record.robloxUsername, 50)} • ${severity.label}`,
+            value: [
+                `**[Open Roblox profile](${profileUrl})** • ID \`${safeCode(record.robloxUserId)}\``,
+                `Entry \`${safeCode(record.id)}\` • In-game permission: **${safeText(player.permission, 80)}**`,
+                `Reason: ${safeText(record.reason, 220)}`,
+                `Verified by exact ${matchedBy === 'user_id' ? 'Roblox ID' : 'username'} match.`,
+            ].join('\n'),
+        });
+    }
+
+    if (matches.length > visibleMatches.length) {
+        embed.addFields({
+            name: 'Additional Matches',
+            value:
+                `There are **${matches.length - visibleMatches.length}** more verified matches. Use \`/watchlist search\` to review all active records.`,
         });
     }
 

@@ -260,6 +260,20 @@ async function getWatchlistEntry(
     );
 }
 
+async function getActiveWatchlistEntries(
+    guildId,
+    store = defaultStore
+) {
+    const database = await store.readDatabase(
+        WATCHLIST_DATABASE_NAME,
+        normalizeDatabase(null)
+    );
+
+    return getGuildRecords(database, guildId)
+        .filter((record) => record.status === 'active')
+        .sort(sortNewestFirst);
+}
+
 async function findWatchlistEntries(
     guildId,
     query,
@@ -626,6 +640,7 @@ module.exports = {
     createAuditEntry,
     createWatchlistRecord,
     findWatchlistEntries,
+    getActiveWatchlistEntries,
     getGuildRecords,
     getWatchlistEntry,
     normalizeDatabase,
