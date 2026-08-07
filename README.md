@@ -111,3 +111,29 @@ no slash-command deployment is required for the welcome system.
 Automatic unanswered moderator-call alerts are disabled to prevent
 repeated notifications. Staff can still check calls manually with
 `?modcalls`; queue-surge and unusual-kill smart alerts remain available.
+
+## Private watchlist
+
+Authorized management, Internal Affairs, directors, ownership, server
+administrators, and the server owner can use `/watchlist`. Every response
+is ephemeral and every record is scoped to the Discord server where it
+was created.
+
+Available actions:
+
+- `/watchlist add` verifies a Roblox username or numeric user ID and
+  creates an active record with severity, reason, evidence, and notes.
+- `/watchlist view` opens the newest matching record privately.
+- `/watchlist search` filters records by text, status, and severity.
+- `/watchlist update` records field changes and the reason for the edit.
+- `/watchlist resolve` closes a concern with a documented outcome.
+- `/watchlist remove` archives an entry without deleting its audit trail.
+
+The system uses Roblox's public user API and does not require the ER:LC
+server key. Records are stored in the gitignored
+`data/private-watchlist.json` file. Keep the bot's `data` folder backed up
+because it contains live private records and must never be committed to
+GitHub.
+
+Run `npm run deploy-commands` after installing this feature, wait for the
+global slash-command update to appear, and restart the bot.
