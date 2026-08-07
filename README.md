@@ -121,6 +121,23 @@ The ISP embed family intentionally stays neutral when
 `ISP_BRAND_LOGO_URL` is empty so the community ISRP logo is not presented
 as an official police badge.
 
+### Embed design system
+
+Shared embeds use `utils/embedTheme.js` to keep the bot visually
+consistent. The automatic image priority is:
+
+1. The relevant member's Discord avatar for staff profiles and personnel
+   records.
+2. The current Discord server logo for server-wide information,
+   dashboards, logs, and command responses.
+3. The official ISRP or Illinois State Utilities logo as a safe fallback
+   and footer mark.
+
+Success, warning, danger, moderation, informational, and neutral embeds
+also share a consistent color palette. Wide artwork is reserved for major
+moments such as welcomes, announcements, and sessions so everyday tools
+remain easy to scan.
+
 ## Private case management
 
 The existing `/case` system provides view, edit, close, reopen, void,

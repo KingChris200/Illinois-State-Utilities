@@ -26,7 +26,11 @@ module.exports = {
         );
         const embed = createEmbed(
             `In-Game Staff — ${total}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(
                 total

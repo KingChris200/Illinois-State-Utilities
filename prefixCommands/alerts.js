@@ -35,7 +35,11 @@ module.exports = {
         const rateLimit = erlcService.getApiRateLimit();
         const embed = createEmbed(
             'ER:LC Smart Alerts — Status',
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(
                 'Automatic monitoring for queue surges and unusual kill activity. Moderator-call alerts are disabled.'
@@ -117,7 +121,11 @@ module.exports = {
 async function sendAlertPreview(message) {
     const alertConfig = getSmartAlertConfig();
     const embeds = createSmartAlertEmbeds(
-        createMockAlertEvents(alertConfig)
+        createMockAlertEvents(alertConfig),
+        {
+            guild: message.guild,
+            client: message.client,
+        }
     );
 
     await message.reply({

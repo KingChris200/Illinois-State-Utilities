@@ -13,7 +13,11 @@ module.exports = {
         const maxPlayers = server.MaxPlayers ?? 'Unknown';
         const embed = createEmbed(
             'ER:LC Server Overview',
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(
                 config.mockMode

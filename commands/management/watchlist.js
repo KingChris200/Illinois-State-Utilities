@@ -509,6 +509,8 @@ async function handleDashboard(interaction) {
         guildId: interaction.guildId,
         executorId: interaction.user.id,
         executorMention: `<@${interaction.user.id}>`,
+        guild: interaction.guild,
+        client: interaction.client,
     });
 
     try {

@@ -26,7 +26,11 @@ module.exports = {
         const recentLogs = sortNewest(logs).slice(0, count);
         const embed = createEmbed(
             `Recent Join Activity — ${recentLogs.length}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         ).setDescription(
             recentLogs.length
                 ? recentLogs.map(formatJoinLog).join('\n')

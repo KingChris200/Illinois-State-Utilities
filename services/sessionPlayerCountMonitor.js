@@ -99,6 +99,7 @@ function parseSessionDashboardStats(server) {
 
 function createSessionDashboardEmbed({
     guildIcon = null,
+    guildName = 'Illinois State Roleplay',
     updatedAt = null,
     currentPlayers = null,
     maxPlayers = 40,
@@ -108,6 +109,10 @@ function createSessionDashboardEmbed({
     const embed = new EmbedBuilder()
         .setColor('#24589B')
         .setTitle(DASHBOARD_TITLE)
+        .setAuthor({
+            name: guildName,
+            ...(guildIcon ? { iconURL: guildIcon } : {}),
+        })
         .setDescription(
             updatedAt
                 ? `**Last Updated:** <t:${Math.floor(

@@ -23,7 +23,12 @@ module.exports = {
             result.dryRun
                 ? 'Message Preview'
                 : 'Server Message Sent',
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+                tone: result.dryRun ? 'warning' : 'success',
+            }
         )
             .setDescription(`> ${text}`)
             .addFields({

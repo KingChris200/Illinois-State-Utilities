@@ -438,7 +438,10 @@ async function sendSmartAlerts(client, alerts, config) {
         throw error;
     }
 
-    const embeds = createSmartAlertEmbeds(alerts);
+    const embeds = createSmartAlertEmbeds(alerts, {
+        guild: channel.guild,
+        client,
+    });
     const content = config.roleId
         ? `<@&${config.roleId}> New ER:LC activity requires attention.`
         : null;
@@ -457,16 +460,16 @@ async function sendSmartAlerts(client, alerts, config) {
     );
 }
 
-function createSmartAlertEmbeds(alerts) {
+function createSmartAlertEmbeds(alerts, context = {}) {
     return alerts
         .map((alert) => {
             switch (alert.type) {
                 case 'mod_calls':
-                    return createModCallAlertEmbed(alert);
+                    return createModCallAlertEmbed(alert, context);
                 case 'queue_surge':
-                    return createQueueAlertEmbed(alert);
+                    return createQueueAlertEmbed(alert, context);
                 case 'kill_spike':
-                    return createKillAlertEmbed(alert);
+                    return createKillAlertEmbed(alert, context);
                 default:
                     return null;
             }
@@ -474,7 +477,7 @@ function createSmartAlertEmbeds(alerts) {
         .filter(Boolean);
 }
 
-function createModCallAlertEmbed(alert) {
+function createModCallAlertEmbed(alert, context = {}) {
     const lines = alert.calls.map((call) => {
         const caller = parsePlayerIdentity(call?.Caller);
         return `• ${formatPlayerIdentity(caller)} · ${formatRelativeTime(call?.Timestamp)}`;
@@ -482,7 +485,11 @@ function createModCallAlertEmbed(alert) {
 
     return createEmbed(
         'Smart Alert — Unanswered Moderator Call',
-        'isrp'
+        'isrp',
+        {
+            ...context,
+            tone: 'danger',
+        }
     )
         .setColor('#C0392B')
         .setDescription(lines.join('\n'))
@@ -493,10 +500,14 @@ function createModCallAlertEmbed(alert) {
         });
 }
 
-function createQueueAlertEmbed(alert) {
+function createQueueAlertEmbed(alert, context = {}) {
     return createEmbed(
         'Smart Alert — Server Queue Surge',
-        'isrp'
+        'isrp',
+        {
+            ...context,
+            tone: 'warning',
+        }
     )
         .setColor('#D68910')
         .setDescription(
@@ -509,7 +520,7 @@ function createQueueAlertEmbed(alert) {
         });
 }
 
-function createKillAlertEmbed(alert) {
+function createKillAlertEmbed(alert, context = {}) {
     const lines = alert.logs.map((log) => {
         const killer = parsePlayerIdentity(log?.Killer);
         const victim = parsePlayerIdentity(log?.Killed);
@@ -518,7 +529,11 @@ function createKillAlertEmbed(alert) {
 
     return createEmbed(
         'Smart Alert — Unusual Kill Activity',
-        'isrp'
+        'isrp',
+        {
+            ...context,
+            tone: 'danger',
+        }
     )
         .setColor('#C0392B')
         .setDescription(lines.join('\n'))

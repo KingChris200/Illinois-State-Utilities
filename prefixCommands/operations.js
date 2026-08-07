@@ -17,6 +17,7 @@ module.exports = {
             executorId: message.author.id,
             executorMention: `${message.author}`,
             client: message.client,
+            guild: message.guild,
             config,
         });
 

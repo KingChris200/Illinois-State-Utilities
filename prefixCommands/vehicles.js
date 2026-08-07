@@ -24,7 +24,11 @@ module.exports = {
         const visibleVehicles = vehicles.slice(0, count);
         const embed = createEmbed(
             `Active Vehicles — ${vehicles.length}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         ).setDescription(
             vehicles.length
                 ? `Showing ${visibleVehicles.length} of ${vehicles.length} currently spawned vehicles.`

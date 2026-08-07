@@ -7,6 +7,7 @@ const {
 const {
     announceSessionEvent,
 } = require('../../services/sessionErlcAutomation');
+const brands = require('../../config/branding');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -103,7 +104,16 @@ module.exports = {
                 .setColor(0x3498db)
                 .setTitle('ISRP | Session Low')
                 .setDescription(descriptionLines.join('\n'))
+                .setAuthor({
+                    name: interaction.guild.name,
+                    iconURL:
+                        interaction.guild.iconURL({
+                            extension: 'png',
+                            size: 256,
+                        }) || undefined,
+                })
                 .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+                .setImage(brands.assets.sessionBanner)
                 .setFooter({
                     text: 'Illinois State Utilities • Supporting Illinois State Roleplay',
                     iconURL: interaction.client.user.displayAvatarURL(),

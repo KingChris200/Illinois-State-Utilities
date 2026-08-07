@@ -31,6 +31,8 @@ async function createPlayerIntelligencePanel({
     query,
     executorId,
     executorMention,
+    guild = null,
+    client = null,
     config,
 }) {
     const snapshot =
@@ -44,6 +46,8 @@ async function createPlayerIntelligencePanel({
         },
         executorId,
         executorMention,
+        guild,
+        client,
         config,
         view: 'overview',
         processing: false,
@@ -274,7 +278,10 @@ async function buildPlayerView(
 
 function buildOverviewView(panel, onlinePlayer, activity) {
     const title = `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)}`;
-    const embed = createEmbed(title, 'isrp')
+    const embed = createEmbed(title, 'isrp', {
+        guild: panel.guild,
+        client: panel.client,
+    })
         .setDescription(
             onlinePlayer
                 ? 'Live, read-only ER:LC player context for staff review.'
@@ -374,7 +381,11 @@ function buildActivityView(panel, onlinePlayer, activity) {
         .map(formatCombatEvent);
     const embed = createEmbed(
         `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Activity`,
-        'isrp'
+        'isrp',
+        {
+            guild: panel.guild,
+            client: panel.client,
+        }
     )
         .setDescription(
             onlinePlayer
@@ -411,7 +422,11 @@ function buildVehiclesView(panel, onlinePlayer, activity) {
     const vehicles = activity.vehicles.slice(0, 10);
     const embed = createEmbed(
         `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Vehicles`,
-        'isrp'
+        'isrp',
+        {
+            guild: panel.guild,
+            client: panel.client,
+        }
     ).setDescription(
         vehicles.length
             ? `Showing ${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'} currently attributed to this player.`
@@ -437,7 +452,15 @@ function buildCallsView(panel, onlinePlayer, activity) {
         .map(formatCallEvent);
     const embed = createEmbed(
         `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Mod Calls`,
-        'isrp'
+        'isrp',
+        {
+            guild: panel.guild,
+            client: panel.client,
+            tone:
+                activity.unansweredCalls.length > 0
+                    ? 'warning'
+                    : 'info',
+        }
     )
         .setDescription(
             calls.join('\n\n') ||
@@ -564,7 +587,12 @@ function createErrorEmbed(panel, error) {
     return addPanelSession(
         createEmbed(
             `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Refresh Failed`,
-            'isrp'
+            'isrp',
+            {
+                guild: panel.guild,
+                client: panel.client,
+                tone: 'danger',
+            }
         )
             .setColor('#C0392B')
             .setDescription(

@@ -27,7 +27,11 @@ module.exports = {
         const recentLogs = sortNewest(logs).slice(0, count);
         const embed = createEmbed(
             'Recent ER:LC Command Logs',
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         ).setDescription(
             recentLogs.length
                 ? recentLogs.map(formatCommandLog).join('\n\n')

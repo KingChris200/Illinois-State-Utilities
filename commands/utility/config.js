@@ -133,6 +133,14 @@ module.exports = {
                 .setTitle(
                     'Illinois State Utilities | Server Configuration'
                 )
+                .setAuthor({
+                    name: interaction.guild.name,
+                    iconURL:
+                        interaction.guild.iconURL({
+                            extension: 'png',
+                            size: 256,
+                        }) || undefined,
+                })
                 .setDescription(
                     [
                         'Below are the settings currently saved for this server.',

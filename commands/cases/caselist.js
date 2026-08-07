@@ -308,6 +308,11 @@ module.exports = {
                 'Use `/case view` with a case ID to open its complete record.',
             ].join('\n');
 
+            const guildIcon =
+                interaction.guild.iconURL({
+                    size: 256,
+                });
+
             const listEmbed =
                 new EmbedBuilder()
                     .setColor(
@@ -333,11 +338,7 @@ module.exports = {
                             interaction.guild
                                 .name,
 
-                        iconURL:
-                            interaction.guild.iconURL({
-                                size: 256,
-                            }) ||
-                            undefined,
+                        iconURL: guildIcon || undefined,
                     })
                     .setFooter({
                         text:
@@ -350,6 +351,10 @@ module.exports = {
                             interaction.client.user.displayAvatarURL(),
                     })
                     .setTimestamp();
+
+            if (guildIcon) {
+                listEmbed.setThumbnail(guildIcon);
+            }
 
             return interaction.editReply({
                 content: null,

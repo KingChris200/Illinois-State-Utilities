@@ -26,7 +26,12 @@ module.exports = {
 
         const embed = createEmbed(
             `Server Queue — ${queue.length}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+                tone: queue.length > 0 ? 'warning' : 'info',
+            }
         )
             .setDescription(
                 lines.join('\n') ||

@@ -32,6 +32,8 @@ module.exports = {
                 query,
                 executorId: message.author.id,
                 executorMention: `${message.author}`,
+                guild: message.guild,
+                client: message.client,
                 config,
             });
         } catch (error) {

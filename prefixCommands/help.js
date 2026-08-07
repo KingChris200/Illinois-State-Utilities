@@ -104,7 +104,11 @@ module.exports = {
             commands.map((command) => [command.name, command])
         );
         const embed = createEmbed(
-            'Illinois State Utilities Command Center'
+            'Illinois State Utilities Command Center',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(
                 [
@@ -172,7 +176,11 @@ async function sendCommandHelp(message, query, config) {
         config.defaultCooldownSeconds;
     const confirmed = CONFIRMED_COMMANDS.has(command.name);
     const embed = createEmbed(
-        `Command Help — ${config.prefix}${command.name}`
+        `Command Help — ${config.prefix}${command.name}`,
+        {
+            guild: message.guild,
+            client: message.client,
+        }
     )
         .setDescription(command.description)
         .addFields(

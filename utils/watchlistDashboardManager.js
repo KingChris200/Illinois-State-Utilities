@@ -27,6 +27,8 @@ async function createWatchlistDashboard({
     guildId,
     executorId,
     executorMention,
+    guild = null,
+    client = null,
     records = null,
 }) {
     const dashboard = {
@@ -34,6 +36,8 @@ async function createWatchlistDashboard({
         guildId,
         executorId,
         executorMention,
+        guild,
+        client,
         providedRecords: Array.isArray(records)
             ? structuredClone(records)
             : null,
@@ -319,7 +323,11 @@ function buildOverviewView(dashboard, summary) {
         .map(formatRecordLine);
 
     return addDashboardSession(
-        createEmbed('🔒 Private Watchlist Command Center', 'isrp')
+        createEmbed('🔒 Private Watchlist Command Center', 'isrp', {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: 'neutral',
+        })
             .setDescription(
                 'Live, server-scoped management intelligence. All dashboard views are private and read-only.'
             )
@@ -367,7 +375,12 @@ function buildOverviewView(dashboard, summary) {
 function buildActiveView(dashboard, summary) {
     const embed = createEmbed(
         `🔎 Active Watchlist Records — ${summary.active.length}`,
-        'isrp'
+        'isrp',
+        {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: summary.active.length > 0 ? 'warning' : 'success',
+        }
     ).setDescription(
         summary.active.length
             ? 'Ordered by severity and age so urgent or long-running records remain visible.'
@@ -409,7 +422,11 @@ function buildActivityView(dashboard, summary) {
         );
 
     return addDashboardSession(
-        createEmbed('📋 Recent Watchlist Activity', 'isrp')
+        createEmbed('📋 Recent Watchlist Activity', 'isrp', {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: 'neutral',
+        })
             .setDescription(
                 events.join('\n') ||
                     '*No watchlist audit activity has been recorded.*'
@@ -443,7 +460,14 @@ function buildReviewView(dashboard, summary) {
     );
 
     return addDashboardSession(
-        createEmbed('⚠️ Watchlist Review Queue', 'isrp')
+        createEmbed('⚠️ Watchlist Review Queue', 'isrp', {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone:
+                urgent.length > 0 || stale.length > 0
+                    ? 'warning'
+                    : 'success',
+        })
             .setDescription(
                 'Records requiring management housekeeping. These are review prompts—not automatic findings of wrongdoing.'
             )
@@ -522,7 +546,11 @@ function addDashboardSession(embed, dashboard) {
 
 function createDashboardErrorEmbed(dashboard) {
     return addDashboardSession(
-        createEmbed('Watchlist Dashboard Refresh Failed', 'isrp')
+        createEmbed('Watchlist Dashboard Refresh Failed', 'isrp', {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: 'danger',
+        })
             .setColor('#C0392B')
             .setDescription(
                 'The private records could not be refreshed. No watchlist data was changed.'

@@ -11,7 +11,11 @@ module.exports = {
     async execute({ message, config }) {
         const embed = createEmbed(
             'ER:LC API Connection Check',
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         );
 
         try {

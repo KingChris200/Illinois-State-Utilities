@@ -29,7 +29,12 @@ module.exports = {
         ).length;
         const embed = createEmbed(
             `Moderator Calls — ${recentCalls.length}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+                tone: unanswered > 0 ? 'warning' : 'info',
+            }
         )
             .setDescription(
                 recentCalls.length

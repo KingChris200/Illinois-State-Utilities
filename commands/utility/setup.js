@@ -240,6 +240,14 @@ module.exports = {
                 .setTitle(
                     'Illinois State Utilities | Setup Complete'
                 )
+                .setAuthor({
+                    name: interaction.guild.name,
+                    iconURL:
+                        interaction.guild.iconURL({
+                            extension: 'png',
+                            size: 256,
+                        }) || undefined,
+                })
                 .setDescription(
                     [
                         'Illinois State Utilities has been configured successfully!',
@@ -288,6 +296,14 @@ module.exports = {
             const logEmbed = new EmbedBuilder()
                 .setColor(brandColor.decimal)
                 .setTitle('Server Configuration Updated')
+                .setAuthor({
+                    name: interaction.guild.name,
+                    iconURL:
+                        interaction.guild.iconURL({
+                            extension: 'png',
+                            size: 256,
+                        }) || undefined,
+                })
                 .setDescription(
                     [
                         `**Updated By:** ${interaction.user}`,

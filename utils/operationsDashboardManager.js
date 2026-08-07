@@ -22,6 +22,7 @@ async function createOperationsDashboard({
     executorId,
     executorMention,
     client,
+    guild = null,
     config,
 }) {
     const dashboard = {
@@ -29,6 +30,7 @@ async function createOperationsDashboard({
         executorId,
         executorMention,
         client,
+        guild,
         config,
         view: 'overview',
         processing: false,
@@ -238,7 +240,11 @@ async function buildOverviewView(dashboard) {
         Object.keys(server.Staff.Helpers).length;
     const embed = createEmbed(
         'ER:LC Operations Center — Overview',
-        'isrp'
+        'isrp',
+        {
+            guild: dashboard.guild,
+            client: dashboard.client,
+        }
     )
         .setDescription(
             `Live operational snapshot for **${cleanMarkdownText(server.Name || 'Unknown Server', 100)}**.`
@@ -300,7 +306,12 @@ async function buildCallsView(dashboard) {
     ).length;
     const embed = createEmbed(
         'ER:LC Operations Center — Mod Calls',
-        'isrp'
+        'isrp',
+        {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: unanswered > 0 ? 'warning' : 'info',
+        }
     )
         .setDescription(
             calls.length
@@ -333,7 +344,11 @@ async function buildActivityView(dashboard) {
     const kills = sortNewest(activity.KillLogs).slice(0, 5);
     const embed = createEmbed(
         'ER:LC Operations Center — Activity',
-        'isrp'
+        'isrp',
+        {
+            guild: dashboard.guild,
+            client: dashboard.client,
+        }
     )
         .setDescription(
             'Recent player movement and elimination activity.'
@@ -370,7 +385,12 @@ async function buildHealthView(dashboard) {
     const connected = Boolean(connection);
     const embed = createEmbed(
         'ER:LC Operations Center — Server Health',
-        'isrp'
+        'isrp',
+        {
+            guild: dashboard.guild,
+            client: dashboard.client,
+            tone: connected ? 'success' : 'danger',
+        }
     )
         .setColor(connected ? '#27AE60' : '#C0392B')
         .setDescription(
@@ -434,7 +454,12 @@ function createErrorEmbed(dashboard, error) {
     return addDashboardSession(
         createEmbed(
             'ER:LC Operations Center — Refresh Failed',
-            'isrp'
+            'isrp',
+            {
+                guild: dashboard.guild,
+                client: dashboard.client,
+                tone: 'danger',
+            }
         )
             .setColor('#C0392B')
             .setDescription(

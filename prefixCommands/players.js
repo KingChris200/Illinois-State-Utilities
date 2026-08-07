@@ -35,7 +35,11 @@ module.exports = {
 
         const embed = createEmbed(
             `Server Players — ${players.length}`,
-            'isrp'
+            'isrp',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(playerList)
             .addFields({

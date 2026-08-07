@@ -28,7 +28,11 @@ module.exports = {
         }
 
         const embed = createEmbed(
-            'Illinois State Utilities Status'
+            'Illinois State Utilities Status',
+            {
+                guild: message.guild,
+                client: message.client,
+            }
         )
             .setDescription(
                 'Current readiness for Discord and ER:LC remote operations.'

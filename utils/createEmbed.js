@@ -1,28 +1,29 @@
 const { EmbedBuilder } = require('discord.js');
-const brands = require('../config/branding');
+const {
+    applyEmbedTheme,
+} = require('./embedTheme');
 
-function createEmbed(title, brandName = 'utilities') {
-    const brand = brands[brandName] || brands.utilities;
+function createEmbed(
+    title,
+    brandName = 'utilities',
+    context = {}
+) {
+    if (
+        brandName &&
+        typeof brandName === 'object'
+    ) {
+        context = brandName;
+        brandName = 'utilities';
+    }
 
     const embed = new EmbedBuilder()
-        .setColor(brand.color)
         .setTitle(title)
         .setTimestamp();
 
-    if (brand.logo) {
-        embed.setThumbnail(brand.logo);
-
-        embed.setFooter({
-            text: brand.footer,
-            iconURL: brand.logo,
-        });
-    } else {
-        embed.setFooter({
-            text: brand.footer,
-        });
-    }
-
-    return embed;
+    return applyEmbedTheme(embed, {
+        ...context,
+        brandName,
+    });
 }
 
 module.exports = createEmbed;
