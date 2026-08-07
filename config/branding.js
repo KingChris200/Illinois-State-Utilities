@@ -1,12 +1,36 @@
-const utilitiesLogo =
-    'https://media.discordapp.net/attachments/1527770370743210150/1528973240809291866/IMG_5938.png?ex=6a60e78b&is=6a5f960b&hm=579350434b94dde6c28246d6b9e42a5d9c69c01d26320e28dba981cf6ae8435a&=&format=webp&quality=lossless';
+const DEFAULT_ASSET_BASE_URL =
+    'https://raw.githubusercontent.com/KingChris200/Illinois-State-Utilities/main/assets';
+const assetBaseUrl = String(
+    process.env.ISRP_ASSET_BASE_URL || DEFAULT_ASSET_BASE_URL
+).replace(/\/+$/, '');
+
+function assetUrl(relativePath) {
+    return `${assetBaseUrl}/${String(relativePath).replace(/^\/+/, '')}`;
+}
+
+const assets = {
+    logo: assetUrl('branding/isrp-logo-clean.jpg'),
+    logoDark: assetUrl('branding/isrp-logo-dark.jpg'),
+    logoSilver: assetUrl('branding/isrp-logo-silver.jpg'),
+    wordmark: assetUrl('branding/isrp-wordmark.jpg'),
+    robloxAvatar: assetUrl(
+        'branding/isrp-roblox-avatar.jpg'
+    ),
+    sessionBanner: assetUrl(
+        'thumbnails/session-started.png'
+    ),
+    welcomeBanner: assetUrl(
+        'thumbnails/welcome-banner.png'
+    ),
+};
 
 module.exports = {
     utilities: {
         name: 'Illinois State Utilities',
         shortName: 'IS Utilities',
         color: '#0A4D8C',
-        logo: utilitiesLogo,
+        logo: assets.logo,
+        wordmark: assets.wordmark,
         footer:
             'Illinois State Utilities • Supporting Illinois State Roleplay',
     },
@@ -16,8 +40,10 @@ module.exports = {
         shortName: 'ISP',
         color: '#002D5B',
 
-        // We can replace this with the ISP badge URL later.
-        logo: utilitiesLogo,
+        // Keep department branding neutral until an official ISP badge
+        // asset is supplied; using the ISRP community logo here would
+        // incorrectly present it as the police department badge.
+        logo: process.env.ISP_BRAND_LOGO_URL || null,
 
         footer:
             'Illinois State Police • Integrity • Service • Pride',
@@ -27,8 +53,14 @@ module.exports = {
         name: 'Illinois State Roleplay',
         shortName: 'ISRP',
         color: '#1E90FF',
-        logo: utilitiesLogo,
+        logo: assets.logo,
+        wordmark: assets.wordmark,
         footer:
             'Illinois State Utilities • Supporting Illinois State Roleplay',
     },
+
+    assets,
+    assetBaseUrl,
+    assetUrl,
+    DEFAULT_ASSET_BASE_URL,
 };

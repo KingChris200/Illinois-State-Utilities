@@ -137,22 +137,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            /*
-             * Lists may be private or public depending on the
-             * visibility option chosen by management.
-             */
-
-            const visibility =
-                interaction.options.getString(
-                    'visibility'
-                ) || 'private';
-
             const access =
                 await validateCaseAccess(
-                    interaction,
-                    {
-                        visibility,
-                    }
+                    interaction
                 );
 
             if (!access.allowed) {

@@ -7,6 +7,9 @@ const {
 
 const fs = require('fs');
 const path = require('path');
+const {
+    isInternalCommandModule,
+} = require('./config/internalCommandModules');
 
 /*
  * ============================================================
@@ -39,28 +42,6 @@ if (!process.env.CLIENT_ID) {
  * They are not standalone Discord slash commands and should
  * never be sent to Discord during command deployment.
  */
-
-const ignoredCommandModules = new Set([
-    /*
-     * /case internal modules
-     */
-
-    'cases/casecomponents.js',
-    'cases/caseview.js',
-    'cases/caseedit.js',
-    'cases/caseclose.js',
-    'cases/casereopen.js',
-    'cases/casevoid.js',
-    'cases/casesearch.js',
-    'cases/caselist.js',
-    'cases/caseexport.js',
-
-    /*
-     * /movement internal modules
-     */
-
-    'management/movementHandler.js',
-]);
 
 /*
  * ============================================================
@@ -130,7 +111,7 @@ for (
          */
 
         if (
-            ignoredCommandModules.has(
+            isInternalCommandModule(
                 relativeFilePath
             )
         ) {

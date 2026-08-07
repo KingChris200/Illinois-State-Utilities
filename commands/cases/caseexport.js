@@ -27,17 +27,9 @@ module.exports = {
     async execute(interaction) {
         try {
 
-            const visibility =
-                interaction.options.getString(
-                    'visibility'
-                ) || 'private';
-
             const access =
                 await validateCaseAccess(
-                    interaction,
-                    {
-                        visibility,
-                    }
+                    interaction
                 );
 
             if (!access.allowed) {

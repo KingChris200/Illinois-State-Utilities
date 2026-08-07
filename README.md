@@ -99,7 +99,44 @@ minutes to appear.
 
 Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
 stored in `assets/branding`. The generated Discord welcome artwork is at
-`assets/thumbnails/welcome-banner.png`.
+`assets/thumbnails/welcome-banner.png`, and the session artwork is at
+`assets/thumbnails/session-started.png`.
+
+The local files are the source of truth. Shared embeds use stable GitHub
+asset URLs instead of temporary Discord attachment links, while commands
+such as `/about`, `/embed`, the welcome system, and session announcements
+attach the wide artwork directly when appropriate. Keep the `assets`
+folder in the same commit as branding changes.
+
+If the repository or default branch changes, set a new public base URL:
+
+```env
+ISRP_ASSET_BASE_URL=https://example.com/illinois-state-utilities/assets
+
+# Optional: use only when an official Illinois State Police badge is ready
+ISP_BRAND_LOGO_URL=
+```
+
+The ISP embed family intentionally stays neutral when
+`ISP_BRAND_LOGO_URL` is empty so the community ISRP logo is not presented
+as an official police badge.
+
+## Private case management
+
+The existing `/case` system provides view, edit, close, reopen, void,
+search, list, and text-export tools. Case records and exports always use
+private Discord responses. Access is limited to the server owner,
+administrators, members with **Manage Server**, and the management,
+Internal Affairs, director, or ownership roles configured in
+`config/serverConfigs.js`. **Manage Messages** by itself is not enough to
+read personnel records.
+
+Because the public/private slash-command choices were removed, run
+`npm run deploy-commands` once after installing this update.
+
+Database writes are serialized per data file. Simultaneous promotions,
+infractions, watchlist actions, session updates, and case actions can no
+longer overwrite one another after reading the same older state.
 
 ## Welcome system
 

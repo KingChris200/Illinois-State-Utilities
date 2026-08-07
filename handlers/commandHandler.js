@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const {
+    isInternalCommandModule,
+} = require('../config/internalCommandModules');
 
 /*
  * ============================================================
@@ -9,29 +12,6 @@ const path = require('path');
  * These files support larger modular commands but are not
  * standalone Discord slash commands.
  */
-
-const ignoredCommandModules = new Set([
-    /*
-     * /case internal modules
-     */
-
-    'cases/casecomponents.js',
-    'cases/caseview.js',
-    'cases/caseedit.js',
-    'cases/caseclose.js',
-    'cases/casereopen.js',
-    'cases/casevoid.js',
-    'cases/casesearch.js',
-    'cases/caselist.js',
-    'cases/caseexport.js',
-
-    /*
-     * /movement internal modules
-     */
-
-    'management/movementHandler.js',
-    'management/movementRevoke.js',
-]);
 
 module.exports = function loadCommands(
     client
@@ -97,7 +77,7 @@ module.exports = function loadCommands(
              */
 
             if (
-                ignoredCommandModules.has(
+                isInternalCommandModule(
                     relativeFilePath
                 )
             ) {

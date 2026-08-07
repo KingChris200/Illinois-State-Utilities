@@ -8,6 +8,10 @@ const {
     readDatabase,
 } = require('../../utils/database');
 
+const {
+    memberCanReviewMovements,
+} = require('../../config/serverConfigs');
+
 /*
  * ============================================================
  * CASE PRESENTATION
@@ -121,19 +125,18 @@ function canManageCases(interaction) {
     const permissions =
         interaction.memberPermissions;
 
-    if (!permissions) {
-        return false;
-    }
-
     return (
-        permissions.has(
-            PermissionFlagsBits.ManageMessages
-        ) ||
-        permissions.has(
+        interaction.guild?.ownerId ===
+            interaction.user?.id ||
+        permissions?.has(
             PermissionFlagsBits.ManageGuild
         ) ||
-        permissions.has(
+        permissions?.has(
             PermissionFlagsBits.Administrator
+        ) ||
+        memberCanReviewMovements(
+            interaction.member,
+            interaction.guildId
         )
     );
 }
@@ -142,7 +145,6 @@ async function validateCaseAccess(
     interaction,
     {
         defer = true,
-        visibility = 'private',
     } = {}
 ) {
     if (!interaction.inGuild()) {
@@ -163,7 +165,7 @@ async function validateCaseAccess(
     if (!canManageCases(interaction)) {
         await interaction.reply({
             content:
-                '❌ You need the **Manage Messages**, **Manage Server**, or **Administrator** permission to manage case records.',
+                '❌ Case records are restricted to configured management, Internal Affairs, directors, and server ownership.',
 
             flags:
                 MessageFlags.Ephemeral,
@@ -177,10 +179,7 @@ async function validateCaseAccess(
 
     if (defer) {
         await interaction.deferReply({
-            flags:
-                visibility === 'private'
-                    ? MessageFlags.Ephemeral
-                    : undefined,
+            flags: MessageFlags.Ephemeral,
         });
     }
 

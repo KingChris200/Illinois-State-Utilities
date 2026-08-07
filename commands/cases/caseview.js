@@ -26,16 +26,6 @@ module.exports = {
     async execute(interaction) {
         try {
             /*
-             * Determine whether the response should be
-             * private or visible to everyone.
-             */
-
-            const visibility =
-                interaction.options.getString(
-                    'visibility'
-                ) || 'private';
-
-            /*
              * Validate:
              * - Command is being used in a server
              * - User has case-management permissions
@@ -45,10 +35,7 @@ module.exports = {
 
             const access =
                 await validateCaseAccess(
-                    interaction,
-                    {
-                        visibility,
-                    }
+                    interaction
                 );
 
             if (!access.allowed) {
@@ -115,8 +102,7 @@ module.exports = {
              * Display the case.
              *
              * Mentions are disabled so saved user IDs cannot
-             * unexpectedly ping staff members when a case is
-             * viewed publicly.
+             * unexpectedly ping staff members.
              */
 
             return interaction.editReply({

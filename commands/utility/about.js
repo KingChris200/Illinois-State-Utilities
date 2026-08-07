@@ -1,5 +1,15 @@
-const { SlashCommandBuilder } = require('discord.js');
+const path = require('path');
+const {
+    AttachmentBuilder,
+    SlashCommandBuilder,
+} = require('discord.js');
 const createEmbed = require('../../utils/createEmbed');
+
+const ABOUT_BANNER_NAME = 'isrp-wordmark.jpg';
+const ABOUT_BANNER_PATH = path.join(
+    __dirname,
+    '../../assets/branding/isrp-wordmark.jpg'
+);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -52,10 +62,31 @@ module.exports = {
                         'Supporting Illinois State Roleplay through management tools, department systems, and server-wide utilities.',
                     inline: false,
                 }
-            );
+            )
+            .setImage(`attachment://${ABOUT_BANNER_NAME}`);
+
+        const guildIcon = interaction.guild?.iconURL?.({
+            extension: 'png',
+            size: 256,
+        });
+
+        if (guildIcon) {
+            embed
+                .setAuthor({
+                    name: interaction.guild.name,
+                    iconURL: guildIcon,
+                })
+                .setThumbnail(guildIcon);
+        }
 
         await interaction.reply({
             embeds: [embed],
+            files: [
+                new AttachmentBuilder(ABOUT_BANNER_PATH, {
+                    name: ABOUT_BANNER_NAME,
+                }),
+            ],
+            allowedMentions: { parse: [] },
         });
     },
 };

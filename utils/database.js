@@ -11,6 +11,7 @@ const DATA_DIRECTORY = path.join(
     process.cwd(),
     'data'
 );
+const databaseOperationQueues = new Map();
 
 /*
  * ============================================================
@@ -160,7 +161,7 @@ async function readDatabase(
  * Data is written to a temporary file first to reduce the chance
  * of database corruption.
  */
-async function writeDatabase(
+async function performWriteDatabase(
     databaseName,
     data
 ) {
@@ -227,6 +228,13 @@ async function writeDatabase(
     return data;
 }
 
+async function writeDatabase(databaseName, data) {
+    return enqueueDatabaseOperation(
+        databaseName,
+        () => performWriteDatabase(databaseName, data)
+    );
+}
+
 /*
  * ============================================================
  * DATABASE UPDATES
@@ -258,7 +266,7 @@ async function writeDatabase(
  * Supporting both formats prevents older and newer commands from
  * conflicting with one another.
  */
-async function updateDatabase(
+async function performDatabaseUpdate(
     databaseName,
     updaterOrData,
     defaultValue = {}
@@ -292,7 +300,7 @@ async function updateDatabase(
             );
         }
 
-        await writeDatabase(
+        await performWriteDatabase(
             databaseName,
             updatedData
         );
@@ -317,12 +325,55 @@ async function updateDatabase(
         );
     }
 
-    await writeDatabase(
+    await performWriteDatabase(
         databaseName,
         updaterOrData
     );
 
     return updaterOrData;
+}
+
+async function updateDatabase(
+    databaseName,
+    updaterOrData,
+    defaultValue = {}
+) {
+    return enqueueDatabaseOperation(
+        databaseName,
+        () =>
+            performDatabaseUpdate(
+                databaseName,
+                updaterOrData,
+                defaultValue
+            )
+    );
+}
+
+function enqueueDatabaseOperation(
+    databaseName,
+    operation
+) {
+    const queueKey = getDatabasePath(databaseName);
+    const previousOperation =
+        databaseOperationQueues.get(queueKey) ||
+        Promise.resolve();
+    const currentOperation = previousOperation
+        .catch(() => undefined)
+        .then(operation);
+
+    databaseOperationQueues.set(
+        queueKey,
+        currentOperation
+    );
+
+    return currentOperation.finally(() => {
+        if (
+            databaseOperationQueues.get(queueKey) ===
+            currentOperation
+        ) {
+            databaseOperationQueues.delete(queueKey);
+        }
+    });
 }
 
 /*
@@ -446,6 +497,8 @@ module.exports = {
     readDatabase,
     writeDatabase,
     updateDatabase,
+
+    enqueueDatabaseOperation,
 
     deleteDatabase,
     databaseExists,

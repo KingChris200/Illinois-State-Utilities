@@ -110,19 +110,6 @@ const CASE_STATUS_CHOICES = [
     },
 ];
 
-const VISIBILITY_CHOICES = [
-    {
-        name:
-            'Private — Only you can see it',
-        value: 'private',
-    },
-    {
-        name:
-            'Public — Everyone can see it',
-        value: 'public',
-    },
-];
-
 /*
  * ============================================================
  * SUBCOMMAND ROUTER
@@ -230,20 +217,6 @@ module.exports = {
                             'The permanent ID of the case.'
                         )
                         .setRequired(true)
-                )
-
-                .addStringOption((option) =>
-                    option
-                        .setName(
-                            'visibility'
-                        )
-                        .setDescription(
-                            'Choose whether the response is private or public.'
-                        )
-                        .addChoices(
-                            ...VISIBILITY_CHOICES
-                        )
-                        .setRequired(false)
                 )
         )
 
@@ -565,20 +538,6 @@ module.exports = {
                         .setMaxValue(20)
                         .setRequired(false)
                 )
-
-                .addStringOption((option) =>
-                    option
-                        .setName(
-                            'visibility'
-                        )
-                        .setDescription(
-                            'Choose whether the response is private or public.'
-                        )
-                        .addChoices(
-                            ...VISIBILITY_CHOICES
-                        )
-                        .setRequired(false)
-                )
         )
 
         /*
@@ -601,20 +560,6 @@ module.exports = {
                             'The permanent ID of the case.'
                         )
                         .setRequired(true)
-                )
-
-                .addStringOption((option) =>
-                    option
-                        .setName(
-                            'visibility'
-                        )
-                        .setDescription(
-                            'Choose whether the exported file is private or public.'
-                        )
-                        .addChoices(
-                            ...VISIBILITY_CHOICES
-                        )
-                        .setRequired(false)
                 )
         ),
 
@@ -691,7 +636,7 @@ module.exports = {
              *
              * Each module handles:
              * - Permissions
-             * - Response visibility
+             * - Private response handling
              * - Deferring the interaction
              * - Database actions
              * - User-facing responses
