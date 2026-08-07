@@ -19,6 +19,7 @@ const CATEGORY_ORDER = [
         name: 'Live Server Intelligence',
         commands: [
             'operations',
+            'alerts',
             'staff',
             'queue',
             'modcalls',
@@ -65,6 +66,7 @@ const READ_ONLY_COMMANDS = new Set([
     'server',
     'staff',
     'operations',
+    'alerts',
     'queue',
     'modcalls',
     'joinlogs',

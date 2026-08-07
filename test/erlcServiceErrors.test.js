@@ -1,10 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+const erlcService = require('../services/erlcService');
 const {
     createApiErrorFromResponse,
     getPublicErrorMessage,
-} = require('../services/erlcService');
+} = erlcService;
 
 test('decodes invalid or expired server keys', () => {
     const error = createApiErrorFromResponse({
@@ -53,4 +54,51 @@ test('does not expose unknown upstream response messages', () => {
         'ER:LC API request failed with HTTP 418.'
     );
     assert.doesNotMatch(error.message, /sensitive/i);
+});
+
+test('records ER:LC rate-limit headers for adaptive polling', async () => {
+    const previousKey = process.env.ERLC_SERVER_KEY;
+    const previousMockMode = process.env.ERLC_MOCK_MODE;
+    const previousFetch = global.fetch;
+
+    process.env.ERLC_SERVER_KEY = 'test-server-key';
+    delete process.env.ERLC_MOCK_MODE;
+    global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        headers: {
+            get: (name) =>
+                ({
+                    'x-ratelimit-bucket': 'global',
+                    'x-ratelimit-limit': '35',
+                    'x-ratelimit-remaining': '1',
+                    'x-ratelimit-reset': '2000000000',
+                })[name.toLowerCase()] ?? null,
+        },
+        json: async () => ({ Name: 'Test Server' }),
+    });
+
+    try {
+        await erlcService.getServer();
+        const rateLimit = erlcService.getApiRateLimit();
+
+        assert.equal(rateLimit.bucket, 'global');
+        assert.equal(rateLimit.limit, 35);
+        assert.equal(rateLimit.remaining, 1);
+        assert.equal(rateLimit.resetAt, 2_000_000_000_000);
+    } finally {
+        global.fetch = previousFetch;
+
+        if (previousKey === undefined) {
+            delete process.env.ERLC_SERVER_KEY;
+        } else {
+            process.env.ERLC_SERVER_KEY = previousKey;
+        }
+
+        if (previousMockMode === undefined) {
+            delete process.env.ERLC_MOCK_MODE;
+        } else {
+            process.env.ERLC_MOCK_MODE = previousMockMode;
+        }
+    }
 });

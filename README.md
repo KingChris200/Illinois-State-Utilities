@@ -10,7 +10,7 @@ Current prefix commands include:
 
 - Public: `?help`, `?id`, and `?status`
 - Server information: `?players`, `?server`, `?staff`, and `?queue`
-- Live intelligence: `?operations`, `?modcalls`, `?joinlogs`, `?kl`, `?vehicles`, and `?logs`
+- Live intelligence: `?operations`, `?alerts`, `?modcalls`, `?joinlogs`, `?kl`, `?vehicles`, and `?logs`
 - Announcements: `?m` and `?h`
 - Confirmed moderation: `?warn`, `?kick`, `?ban`, `?unban`, `?respawn`, `?heal`, `?wanted`, and `?unwanted`
 - Diagnostics: `?apicheck`
@@ -45,6 +45,21 @@ ERLC_DRY_RUN=true
 
 # Set true to return safe sample data for every ER:LC information command
 ERLC_MOCK_MODE=true
+
+# Smart alerts remain off until explicitly enabled
+ERLC_SMART_ALERTS_ENABLED=false
+ERLC_SMART_ALERT_CHANNEL_ID=
+
+# Optional staff role to ping when a real alert is sent
+ERLC_SMART_ALERT_ROLE_ID=
+
+# Optional tuning (safe defaults shown)
+ERLC_SMART_ALERT_INTERVAL_MS=60000
+ERLC_MODCALL_ALERT_DELAY_SECONDS=60
+ERLC_QUEUE_ALERT_THRESHOLD=5
+ERLC_KILL_ALERT_THRESHOLD=5
+ERLC_KILL_ALERT_WINDOW_SECONDS=120
+ERLC_ALERT_COOLDOWN_SECONDS=300
 ```
 
 Administrators may use staff-only commands even when their role is not

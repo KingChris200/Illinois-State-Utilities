@@ -42,6 +42,14 @@ const apiHealth = {
     lastErrorCode: null,
 };
 
+const apiRateLimit = {
+    bucket: null,
+    limit: null,
+    remaining: null,
+    resetAt: null,
+    updatedAt: null,
+};
+
 function getApiKey() {
     return String(process.env.ERLC_SERVER_KEY || '').trim();
 }
@@ -94,11 +102,13 @@ async function request(path, options = {}) {
         throw error;
     }
 
+    recordRateLimit(response);
+
     if (!response.ok) {
         const body = await readSafeResponseBody(response);
         const retryAfter = parseRetryAfter(
             response.headers.get('retry-after')
-        );
+        ) || parseRetryAfter(body?.retryAfter);
         const error = createApiErrorFromResponse({
             status: response.status,
             body,
@@ -163,6 +173,8 @@ async function readSafeResponseBody(response) {
         return {
             code: parsed?.code,
             errorCode: parsed?.errorCode,
+            retryAfter:
+                parsed?.retry_after ?? parsed?.retryAfter,
         };
     } catch {
         return null;
@@ -198,6 +210,57 @@ function recordFailure(error) {
 
 function getApiHealth() {
     return { ...apiHealth };
+}
+
+function getApiRateLimit() {
+    return { ...apiRateLimit };
+}
+
+function recordRateLimit(response) {
+    const headers = response?.headers;
+
+    if (!headers?.get) {
+        return;
+    }
+
+    const bucket = headers.get('x-ratelimit-bucket');
+    const limit = parseHeaderNumber(
+        headers.get('x-ratelimit-limit')
+    );
+    const remaining = parseHeaderNumber(
+        headers.get('x-ratelimit-remaining')
+    );
+    const rawReset = parseHeaderNumber(
+        headers.get('x-ratelimit-reset')
+    );
+
+    if (
+        bucket === null &&
+        limit === null &&
+        remaining === null &&
+        rawReset === null
+    ) {
+        return;
+    }
+
+    apiRateLimit.bucket = bucket;
+    apiRateLimit.limit = limit;
+    apiRateLimit.remaining = remaining;
+    apiRateLimit.resetAt = rawReset === null
+        ? null
+        : rawReset < 1_000_000_000_000
+          ? rawReset * 1000
+          : rawReset;
+    apiRateLimit.updatedAt = Date.now();
+}
+
+function parseHeaderNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
 }
 
 function getPublicErrorMessage(error) {
@@ -574,6 +637,43 @@ async function getOperationsActivity({ mockData = null } = {}) {
     return normalizeOperationsActivity(server);
 }
 
+async function getSmartAlertSnapshot({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeSmartAlertSnapshot(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return normalizeSmartAlertSnapshot({
+            ModCalls: [
+                {
+                    Caller: 'MockCivilian:135792468',
+                    Moderator: null,
+                    Timestamp: now - 90,
+                },
+            ],
+            Queue: [135792468, 864297531],
+            KillLogs: [
+                {
+                    Killer: 'MockOfficer:112233445',
+                    Killed: 'MockSuspect:556677889',
+                    Timestamp: now - 30,
+                },
+                {
+                    Killer: 'MockPlayer:123456789',
+                    Killed: 'MockCivilian:135792468',
+                    Timestamp: now - 60,
+                },
+            ],
+        });
+    }
+
+    const server = await request(
+        '/v2/server?ModCalls=true&Queue=true&KillLogs=true'
+    );
+    return normalizeSmartAlertSnapshot(server);
+}
+
 function normalizeStaff(staff) {
     return {
         Admins: staff?.Admins || {},
@@ -607,6 +707,14 @@ function normalizeOperationsActivity(server) {
     };
 }
 
+function normalizeSmartAlertSnapshot(server) {
+    return {
+        ModCalls: normalizeArray(server?.ModCalls),
+        Queue: normalizeArray(server?.Queue),
+        KillLogs: normalizeArray(server?.KillLogs),
+    };
+}
+
 module.exports = {
     ErlcServiceError,
     PRC_ERROR_MESSAGES,
@@ -614,6 +722,7 @@ module.exports = {
     createApiErrorFromResponse,
     executeCommand,
     getApiHealth,
+    getApiRateLimit,
     getCommandLogs,
     getJoinLogs,
     getKillLogs,
@@ -625,6 +734,7 @@ module.exports = {
     getQueue,
     getServer,
     getSessionStatus,
+    getSmartAlertSnapshot,
     getStaff,
     getVehicles,
     isConfigured,

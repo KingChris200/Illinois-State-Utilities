@@ -3,6 +3,9 @@ const { Events } = require('discord.js');
 const {
     recoverSessionState,
 } = require('../services/sessionRecoveryService');
+const {
+    startSmartAlertMonitor,
+} = require('../services/erlcSmartAlertMonitor');
 
 module.exports = {
     name: Events.ClientReady,
@@ -19,6 +22,20 @@ module.exports = {
         } catch (error) {
             console.error(
                 '[SESSION RECOVERY] Startup recovery failed:',
+                error
+            );
+        }
+
+        try {
+            const alerts =
+                await startSmartAlertMonitor(client);
+
+            console.log(
+                `[ER:LC SMART ALERTS] ${alerts.state}`
+            );
+        } catch (error) {
+            console.error(
+                '[ER:LC SMART ALERTS] Startup failed:',
                 error
             );
         }

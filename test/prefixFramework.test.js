@@ -8,10 +8,11 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 24);
+    assert.equal(count, 25);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
+            'alerts',
             'api',
             'apicheck',
             'ban',
@@ -71,6 +72,11 @@ test('mock data bypasses live ER:LC requests', async () => {
     };
     const operationsActivity = {
         JoinLogs: joinLogs,
+        KillLogs: killLogs,
+    };
+    const alertSnapshot = {
+        ModCalls: modCalls,
+        Queue: queue,
         KillLogs: killLogs,
     };
 
@@ -134,6 +140,12 @@ test('mock data bypasses live ER:LC requests', async () => {
             mockData: operationsActivity,
         }),
         operationsActivity
+    );
+    assert.deepEqual(
+        await erlcService.getSmartAlertSnapshot({
+            mockData: alertSnapshot,
+        }),
+        alertSnapshot
     );
 });
 

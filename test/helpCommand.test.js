@@ -93,4 +93,24 @@ test('configured staff see the live intelligence commands', async () => {
     assert.match(intelligence, /\?vehicles/);
     assert.doesNotMatch(intelligence, /\?killlogs/);
     assert.doesNotMatch(intelligence, /\?logs/);
+    assert.doesNotMatch(intelligence, /\?alerts/);
+});
+
+test('senior staff can see detailed smart-alert help', async () => {
+    const { message, replies } = createMessage(['senior-role']);
+
+    await helpCommand.execute({
+        message,
+        args: ['alerts'],
+        config,
+    });
+
+    const embed = replies[0].embeds[0].toJSON();
+    assert.match(embed.title, /\?alerts/);
+    assert.equal(
+        embed.fields.find(
+            (field) => field.name === 'Permission'
+        ).value,
+        'Senior staff'
+    );
 });
