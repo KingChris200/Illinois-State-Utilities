@@ -479,6 +479,101 @@ async function getVehicles({ mockData = null } = {}) {
     return normalizeArray(server?.Vehicles);
 }
 
+async function getOperationsOverview({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeOperationsOverview(mockData);
+    }
+
+    if (isMockMode()) {
+        return normalizeOperationsOverview({
+            Name: 'Illinois State Roleplay (Mock)',
+            CurrentPlayers: 3,
+            MaxPlayers: 40,
+            JoinKey: 'MOCK',
+            AccVerifiedReq: 'Disabled',
+            TeamBalance: true,
+            Players: [
+                {
+                    Player: 'MockPlayer:123456789',
+                    Team: 'Civilian',
+                },
+                {
+                    Player: 'MockOfficer:112233445',
+                    Team: 'Police',
+                },
+                {
+                    Player: 'MockFirefighter:998877665',
+                    Team: 'Fire',
+                },
+            ],
+            Staff: {
+                Admins: { 123456789: 'MockPlayer' },
+                Mods: { 987654321: 'MockModerator' },
+                Helpers: {},
+            },
+            Queue: [135792468, 864297531],
+            Vehicles: [
+                {
+                    Name: 'Falcon Interceptor Utility',
+                    Owner: 'MockOfficer',
+                    Plate: 'ISRP-01',
+                },
+                {
+                    Name: 'Bullhorn Prancer',
+                    Owner: 'MockPlayer',
+                    Plate: 'MOCK-02',
+                },
+            ],
+        });
+    }
+
+    const server = await request(
+        '/v2/server?Players=true&Staff=true&Queue=true&Vehicles=true'
+    );
+    return normalizeOperationsOverview(server);
+}
+
+async function getOperationsActivity({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeOperationsActivity(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return normalizeOperationsActivity({
+            JoinLogs: [
+                {
+                    Join: true,
+                    Player: 'MockCivilian:135792468',
+                    Timestamp: now - 25,
+                },
+                {
+                    Join: false,
+                    Player: 'MockFormerPlayer:864297531',
+                    Timestamp: now - 150,
+                },
+            ],
+            KillLogs: [
+                {
+                    Killer: 'MockOfficer:112233445',
+                    Killed: 'MockSuspect:556677889',
+                    Timestamp: now - 40,
+                },
+                {
+                    Killer: 'MockPlayer:123456789',
+                    Killed: 'MockCivilian:135792468',
+                    Timestamp: now - 210,
+                },
+            ],
+        });
+    }
+
+    const server = await request(
+        '/v2/server?JoinLogs=true&KillLogs=true'
+    );
+    return normalizeOperationsActivity(server);
+}
+
 function normalizeStaff(staff) {
     return {
         Admins: staff?.Admins || {},
@@ -495,6 +590,23 @@ function normalizeArray(value) {
     return Array.isArray(value) ? value : [];
 }
 
+function normalizeOperationsOverview(server) {
+    return {
+        ...(server || {}),
+        Players: normalizeArray(server?.Players),
+        Staff: normalizeStaff(server?.Staff),
+        Queue: normalizeArray(server?.Queue),
+        Vehicles: normalizeArray(server?.Vehicles),
+    };
+}
+
+function normalizeOperationsActivity(server) {
+    return {
+        JoinLogs: normalizeArray(server?.JoinLogs),
+        KillLogs: normalizeArray(server?.KillLogs),
+    };
+}
+
 module.exports = {
     ErlcServiceError,
     PRC_ERROR_MESSAGES,
@@ -506,6 +618,8 @@ module.exports = {
     getJoinLogs,
     getKillLogs,
     getModCalls,
+    getOperationsActivity,
+    getOperationsOverview,
     getPlayers,
     getPublicErrorMessage,
     getQueue,

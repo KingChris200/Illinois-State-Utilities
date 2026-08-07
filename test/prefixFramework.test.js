@@ -8,7 +8,7 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 23);
+    assert.equal(count, 24);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
@@ -25,6 +25,8 @@ test('loads the expected prefix commands', () => {
             'logs',
             'm',
             'modcalls',
+            'operations',
+            'ops',
             'players',
             'queue',
             're',
@@ -62,6 +64,15 @@ test('mock data bypasses live ER:LC requests', async () => {
     const killLogs = [{ Killer: 'Tester:1', Killed: 'Other:2' }];
     const queue = [1, 2];
     const vehicles = [{ Name: 'Test Vehicle' }];
+    const operationsOverview = {
+        Name: 'Test Server',
+        Players: [{ Player: 'Tester:1' }],
+        Staff: { Admins: { 1: 'Tester' } },
+    };
+    const operationsActivity = {
+        JoinLogs: joinLogs,
+        KillLogs: killLogs,
+    };
 
     assert.equal(
         await erlcService.getPlayers({ mockData: players }),
@@ -102,6 +113,27 @@ test('mock data bypasses live ER:LC requests', async () => {
     assert.equal(
         await erlcService.getVehicles({ mockData: vehicles }),
         vehicles
+    );
+    assert.deepEqual(
+        await erlcService.getOperationsOverview({
+            mockData: operationsOverview,
+        }),
+        {
+            ...operationsOverview,
+            Staff: {
+                Admins: { 1: 'Tester' },
+                Mods: {},
+                Helpers: {},
+            },
+            Queue: [],
+            Vehicles: [],
+        }
+    );
+    assert.deepEqual(
+        await erlcService.getOperationsActivity({
+            mockData: operationsActivity,
+        }),
+        operationsActivity
     );
 });
 

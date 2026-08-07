@@ -15,6 +15,9 @@ const {
     handleModerationButton,
 } = require('../utils/moderationConfirmationManager');
 const {
+    handleOperationsButton,
+} = require('../utils/operationsDashboardManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -81,6 +84,17 @@ module.exports = {
             )
         ) {
             await handleModerationButton(
+                interaction
+            );
+            return;
+        }
+
+        if (
+            interaction.customId.startsWith(
+                'erlc_ops:'
+            )
+        ) {
+            await handleOperationsButton(
                 interaction
             );
             return;
