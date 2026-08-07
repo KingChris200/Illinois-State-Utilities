@@ -2,9 +2,18 @@
 
 ## Remote ER:LC commands
 
-The bot supports `?m`, `?h`, `?players`, `?server`, `?help`, and
-`?id <Roblox username>`. Remote calls are isolated in
-`services/erlcService.js`.
+Remote calls are isolated in `services/erlcService.js`. Run `?help`
+to see only the commands available to your Discord roles, or
+`?help <command>` for detailed usage.
+
+Current prefix commands include:
+
+- Public: `?help`, `?id`, and `?status`
+- Server information: `?players`, `?server`, `?staff`, and `?queue`
+- Live intelligence: `?modcalls`, `?joinlogs`, `?kl`, `?vehicles`, and `?logs`
+- Announcements: `?m` and `?h`
+- Confirmed moderation: `?warn`, `?kick`, `?ban`, `?unban`, `?respawn`, `?heal`, `?wanted`, and `?unwanted`
+- Diagnostics: `?apicheck`
 
 Add the following values to `.env` as needed:
 
@@ -16,7 +25,7 @@ ERLC_SERVER_KEY=
 ERLC_COMMAND_ROLE_IDS=123456789012345678,234567890123456789
 ERLC_COMMAND_CHANNEL_IDS=345678901234567890
 
-# Senior roles permitted to use ban and unban (admins always allowed)
+# Senior roles permitted to use restricted moderation and logs
 ERLC_SENIOR_MOD_ROLE_IDS=567890123456789012
 
 # Optional Discord channel for command audit messages
@@ -31,10 +40,10 @@ ERLC_SESSION_CHANNEL_ID=1490731232311378010
 # Required only when enabling live session-to-ER:LC announcements
 ERLC_SESSION_AUTOMATION_ENABLED=false
 
-# Set true to test ?m and ?h without sending anything to ER:LC
+# Set true to preview remote commands without sending them to ER:LC
 ERLC_DRY_RUN=true
 
-# Set true to return safe sample data from ?players and ?server too
+# Set true to return safe sample data for every ER:LC information command
 ERLC_MOCK_MODE=true
 ```
 
@@ -45,5 +54,3 @@ remain administrator-only.
 
 Enable **Message Content Intent** for the bot in the Discord Developer
 Portal before starting it. No slash-command redeployment is needed.
-
-!

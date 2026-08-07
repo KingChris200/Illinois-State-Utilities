@@ -1,8 +1,12 @@
 const erlcService = require('../services/erlcService');
 const createEmbed = require('../utils/createEmbed');
-
-const DEFAULT_LOG_COUNT = 5;
-const MAX_LOG_COUNT = 10;
+const {
+    cleanInlineCode,
+    formatRelativeTime,
+    parseActivityCount,
+    parsePlayerIdentity,
+    sortNewest,
+} = require('../utils/erlcActivityUtils');
 
 module.exports = {
     name: 'logs',
@@ -12,7 +16,7 @@ module.exports = {
     cooldownSeconds: 8,
 
     async execute({ message, args }) {
-        const count = parseLogCount(args[0]);
+        const count = parseActivityCount(args[0]);
 
         if (count === null) {
             await message.reply('Usage: `?logs [1-10]`');
@@ -20,13 +24,7 @@ module.exports = {
         }
 
         const logs = await erlcService.getCommandLogs();
-        const recentLogs = [...logs]
-            .sort(
-                (first, second) =>
-                    Number(second.Timestamp || 0) -
-                    Number(first.Timestamp || 0)
-            )
-            .slice(0, count);
+        const recentLogs = sortNewest(logs).slice(0, count);
         const embed = createEmbed(
             'Recent ER:LC Command Logs',
             'isrp'
@@ -49,27 +47,9 @@ module.exports = {
     },
 };
 
-function parseLogCount(value) {
-    if (value === undefined) {
-        return DEFAULT_LOG_COUNT;
-    }
-
-    if (!/^\d+$/.test(value)) {
-        return null;
-    }
-
-    const count = Number(value);
-    return count >= 1 && count <= MAX_LOG_COUNT
-        ? count
-        : null;
-}
-
 function formatCommandLog(log, index) {
-    const player = parsePlayer(log?.Player);
-    const timestamp = Number(log?.Timestamp);
-    const when = Number.isInteger(timestamp) && timestamp > 0
-        ? `<t:${timestamp}:R>`
-        : 'Unknown time';
+    const player = parsePlayerIdentity(log?.Player);
+    const when = formatRelativeTime(log?.Timestamp);
     const command = cleanInlineCode(log?.Command, 240);
 
     return [
@@ -81,32 +61,5 @@ function formatCommandLog(log, index) {
         .join('\n');
 }
 
-function parsePlayer(value) {
-    const text = String(value || 'Unknown');
-    const separatorIndex = text.lastIndexOf(':');
-
-    if (separatorIndex === -1) {
-        return { username: cleanText(text, 40), userId: null };
-    }
-
-    return {
-        username: cleanText(text.slice(0, separatorIndex), 40),
-        userId: cleanText(text.slice(separatorIndex + 1), 24),
-    };
-}
-
-function cleanText(value, maximumLength) {
-    return String(value || 'Unknown')
-        .replace(/[*_~`|>\\]/g, '\\$&')
-        .slice(0, maximumLength);
-}
-
-function cleanInlineCode(value, maximumLength) {
-    return String(value || 'Unknown command')
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/`/g, "'")
-        .slice(0, maximumLength);
-}
-
 module.exports.formatCommandLog = formatCommandLog;
-module.exports.parseLogCount = parseLogCount;
+module.exports.parseLogCount = parseActivityCount;

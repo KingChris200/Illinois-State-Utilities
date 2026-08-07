@@ -13,7 +13,17 @@ const CATEGORY_ORDER = [
             'apicheck',
             'players',
             'server',
+        ],
+    },
+    {
+        name: 'Live Server Intelligence',
+        commands: [
             'staff',
+            'queue',
+            'modcalls',
+            'joinlogs',
+            'kl',
+            'vehicles',
             'logs',
         ],
     },
@@ -45,6 +55,20 @@ const CONFIRMED_COMMANDS = new Set([
     'heal',
     'wanted',
     'unwanted',
+]);
+
+const READ_ONLY_COMMANDS = new Set([
+    'status',
+    'apicheck',
+    'players',
+    'server',
+    'staff',
+    'queue',
+    'modcalls',
+    'joinlogs',
+    'kl',
+    'vehicles',
+    'logs',
 ]);
 
 module.exports = {
@@ -169,12 +193,7 @@ async function sendCommandHelp(message, query, config) {
                 name: 'Execution Safety',
                 value: confirmed
                     ? '🛡️ Requires confirmation; the target is checked again before execution.'
-                    : command.name === 'staff' ||
-                        command.name === 'logs' ||
-                        command.name === 'players' ||
-                        command.name === 'server' ||
-                        command.name === 'status' ||
-                        command.name === 'apicheck'
+                    : READ_ONLY_COMMANDS.has(command.name)
                       ? 'Read-only; this command cannot modify the ER:LC server.'
                       : 'Runs through the protected command router and cooldown system.',
             },

@@ -8,7 +8,7 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 18);
+    assert.equal(count, 23);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
@@ -19,10 +19,14 @@ test('loads the expected prefix commands', () => {
             'heal',
             'help',
             'id',
+            'joinlogs',
             'kick',
+            'kl',
             'logs',
             'm',
+            'modcalls',
             'players',
+            'queue',
             're',
             'respawn',
             'server',
@@ -30,6 +34,7 @@ test('loads the expected prefix commands', () => {
             'status',
             'unban',
             'unwanted',
+            'vehicles',
             'wanted',
             'warn',
         ]
@@ -52,6 +57,11 @@ test('mock data bypasses live ER:LC requests', async () => {
     const server = { Name: 'Test Server' };
     const staff = { Admins: { 1: 'Tester' } };
     const logs = [{ Player: 'Tester:1', Command: ':h Test' }];
+    const modCalls = [{ Caller: 'Tester:1' }];
+    const joinLogs = [{ Join: true, Player: 'Tester:1' }];
+    const killLogs = [{ Killer: 'Tester:1', Killed: 'Other:2' }];
+    const queue = [1, 2];
+    const vehicles = [{ Name: 'Test Vehicle' }];
 
     assert.equal(
         await erlcService.getPlayers({ mockData: players }),
@@ -72,6 +82,26 @@ test('mock data bypasses live ER:LC requests', async () => {
     assert.equal(
         await erlcService.getCommandLogs({ mockData: logs }),
         logs
+    );
+    assert.equal(
+        await erlcService.getModCalls({ mockData: modCalls }),
+        modCalls
+    );
+    assert.equal(
+        await erlcService.getJoinLogs({ mockData: joinLogs }),
+        joinLogs
+    );
+    assert.equal(
+        await erlcService.getKillLogs({ mockData: killLogs }),
+        killLogs
+    );
+    assert.equal(
+        await erlcService.getQueue({ mockData: queue }),
+        queue
+    );
+    assert.equal(
+        await erlcService.getVehicles({ mockData: vehicles }),
+        vehicles
     );
 });
 

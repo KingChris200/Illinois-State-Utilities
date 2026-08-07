@@ -361,6 +361,124 @@ async function getCommandLogs({ mockData = null } = {}) {
     return normalizeCommandLogs(server?.CommandLogs);
 }
 
+async function getModCalls({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeArray(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return [
+            {
+                Caller: 'MockCivilian:135792468',
+                Moderator: null,
+                Timestamp: now - 45,
+            },
+            {
+                Caller: 'MockPlayer:123456789',
+                Moderator: 'MockModerator:987654321',
+                Timestamp: now - 180,
+            },
+        ];
+    }
+
+    const server = await request('/v2/server?ModCalls=true');
+    return normalizeArray(server?.ModCalls);
+}
+
+async function getJoinLogs({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeArray(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return [
+            {
+                Join: true,
+                Timestamp: now - 25,
+                Player: 'MockCivilian:135792468',
+            },
+            {
+                Join: false,
+                Timestamp: now - 150,
+                Player: 'MockFormerPlayer:864297531',
+            },
+        ];
+    }
+
+    const server = await request('/v2/server?JoinLogs=true');
+    return normalizeArray(server?.JoinLogs);
+}
+
+async function getKillLogs({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeArray(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return [
+            {
+                Killer: 'MockOfficer:112233445',
+                Killed: 'MockSuspect:556677889',
+                Timestamp: now - 40,
+            },
+            {
+                Killer: 'MockPlayer:123456789',
+                Killed: 'MockCivilian:135792468',
+                Timestamp: now - 210,
+            },
+        ];
+    }
+
+    const server = await request('/v2/server?KillLogs=true');
+    return normalizeArray(server?.KillLogs);
+}
+
+async function getQueue({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeArray(mockData);
+    }
+
+    if (isMockMode()) {
+        return [135792468, 864297531];
+    }
+
+    const server = await request('/v2/server?Queue=true');
+    return normalizeArray(server?.Queue);
+}
+
+async function getVehicles({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeArray(mockData);
+    }
+
+    if (isMockMode()) {
+        return [
+            {
+                Name: 'Falcon Interceptor Utility',
+                Owner: 'MockOfficer',
+                Plate: 'ISRP-01',
+                Texture: 'Illinois State Police',
+                ColorName: 'Midnight Blue',
+                ColorHex: '#101820',
+            },
+            {
+                Name: 'Bullhorn Prancer',
+                Owner: 'MockCivilian',
+                Plate: 'MOCK-02',
+                Texture: 'Standard',
+                ColorName: 'White',
+                ColorHex: '#FFFFFF',
+            },
+        ];
+    }
+
+    const server = await request('/v2/server?Vehicles=true');
+    return normalizeArray(server?.Vehicles);
+}
+
 function normalizeStaff(staff) {
     return {
         Admins: staff?.Admins || {},
@@ -370,7 +488,11 @@ function normalizeStaff(staff) {
 }
 
 function normalizeCommandLogs(logs) {
-    return Array.isArray(logs) ? logs : [];
+    return normalizeArray(logs);
+}
+
+function normalizeArray(value) {
+    return Array.isArray(value) ? value : [];
 }
 
 module.exports = {
@@ -381,11 +503,16 @@ module.exports = {
     executeCommand,
     getApiHealth,
     getCommandLogs,
+    getJoinLogs,
+    getKillLogs,
+    getModCalls,
     getPlayers,
     getPublicErrorMessage,
+    getQueue,
     getServer,
     getSessionStatus,
     getStaff,
+    getVehicles,
     isConfigured,
     isMockMode,
 };

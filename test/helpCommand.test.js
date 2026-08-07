@@ -71,3 +71,25 @@ test('senior staff can see detailed logs help', async () => {
         'Senior staff'
     );
 });
+
+test('configured staff see the live intelligence commands', async () => {
+    const { message, replies } = createMessage(['staff-role']);
+
+    await helpCommand.execute({
+        message,
+        args: [],
+        config,
+    });
+
+    const embed = replies[0].embeds[0].toJSON();
+    const intelligence = embed.fields.find(
+        (field) => field.name === 'Live Server Intelligence'
+    ).value;
+    assert.match(intelligence, /\?modcalls/);
+    assert.match(intelligence, /\?joinlogs/);
+    assert.match(intelligence, /\?kl/);
+    assert.match(intelligence, /\?queue/);
+    assert.match(intelligence, /\?vehicles/);
+    assert.doesNotMatch(intelligence, /\?killlogs/);
+    assert.doesNotMatch(intelligence, /\?logs/);
+});
