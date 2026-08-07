@@ -274,6 +274,20 @@ async function getActiveWatchlistEntries(
         .sort(sortNewestFirst);
 }
 
+async function getAllWatchlistEntries(
+    guildId,
+    store = defaultStore
+) {
+    const database = await store.readDatabase(
+        WATCHLIST_DATABASE_NAME,
+        normalizeDatabase(null)
+    );
+
+    return getGuildRecords(database, guildId)
+        .map((record) => structuredClone(record))
+        .sort(sortNewestFirst);
+}
+
 async function findWatchlistEntries(
     guildId,
     query,
@@ -732,6 +746,7 @@ module.exports = {
     createWatchlistRecord,
     findWatchlistEntries,
     getActiveWatchlistEntries,
+    getAllWatchlistEntries,
     getGuildRecords,
     getWatchlistEntry,
     normalizeDatabase,

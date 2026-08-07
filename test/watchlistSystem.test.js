@@ -11,6 +11,7 @@ const {
     addWatchlistEntry,
     findWatchlistEntries,
     getActiveWatchlistEntries,
+    getAllWatchlistEntries,
     getWatchlistEntry,
     normalizeDatabase,
     recordWatchlistEvent,
@@ -71,7 +72,7 @@ function interactionForEmbeds() {
     };
 }
 
-test('/watchlist exposes seven focused management actions', () => {
+test('/watchlist exposes eight focused management actions', () => {
     const command = watchlistCommand.data.toJSON();
 
     assert.equal(command.name, 'watchlist');
@@ -82,6 +83,7 @@ test('/watchlist exposes seven focused management actions', () => {
             'view',
             'search',
             'scan',
+            'dashboard',
             'update',
             'resolve',
             'remove',
@@ -306,6 +308,12 @@ test('active watchlist records can be loaded without a display limit', async () 
     );
 
     assert.equal(records.length, 21);
+
+    const completeHistory = await getAllWatchlistEntries(
+        'guild-1',
+        store
+    );
+    assert.equal(completeHistory.length, 21);
 });
 
 test('live watchlist matching accepts exact identities and rejects partial or conflicting IDs', () => {

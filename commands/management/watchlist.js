@@ -24,6 +24,11 @@ const {
 const {
     canManageWatchlist,
 } = require('../../utils/watchlistPermissions');
+const {
+    attachWatchlistDashboardMessage,
+    createWatchlistDashboard,
+    removeWatchlistDashboard,
+} = require('../../utils/watchlistDashboardManager');
 
 const SEVERITY_CHOICES = [
     { name: 'Low — Monitor only', value: 'low' },
@@ -147,6 +152,13 @@ module.exports = {
                 .setName('scan')
                 .setDescription(
                     'Privately compare online ER:LC players with active records.'
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('dashboard')
+                .setDescription(
+                    'Open the private interactive watchlist command center.'
                 )
         )
         .addSubcommand((subcommand) =>
@@ -324,6 +336,9 @@ module.exports = {
                 case 'scan':
                     await handleScan(interaction);
                     break;
+                case 'dashboard':
+                    await handleDashboard(interaction);
+                    break;
                 case 'update':
                     await handleUpdate(interaction);
                     break;
@@ -487,6 +502,30 @@ async function handleScan(interaction) {
         ],
         allowedMentions: { parse: [] },
     });
+}
+
+async function handleDashboard(interaction) {
+    const dashboard = await createWatchlistDashboard({
+        guildId: interaction.guildId,
+        executorId: interaction.user.id,
+        executorMention: `<@${interaction.user.id}>`,
+    });
+
+    try {
+        const message = await interaction.editReply({
+            embeds: [dashboard.embed],
+            components: [dashboard.components],
+            allowedMentions: { parse: [] },
+        });
+
+        attachWatchlistDashboardMessage(
+            dashboard.id,
+            message
+        );
+    } catch (error) {
+        removeWatchlistDashboard(dashboard.id);
+        throw error;
+    }
 }
 
 async function handleUpdate(interaction) {

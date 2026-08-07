@@ -25,6 +25,9 @@ const {
     handleWatchlistAlertModal,
 } = require('../utils/watchlistAlertInteractionManager');
 const {
+    handleWatchlistDashboardButton,
+} = require('../utils/watchlistDashboardManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -134,6 +137,17 @@ module.exports = {
             )
         ) {
             await handleWatchlistAlertButton(interaction);
+            return;
+        }
+
+        if (
+            interaction.customId.startsWith(
+                'watchlist_dashboard:'
+            )
+        ) {
+            await handleWatchlistDashboardButton(
+                interaction
+            );
             return;
         }
 

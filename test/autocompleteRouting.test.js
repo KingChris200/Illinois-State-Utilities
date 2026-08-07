@@ -119,6 +119,26 @@ test('central interaction handler routes watchlist alert forms', async () => {
     assert.match(reply.content, /restricted/i);
 });
 
+test('central interaction handler routes watchlist dashboard buttons', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isButton: () => true,
+        customId:
+            'watchlist_dashboard:overview:00000000-0000-0000-0000-000000000000',
+        user: { id: 'manager-id' },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /expired/i);
+});
+
 test('infraction rank option uses live autocomplete', async () => {
     const command = infractionCommand.data.toJSON();
     const rankOption = command.options.find(

@@ -132,6 +132,8 @@ Available actions:
 - `/watchlist search` filters records by text, status, and severity.
 - `/watchlist scan` privately compares every connected ER:LC player with
   active records using exact Roblox IDs (or exact usernames as a fallback).
+- `/watchlist dashboard` opens an interactive private command center with
+  record totals, severity coverage, recent audit activity, and a review queue.
 - `/watchlist update` records field changes and the reason for the edit.
 - `/watchlist resolve` closes a concern with a documented outcome.
 - `/watchlist remove` archives an entry without deleting its audit trail.
