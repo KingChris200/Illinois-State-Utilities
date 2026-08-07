@@ -2,12 +2,20 @@ const {
     SlashCommandBuilder,
     PermissionFlagsBits,
     EmbedBuilder,
+    AttachmentBuilder,
     ChannelType,
 } = require('discord.js');
+
+const path = require('path');
 
 const brands = require('../../config/branding');
 
 const DEFAULT_TITLE = 'Community Announcement';
+const ANNOUNCEMENT_BANNER_NAME = 'isrp-wordmark.jpg';
+const ANNOUNCEMENT_BANNER_PATH = path.join(
+    __dirname,
+    '../../assets/branding/isrp-wordmark.jpg'
+);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -85,6 +93,14 @@ module.exports = {
         try {
             await channel.send({
                 embeds: [embed],
+                files: [
+                    new AttachmentBuilder(
+                        ANNOUNCEMENT_BANNER_PATH,
+                        {
+                            name: ANNOUNCEMENT_BANNER_NAME,
+                        }
+                    ),
+                ],
                 allowedMentions: {
                     parse: [],
                     users: [],
@@ -144,6 +160,9 @@ function createAnnouncementEmbed({
         })
         .setTitle(title)
         .setDescription(message)
+        .setImage(
+            `attachment://${ANNOUNCEMENT_BANNER_NAME}`
+        )
         .setFooter({
             text: brand.footer,
             ...(serverLogo

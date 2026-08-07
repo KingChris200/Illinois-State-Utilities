@@ -103,10 +103,19 @@ test('/embed posts a branded announcement in the current channel', async () => {
         'https://cdn.discordapp.com/icons/123/server.png'
     );
     assert.equal(
+        embed.image.url,
+        'attachment://isrp-wordmark.jpg'
+    );
+    assert.equal(
         embed.footer.icon_url,
         'https://cdn.discordapp.com/icons/123/server.png'
     );
     assert.ok(embed.timestamp);
+    assert.equal(payload.files.length, 1);
+    assert.equal(
+        payload.files[0].name,
+        'isrp-wordmark.jpg'
+    );
     assert.deepEqual(payload.allowedMentions, {
         parse: [],
         users: [],

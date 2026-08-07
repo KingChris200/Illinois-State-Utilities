@@ -81,9 +81,17 @@ with only three options:
 - `channel` (optional): defaults to the channel where the command runs
 
 The bot automatically applies the Illinois State Roleplay color, live
-Discord server logo, official footer, and timestamp. Custom text cannot
-trigger user, role, or everyone mentions.
+Discord server logo, wide official wordmark, official footer, and
+timestamp. Custom text cannot trigger user, role, or everyone mentions.
 
 After changing the `/embed` command, run `npm run deploy-commands` once
 and restart the bot. Global Discord command changes may take several
 minutes to appear.
+
+## Brand assets
+
+Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
+stored in `assets/branding`. The generated Discord welcome artwork is at
+`assets/thumbnails/welcome-banner.png`. The welcome artwork is ready for
+a future member-join system; the automatic welcome handler and welcome
+channel configuration have not been added yet.
