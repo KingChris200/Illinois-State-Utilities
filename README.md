@@ -68,4 +68,22 @@ guild text channel. If no role IDs are configured, staff-only commands
 remain administrator-only.
 
 Enable **Message Content Intent** for the bot in the Discord Developer
-Portal before starting it. No slash-command redeployment is needed.
+Portal before starting it. No slash-command redeployment is needed for
+the prefix commands above.
+
+## Branded `/embed` announcements
+
+Staff members with **Manage Messages** can create a clean announcement
+with only three options:
+
+- `message` (required): the announcement text
+- `title` (optional): defaults to **Community Announcement**
+- `channel` (optional): defaults to the channel where the command runs
+
+The bot automatically applies the Illinois State Roleplay color, live
+Discord server logo, official footer, and timestamp. Custom text cannot
+trigger user, role, or everyone mentions.
+
+After changing the `/embed` command, run `npm run deploy-commands` once
+and restart the bot. Global Discord command changes may take several
+minutes to appear.

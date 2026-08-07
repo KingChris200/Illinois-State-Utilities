@@ -5,225 +5,103 @@ const {
     ChannelType,
 } = require('discord.js');
 
+const brands = require('../../config/branding');
+
+const DEFAULT_TITLE = 'Community Announcement';
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('embed')
-        .setDescription('Creates and sends a custom embed.')
+        .setDescription(
+            'Sends a polished Illinois State Roleplay announcement.'
+        )
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageMessages
         )
-
         .addStringOption((option) =>
             option
-                .setName('title')
-                .setDescription('The title of the embed.')
-                .setRequired(true)
-                .setMaxLength(256)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('description')
-                .setDescription('The main message inside the embed.')
+                .setName('message')
+                .setDescription('What should the announcement say?')
                 .setRequired(true)
                 .setMaxLength(4000)
         )
-
+        .addStringOption((option) =>
+            option
+                .setName('title')
+                .setDescription(
+                    `Optional heading (defaults to "${DEFAULT_TITLE}").`
+                )
+                .setRequired(false)
+                .setMaxLength(256)
+        )
         .addChannelOption((option) =>
             option
                 .setName('channel')
                 .setDescription(
-                    'The channel where the embed should be sent.'
+                    'Where to post it (defaults to this channel).'
                 )
                 .addChannelTypes(
                     ChannelType.GuildText,
                     ChannelType.GuildAnnouncement
                 )
                 .setRequired(false)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('color')
-                .setDescription(
-                    'A HEX color, such as #3498DB.'
-                )
-                .setRequired(false)
-                .setMaxLength(7)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('thumbnail')
-                .setDescription(
-                    'A direct image URL for the thumbnail.'
-                )
-                .setRequired(false)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('image')
-                .setDescription(
-                    'A direct image URL for the large image.'
-                )
-                .setRequired(false)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('footer')
-                .setDescription(
-                    'Optional footer text.'
-                )
-                .setRequired(false)
-                .setMaxLength(2048)
-        )
-
-        .addBooleanOption((option) =>
-            option
-                .setName('timestamp')
-                .setDescription(
-                    'Add the current date and time to the embed.'
-                )
-                .setRequired(false)
         ),
 
     async execute(interaction) {
-        const title = interaction.options.getString(
-            'title',
-            true
-        );
-
-        const description = interaction.options.getString(
-            'description',
-            true
-        );
-
+        const message = interaction.options
+            .getString('message', true)
+            .trim();
+        const customTitle = interaction.options
+            .getString('title')
+            ?.trim();
         const channel =
             interaction.options.getChannel('channel') ||
             interaction.channel;
 
-        const colorInput =
-            interaction.options.getString('color');
-
-        const thumbnail =
-            interaction.options.getString('thumbnail');
-
-        const image =
-            interaction.options.getString('image');
-
-        const footer =
-            interaction.options.getString('footer');
-
-        const timestamp =
-            interaction.options.getBoolean('timestamp') ??
-            true;
-
-        const defaultColor = '#3498DB';
-        let embedColor = defaultColor;
-
-        if (colorInput) {
-            const normalizedColor = colorInput.startsWith('#')
-                ? colorInput
-                : `#${colorInput}`;
-
-            const validHexColor =
-                /^#[0-9A-Fa-f]{6}$/.test(normalizedColor);
-
-            if (!validHexColor) {
-                return interaction.reply({
-                    content:
-                        '❌ That color is invalid. Please use a six-digit HEX color such as `#3498DB`.',
-                    ephemeral: true,
-                });
-            }
-
-            embedColor = normalizedColor;
-        }
-
-        const isValidUrl = (value) => {
-            try {
-                const url = new URL(value);
-
-                return (
-                    url.protocol === 'http:' ||
-                    url.protocol === 'https:'
-                );
-            } catch {
-                return false;
-            }
-        };
-
-        if (thumbnail && !isValidUrl(thumbnail)) {
-            return interaction.reply({
+        if (!message) {
+            await interaction.reply({
                 content:
-                    '❌ The thumbnail must be a valid image URL.',
+                    '❌ Please include some text for the announcement.',
                 ephemeral: true,
             });
+            return;
         }
 
-        if (image && !isValidUrl(image)) {
-            return interaction.reply({
+        if (!canSendEmbed(channel, interaction)) {
+            await interaction.reply({
                 content:
-                    '❌ The image must be a valid image URL.',
+                    '❌ I cannot post embeds in that channel. Please choose a channel where I can view messages, send messages, and embed links.',
                 ephemeral: true,
             });
+            return;
         }
 
-        if (!channel || !channel.isTextBased()) {
-            return interaction.reply({
-                content:
-                    '❌ I cannot send an embed in that channel.',
-                ephemeral: true,
-            });
-        }
-
-        const embed = new EmbedBuilder()
-            .setColor(embedColor)
-            .setTitle(title)
-            .setDescription(description);
-
-        if (thumbnail) {
-            embed.setThumbnail(thumbnail);
-        }
-
-        if (image) {
-            embed.setImage(image);
-        }
-
-        if (footer) {
-            embed.setFooter({
-                text: footer,
-            });
-        } else {
-            embed.setFooter({
-                text: 'Illinois State Utilities • Supporting Illinois State Roleplay',
-            });
-        }
-
-        if (timestamp) {
-            embed.setTimestamp();
-        }
+        const embed = createAnnouncementEmbed({
+            interaction,
+            title: customTitle || DEFAULT_TITLE,
+            message,
+        });
 
         try {
             await channel.send({
                 embeds: [embed],
                 allowedMentions: {
                     parse: [],
+                    users: [],
+                    roles: [],
                 },
             });
 
             await interaction.reply({
-                content: `✅ Your embed was successfully sent in ${channel}.`,
+                content:
+                    `✅ Your announcement was posted in ${channel}.`,
                 ephemeral: true,
             });
         } catch (error) {
-            console.error('❌ Error while running /embed:');
-            console.error(error);
+            console.error('Error while running /embed:', error);
 
             const errorMessage =
-                '❌ I could not send the embed. Please check my channel permissions and try again.';
+                '❌ I could not post the announcement. Please check my channel permissions and try again.';
 
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
@@ -238,4 +116,88 @@ module.exports = {
             }
         }
     },
+
+    createAnnouncementEmbed,
+    canSendEmbed,
 };
+
+/**
+ * Build the consistent public announcement style used by /embed.
+ */
+function createAnnouncementEmbed({
+    interaction,
+    title,
+    message,
+}) {
+    const brand = brands.isrp || brands.utilities;
+    const guildName =
+        interaction.guild?.name || brand.name;
+    const serverLogo = getServerLogo(interaction, brand);
+
+    const embed = new EmbedBuilder()
+        .setColor(brand.color)
+        .setAuthor({
+            name: guildName,
+            ...(serverLogo
+                ? { iconURL: serverLogo }
+                : {}),
+        })
+        .setTitle(title)
+        .setDescription(message)
+        .setFooter({
+            text: brand.footer,
+            ...(serverLogo
+                ? { iconURL: serverLogo }
+                : {}),
+        })
+        .setTimestamp();
+
+    if (serverLogo) {
+        embed.setThumbnail(serverLogo);
+    }
+
+    return embed;
+}
+
+/**
+ * Prefer the Discord server icon so branding stays current automatically.
+ */
+function getServerLogo(interaction, brand) {
+    const guildIcon = interaction.guild?.iconURL?.({
+        extension: 'png',
+        size: 256,
+    });
+
+    return guildIcon || brand.logo || null;
+}
+
+/**
+ * Validate the destination before attempting a public post.
+ */
+function canSendEmbed(channel, interaction) {
+    if (
+        !channel ||
+        typeof channel.isTextBased !== 'function' ||
+        !channel.isTextBased() ||
+        typeof channel.send !== 'function'
+    ) {
+        return false;
+    }
+
+    const botMember = interaction.guild?.members?.me;
+
+    if (
+        !botMember ||
+        typeof channel.permissionsFor !== 'function'
+    ) {
+        return true;
+    }
+
+    const permissions = channel.permissionsFor(botMember);
+
+    return Boolean(
+        permissions?.has(PermissionFlagsBits.ViewChannel) &&
+            permissions?.has(PermissionFlagsBits.SendMessages) &&
+            permissions?.has(PermissionFlagsBits.EmbedLinks)
+    );
+}
