@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const healCommand = require('../prefixCommands/heal');
+const warnCommand = require('../prefixCommands/warn');
 const wantedCommand = require('../prefixCommands/wanted');
 const unwantedCommand = require('../prefixCommands/unwanted');
 const {
@@ -113,6 +114,31 @@ test('wanted completes through the shared mock confirmation flow', async () => {
         /Evading police/
     );
 
+    restoreMockMode(previousMockMode);
+});
+
+test('warn includes the reason in the confirmed ER:LC command', async () => {
+    const previousMockMode = enableMockMode();
+    const { message, replies } = createMessage();
+
+    await warnCommand.execute({
+        message,
+        args: ['mock', 'Failing', 'roleplay'],
+        config: { mockMode: true, dryRun: true },
+    });
+
+    const embed = replies[0].embeds[0].toJSON();
+    const confirmation = getConfirmation(replies[0]);
+    assert.equal(embed.title, 'Warn Confirmation');
+    assert.equal(confirmation.label, 'Confirm Warn');
+    assert.equal(
+        embed.fields.find(
+            (field) => field.name === 'In-Game Command'
+        ).value,
+        '`:warn MockPlayer Failing roleplay`'
+    );
+
+    removeConfirmation(confirmation.id);
     restoreMockMode(previousMockMode);
 });
 

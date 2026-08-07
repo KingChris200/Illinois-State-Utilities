@@ -15,6 +15,7 @@ function createPlayerActionCommand({
     actionName,
     description,
     reasonRequired = false,
+    includeReasonInCommand = false,
     cooldownSeconds = 5,
 }) {
     const usage = reasonRequired
@@ -52,8 +53,13 @@ function createPlayerActionCommand({
                 return;
             }
 
-            const command =
-                `:${name} ${resolved.player.username}`;
+            const command = [
+                `:${name}`,
+                resolved.player.username,
+                includeReasonInCommand ? reason : null,
+            ]
+                .filter(Boolean)
+                .join(' ');
             const confirmation = createConfirmation({
                 action: name,
                 command,

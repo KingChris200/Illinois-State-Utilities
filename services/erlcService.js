@@ -311,6 +311,68 @@ async function getSessionStatus({ mockData = null } = {}) {
     );
 }
 
+async function getStaff({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeStaff(mockData);
+    }
+
+    if (isMockMode()) {
+        return {
+            Admins: {
+                123456789: 'MockPlayer',
+            },
+            Mods: {
+                987654321: 'MockModerator',
+            },
+            Helpers: {
+                246813579: 'MockHelper',
+            },
+        };
+    }
+
+    const server = await request('/v2/server?Staff=true');
+    return normalizeStaff(server?.Staff);
+}
+
+async function getCommandLogs({ mockData = null } = {}) {
+    if (mockData !== null) {
+        return normalizeCommandLogs(mockData);
+    }
+
+    if (isMockMode()) {
+        const now = Math.floor(Date.now() / 1000);
+        return [
+            {
+                Player: 'MockPlayer:123456789',
+                Timestamp: now - 30,
+                Command: ':h Welcome to the mock server!',
+            },
+            {
+                Player: 'MockModerator:987654321',
+                Timestamp: now - 120,
+                Command: ':m Mock session starting soon.',
+            },
+        ];
+    }
+
+    const server = await request(
+        '/v2/server?CommandLogs=true'
+    );
+    return normalizeCommandLogs(server?.CommandLogs);
+}
+
+function normalizeStaff(staff) {
+    return {
+        Admins: staff?.Admins || {},
+        Mods: staff?.Mods || {},
+        Helpers: staff?.Helpers || {},
+    };
+}
+
+function normalizeCommandLogs(logs) {
+    return Array.isArray(logs) ? logs : [];
+}
+
 module.exports = {
     ErlcServiceError,
     PRC_ERROR_MESSAGES,
@@ -318,10 +380,12 @@ module.exports = {
     createApiErrorFromResponse,
     executeCommand,
     getApiHealth,
+    getCommandLogs,
     getPlayers,
     getPublicErrorMessage,
     getServer,
     getSessionStatus,
+    getStaff,
     isConfigured,
     isMockMode,
 };

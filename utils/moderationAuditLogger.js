@@ -38,6 +38,7 @@ const ACTION_NAMES = {
     ban: 'Ban',
     unban: 'Unban',
     heal: 'Heal',
+    warn: 'Warn',
     wanted: 'Wanted',
     unwanted: 'Unwanted',
 };

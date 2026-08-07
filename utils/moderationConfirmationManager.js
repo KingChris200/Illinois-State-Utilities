@@ -197,6 +197,7 @@ function createButtons(id, action, disabled = false) {
         ban: 'Confirm Ban',
         unban: 'Confirm Unban',
         heal: 'Confirm Heal',
+        warn: 'Confirm Warn',
         wanted: 'Confirm Wanted',
         unwanted: 'Confirm Unwanted',
     };
@@ -248,6 +249,7 @@ function createResultEmbed(pending, outcome, error = null) {
         ban: 'Ban',
         unban: 'Unban',
         heal: 'Heal',
+        warn: 'Warn',
         wanted: 'Wanted',
         unwanted: 'Unwanted',
     };

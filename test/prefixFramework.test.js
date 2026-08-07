@@ -8,7 +8,7 @@ test('loads the expected prefix commands', () => {
     const client = {};
     const count = loadPrefixCommands(client);
 
-    assert.equal(count, 15);
+    assert.equal(count, 18);
     assert.deepEqual(
         [...client.prefixCommands.keys()].sort(),
         [
@@ -20,15 +20,18 @@ test('loads the expected prefix commands', () => {
             'help',
             'id',
             'kick',
+            'logs',
             'm',
             'players',
             're',
             'respawn',
             'server',
+            'staff',
             'status',
             'unban',
             'unwanted',
             'wanted',
+            'warn',
         ]
     );
 });
@@ -47,6 +50,8 @@ test('dry-run remote commands never require an API key', async () => {
 test('mock data bypasses live ER:LC requests', async () => {
     const players = [{ Player: 'Tester:1' }];
     const server = { Name: 'Test Server' };
+    const staff = { Admins: { 1: 'Tester' } };
+    const logs = [{ Player: 'Tester:1', Command: ':h Test' }];
 
     assert.equal(
         await erlcService.getPlayers({ mockData: players }),
@@ -55,6 +60,18 @@ test('mock data bypasses live ER:LC requests', async () => {
     assert.equal(
         await erlcService.getServer({ mockData: server }),
         server
+    );
+    assert.deepEqual(
+        await erlcService.getStaff({ mockData: staff }),
+        {
+            Admins: { 1: 'Tester' },
+            Mods: {},
+            Helpers: {},
+        }
+    );
+    assert.equal(
+        await erlcService.getCommandLogs({ mockData: logs }),
+        logs
     );
 });
 
