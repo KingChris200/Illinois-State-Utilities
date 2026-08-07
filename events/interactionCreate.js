@@ -21,6 +21,10 @@ const {
     handlePlayerIntelligenceButton,
 } = require('../utils/playerIntelligenceManager');
 const {
+    handleWatchlistAlertButton,
+    handleWatchlistAlertModal,
+} = require('../utils/watchlistAlertInteractionManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -73,6 +77,16 @@ module.exports = {
             return;
         }
 
+        if (
+            interaction.isModalSubmit?.() &&
+            interaction.customId.startsWith(
+                'watchlist_alert_modal:'
+            )
+        ) {
+            await handleWatchlistAlertModal(interaction);
+            return;
+        }
+
         /*
          * Ignore interactions that are not buttons.
          */
@@ -111,6 +125,15 @@ module.exports = {
             await handlePlayerIntelligenceButton(
                 interaction
             );
+            return;
+        }
+
+        if (
+            interaction.customId.startsWith(
+                'watchlist_alert:'
+            )
+        ) {
+            await handleWatchlistAlertButton(interaction);
             return;
         }
 

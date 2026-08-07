@@ -523,6 +523,97 @@ async function removeWatchlistEntry(
     );
 }
 
+async function recordWatchlistEvent(
+    guildId,
+    entryId,
+    {
+        action,
+        reason,
+        actorId,
+        actorUsername,
+    },
+    store = defaultStore
+) {
+    const allowedActions = [
+        'alert_acknowledged',
+        'match_dismissed',
+    ];
+
+    if (!allowedActions.includes(action)) {
+        throw new WatchlistError(
+            'INVALID_EVENT',
+            'That watchlist event is not supported.'
+        );
+    }
+
+    const normalizedReason = cleanText(reason, 500);
+    let updatedRecord = null;
+
+    await store.updateDatabase(
+        WATCHLIST_DATABASE_NAME,
+        (database) => {
+            const normalized = ensureGuildRecords(
+                database,
+                guildId
+            );
+            const records = normalized.guilds[String(guildId)];
+            const record = records.find(
+                (candidate) =>
+                    String(candidate.id || '').toLowerCase() ===
+                    String(entryId || '').toLowerCase()
+            );
+
+            if (!record || record.status !== 'active') {
+                throw new WatchlistError(
+                    'ENTRY_NOT_ACTIVE',
+                    'That watchlist entry is no longer active.'
+                );
+            }
+
+            const createdAt = new Date().toISOString();
+            record.updatedAt = createdAt;
+
+            if (action === 'alert_acknowledged') {
+                record.lastAcknowledgedAt = createdAt;
+                record.lastAcknowledgedById = cleanText(
+                    actorId,
+                    30
+                );
+            } else {
+                if (!normalizedReason) {
+                    throw new WatchlistError(
+                        'REASON_REQUIRED',
+                        'A reason is required to dismiss a match.'
+                    );
+                }
+
+                record.lastDismissedAt = createdAt;
+                record.lastDismissedById = cleanText(
+                    actorId,
+                    30
+                );
+                record.lastDismissalReason = normalizedReason;
+            }
+
+            appendAudit(
+                record,
+                createAuditEntry({
+                    action,
+                    actorId,
+                    actorUsername,
+                    reason: normalizedReason,
+                    createdAt,
+                })
+            );
+            updatedRecord = structuredClone(record);
+            return normalized;
+        },
+        normalizeDatabase(null)
+    );
+
+    return updatedRecord;
+}
+
 async function changeEntryStatus(
     guildId,
     entryId,
@@ -644,6 +735,7 @@ module.exports = {
     getGuildRecords,
     getWatchlistEntry,
     normalizeDatabase,
+    recordWatchlistEvent,
     removeWatchlistEntry,
     resolveWatchlistEntry,
     searchWatchlistEntries,

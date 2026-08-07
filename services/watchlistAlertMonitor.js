@@ -12,6 +12,9 @@ const {
 const {
     matchWatchlistPlayers,
 } = require('../utils/watchlistMatcher');
+const {
+    createWatchlistAlertComponents,
+} = require('../utils/watchlistAlertInteractionManager');
 const erlcService = require('./erlcService');
 
 const DATABASE_NAME = 'watchlist-alert-state';
@@ -329,14 +332,19 @@ async function sendWatchlistAlerts(channel, matches) {
         throw error;
     }
 
-    await channel.send({
-        content: null,
-        embeds: createWatchlistAlertEmbeds(
-            matches,
-            channel.guild
-        ),
-        allowedMentions: { parse: [] },
-    });
+    for (const match of matches) {
+        await channel.send({
+            content: null,
+            embeds: createWatchlistAlertEmbeds(
+                [match],
+                channel.guild
+            ),
+            components: createWatchlistAlertComponents(
+                match.record.id
+            ),
+            allowedMentions: { parse: [] },
+        });
+    }
 
     console.log(
         `[WATCHLIST ALERTS] channel=${channel.id} matches=${matches.length} outcome=sent`

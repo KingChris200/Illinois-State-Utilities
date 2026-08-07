@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { MessageFlags } = require('discord.js');
 
 const interactionEvent = require('../events/interactionCreate');
 const infractionCommand = require('../commands/management/infraction');
@@ -64,6 +65,58 @@ test('central interaction handler routes player profile buttons', async () => {
 
     assert.equal(reply.ephemeral, true);
     assert.match(reply.content, /expired/);
+});
+
+test('central interaction handler routes watchlist alert buttons', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isButton: () => true,
+        customId:
+            'watchlist_alert:view:watch-example',
+        guildId: 'unsupported-guild',
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'member-id' },
+        member: {
+            permissions: { has: () => false },
+            roles: { cache: { some: () => false } },
+        },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /restricted/i);
+});
+
+test('central interaction handler routes watchlist alert forms', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => true,
+        isButton: () => false,
+        customId:
+            'watchlist_alert_modal:resolve:watch-example',
+        guildId: 'unsupported-guild',
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'member-id' },
+        member: {
+            permissions: { has: () => false },
+            roles: { cache: { some: () => false } },
+        },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /restricted/i);
 });
 
 test('infraction rank option uses live autocomplete', async () => {

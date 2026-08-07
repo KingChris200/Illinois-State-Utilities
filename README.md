@@ -150,5 +150,11 @@ and stores its deduplication state in the gitignored `data` directory. A
 match is announced once while that player remains online; it becomes
 eligible for a fresh alert only after leaving and later rejoining.
 
+Each automatic alert includes protected controls to acknowledge it, open
+the full private record, launch live player intelligence, document a false
+match, resolve the entry with a required reason, or refresh the player's
+online status. State-changing responses are written into the record's
+audit history, and every detailed response is ephemeral.
+
 Run `npm run deploy-commands` after installing this feature, wait for the
 global slash-command update to appear, and restart the bot.

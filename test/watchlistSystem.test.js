@@ -13,6 +13,7 @@ const {
     getActiveWatchlistEntries,
     getWatchlistEntry,
     normalizeDatabase,
+    recordWatchlistEvent,
     removeWatchlistEntry,
     resolveWatchlistEntry,
     searchWatchlistEntries,
@@ -211,6 +212,50 @@ test('updates, resolutions, and removals preserve audit history', async () => {
     assert.equal(visible.length, 0);
     assert.equal(archived.length, 1);
     assert.equal(direct.status, 'removed');
+});
+
+test('interactive alert responses are preserved in the watchlist audit history', async () => {
+    const store = createMemoryStore();
+    const created = await addWatchlistEntry(
+        entryDetails(),
+        store
+    );
+    const acknowledged = await recordWatchlistEvent(
+        'guild-1',
+        created.id,
+        {
+            action: 'alert_acknowledged',
+            reason: 'Alert acknowledged.',
+            actorId: 'manager-2',
+            actorUsername: 'ManagerTwo',
+        },
+        store
+    );
+    const dismissed = await recordWatchlistEvent(
+        'guild-1',
+        created.id,
+        {
+            action: 'match_dismissed',
+            reason: 'The displayed username belonged to a different verified ID.',
+            actorId: 'manager-2',
+            actorUsername: 'ManagerTwo',
+        },
+        store
+    );
+
+    assert.equal(
+        acknowledged.auditLog.at(-1).action,
+        'alert_acknowledged'
+    );
+    assert.equal(
+        dismissed.auditLog.at(-1).action,
+        'match_dismissed'
+    );
+    assert.equal(dismissed.status, 'active');
+    assert.match(
+        dismissed.lastDismissalReason,
+        /different verified ID/
+    );
 });
 
 test('watchlist search combines private filters safely', async () => {

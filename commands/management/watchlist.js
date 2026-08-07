@@ -2,13 +2,9 @@ const {
     SlashCommandBuilder,
     EmbedBuilder,
     MessageFlags,
-    PermissionFlagsBits,
 } = require('discord.js');
 
 const brands = require('../../config/branding');
-const {
-    memberCanReviewMovements,
-} = require('../../config/serverConfigs');
 const robloxService = require('../../services/robloxService');
 const erlcService = require('../../services/erlcService');
 const {
@@ -25,6 +21,9 @@ const {
 const {
     matchWatchlistPlayers,
 } = require('../../utils/watchlistMatcher');
+const {
+    canManageWatchlist,
+} = require('../../utils/watchlistPermissions');
 
 const SEVERITY_CHOICES = [
     { name: 'Low — Monitor only', value: 'low' },
@@ -611,31 +610,6 @@ async function resolveRobloxIdentity(query) {
     return identity;
 }
 
-function canManageWatchlist(interaction) {
-    const member = interaction.member;
-
-    if (
-        interaction.guild?.ownerId === interaction.user?.id ||
-        member?.permissions?.has(
-            PermissionFlagsBits.Administrator
-        ) ||
-        member?.permissions?.has(
-            PermissionFlagsBits.ManageGuild
-        )
-    ) {
-        return true;
-    }
-
-    try {
-        return memberCanReviewMovements(
-            member,
-            interaction.guildId
-        );
-    } catch {
-        return false;
-    }
-}
-
 function createWatchlistEmbed(record, interaction) {
     const severity =
         SEVERITY_PRESENTATION[record.severity] ||
@@ -734,6 +708,23 @@ function createWatchlistEmbed(record, interaction) {
         embed.addFields({
             name: 'Removal Reason',
             value: safeText(record.removalReason, 750),
+        });
+    }
+
+    if (record.lastAcknowledgedAt) {
+        embed.addFields({
+            name: 'Latest Alert Acknowledgement',
+            value: `${record.lastAcknowledgedById ? `<@${record.lastAcknowledgedById}>` : 'Authorized management'} • ${discordTimestamp(record.lastAcknowledgedAt, 'R')}`,
+        });
+    }
+
+    if (record.lastDismissalReason) {
+        embed.addFields({
+            name: 'Latest False-Match Review',
+            value: [
+                `${record.lastDismissedById ? `<@${record.lastDismissedById}>` : 'Authorized management'} • ${discordTimestamp(record.lastDismissedAt, 'R')}`,
+                safeText(record.lastDismissalReason, 500),
+            ].join('\n'),
         });
     }
 

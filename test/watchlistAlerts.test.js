@@ -117,4 +117,5 @@ test('automatic watchlist delivery cannot create Discord mentions', async () => 
     assert.equal(sent.content, null);
     assert.deepEqual(sent.allowedMentions, { parse: [] });
     assert.equal(sent.embeds.length, 1);
+    assert.equal(sent.components.length, 2);
 });
