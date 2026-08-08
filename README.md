@@ -185,7 +185,8 @@ channel with messages. The panel continues working after bot restarts.
 The official chain of command is organized into Foundership, Directorate,
 Staff Supervision, Management, Internal Affairs, Administration, and
 Moderation. The panel links every operational summary back to its matching
-tab in the official Staff Handbook.
+tab in the official Staff Handbook. Quick-access buttons also open the
+ISRP Whitelisted Roblox group and the Melonly staff panel.
 
 Staff with **Manage Server** can use:
 

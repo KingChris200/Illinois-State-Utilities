@@ -33,6 +33,10 @@ const SECTION_SELECT_ID = `${STAFF_GUIDE_PREFIX}section`;
 const RANK_SELECT_ID = `${STAFF_GUIDE_PREFIX}ranks`;
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
+const WHITELISTED_GROUP_URL =
+    'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about';
+const MELONLY_PANEL_URL =
+    'https://melonly.xyz/panel/7470913514073231360';
 
 const CHAIN_GROUPS = [
     {
@@ -138,12 +142,25 @@ function createGuidePanelPayload(guild) {
         overview.setThumbnail(guildIcon);
     }
 
-    const linkButtons = new ActionRowBuilder().addComponents(
+    const resourceButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setLabel('Full Staff Handbook')
             .setEmoji('📖')
             .setStyle(ButtonStyle.Link)
             .setURL(STAFF_GUIDE_DOCUMENT_URL),
+        new ButtonBuilder()
+            .setLabel('Whitelisted Group')
+            .setEmoji('🎮')
+            .setStyle(ButtonStyle.Link)
+            .setURL(WHITELISTED_GROUP_URL),
+        new ButtonBuilder()
+            .setLabel('Melonly Panel')
+            .setEmoji('🕒')
+            .setStyle(ButtonStyle.Link)
+            .setURL(MELONLY_PANEL_URL)
+    );
+
+    const guideButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(CHAIN_BUTTON_ID)
             .setLabel('Chain of Command')
@@ -161,7 +178,7 @@ function createGuidePanelPayload(guild) {
     ).trim();
 
     if (/^\d{17,20}$/.test(permissionLogsChannelId)) {
-        linkButtons.addComponents(
+        guideButtons.addComponents(
             new ButtonBuilder()
                 .setLabel('Permission Logs')
                 .setEmoji('🗂️')
@@ -205,7 +222,8 @@ function createGuidePanelPayload(guild) {
     return {
         embeds: [banner, overview],
         components: [
-            linkButtons,
+            resourceButtons,
+            guideButtons,
             new ActionRowBuilder().addComponents(
                 sectionMenu
             ),
@@ -607,10 +625,12 @@ module.exports = {
     CHAIN_BUTTON_ID,
     CHAIN_GROUPS,
     HELP_BUTTON_ID,
+    MELONLY_PANEL_URL,
     RANK_SELECT_ID,
     SECTION_SELECT_ID,
     STAFF_GUIDE_DATABASE,
     STAFF_GUIDE_PREFIX,
+    WHITELISTED_GROUP_URL,
     canAccessStaffGuide,
     createChainPayload,
     createGuidePanelPayload,

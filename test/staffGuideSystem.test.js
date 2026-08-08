@@ -17,8 +17,10 @@ const {
 } = require('../config/serverConfigs');
 const {
     CHAIN_BUTTON_ID,
+    MELONLY_PANEL_URL,
     RANK_SELECT_ID,
     SECTION_SELECT_ID,
+    WHITELISTED_GROUP_URL,
     canAccessStaffGuide,
     createChainPayload,
     createGuidePanelPayload,
@@ -114,25 +116,39 @@ test('public guide panel contains branded embeds and persistent controls', () =>
     );
 
     assert.equal(payload.embeds.length, 2);
-    assert.equal(rows.length, 3);
-    assert.equal(
-        rows[1].components[0].custom_id,
-        SECTION_SELECT_ID
-    );
-    assert.equal(
-        rows[1].components[0].options.length,
-        15
-    );
-    assert.equal(
-        rows[2].components[0].custom_id,
-        RANK_SELECT_ID
-    );
-    assert.equal(
-        rows[2].components[0].options.length,
-        7
+    assert.equal(rows.length, 4);
+    assert.ok(
+        rows[0].components.some(
+            (component) =>
+                component.url ===
+                WHITELISTED_GROUP_URL
+        )
     );
     assert.ok(
         rows[0].components.some(
+            (component) =>
+                component.url ===
+                MELONLY_PANEL_URL
+        )
+    );
+    assert.equal(
+        rows[2].components[0].custom_id,
+        SECTION_SELECT_ID
+    );
+    assert.equal(
+        rows[2].components[0].options.length,
+        15
+    );
+    assert.equal(
+        rows[3].components[0].custom_id,
+        RANK_SELECT_ID
+    );
+    assert.equal(
+        rows[3].components[0].options.length,
+        7
+    );
+    assert.ok(
+        rows[1].components.some(
             (component) =>
                 component.custom_id ===
                 CHAIN_BUTTON_ID
