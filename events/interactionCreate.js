@@ -28,6 +28,9 @@ const {
     handleWatchlistDashboardButton,
 } = require('../utils/watchlistDashboardManager');
 const {
+    handleStaffGuideInteraction,
+} = require('../utils/staffGuideManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -87,6 +90,21 @@ module.exports = {
             )
         ) {
             await handleWatchlistAlertModal(interaction);
+            return;
+        }
+
+        if (
+            (
+                interaction.isStringSelectMenu?.() ||
+                interaction.isButton?.()
+            ) &&
+            interaction.customId?.startsWith(
+                'staff_guide:'
+            )
+        ) {
+            await handleStaffGuideInteraction(
+                interaction
+            );
             return;
         }
 

@@ -31,6 +31,10 @@ ERLC_SENIOR_MOD_ROLE_IDS=567890123456789012
 # Optional Discord channel for command audit messages
 ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 
+# Optional Staff Guide source and private permission-log shortcut
+STAFF_GUIDE_DOCUMENT_URL=https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit
+STAFF_PERMISSION_LOGS_CHANNEL_ID=
+
 # Optional channel for detailed moderation lifecycle embeds
 ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
 
@@ -170,6 +174,34 @@ no slash-command deployment is required for the welcome system.
 Automatic unanswered moderator-call alerts are disabled to prevent
 repeated notifications. Staff can still check calls manually with
 `?modcalls`; queue-surge and unusual-kill smart alerts remain available.
+
+## Permanent Staff Guide
+
+The `/guide` command manages a branded, persistent staff handbook panel
+for the main Illinois State Roleplay server. Its topic and rank menus open
+private responses, so staff can study policies without filling the public
+channel with messages. The panel continues working after bot restarts.
+
+The official chain of command is organized into Foundership, Directorate,
+Staff Supervision, Management, Internal Affairs, Administration, and
+Moderation. The panel links every operational summary back to its matching
+tab in the official Staff Handbook.
+
+Staff with **Manage Server** can use:
+
+- `/guide preview` to inspect the complete panel privately.
+- `/guide setup channel:#staff-guide` to post it. Leaving out `channel`
+  uses the current channel.
+- `/guide update` to refresh the saved message after future changes.
+- `/guide remove` to remove the message and its saved location.
+
+Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if the panel should include a
+shortcut to a private permission-log channel. The bot needs **View
+Channel**, **Send Messages**, and **Embed Links** in the selected guide
+channel.
+
+Run `npm run deploy-commands` once after installing this feature, then
+restart the bot and begin with `/guide preview`.
 
 ## Private watchlist
 

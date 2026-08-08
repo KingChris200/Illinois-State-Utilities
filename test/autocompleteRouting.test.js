@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { MessageFlags } = require('discord.js');
+const {
+    MessageFlags,
+    PermissionFlagsBits,
+} = require('discord.js');
 
 const interactionEvent = require('../events/interactionCreate');
 const infractionCommand = require('../commands/management/infraction');
@@ -137,6 +140,42 @@ test('central interaction handler routes watchlist dashboard buttons', async () 
 
     assert.equal(reply.flags, MessageFlags.Ephemeral);
     assert.match(reply.content, /expired/i);
+});
+
+test('central interaction handler routes persistent Staff Guide menus', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => true,
+        isButton: () => false,
+        customId: 'staff_guide:section',
+        values: ['introduction'],
+        guildId: MAIN_SERVER_ID,
+        guild: {
+            id: MAIN_SERVER_ID,
+            name: 'Illinois State Roleplay',
+            ownerId: 'owner-id',
+            iconURL: () => null,
+        },
+        user: { id: 'staff-id' },
+        member: {
+            permissions: {
+                has: (permission) =>
+                    permission ===
+                    PermissionFlagsBits.ManageMessages,
+            },
+            roles: { cache: new Map() },
+        },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.equal(reply.embeds.length, 1);
 });
 
 test('infraction rank option uses live autocomplete', async () => {
