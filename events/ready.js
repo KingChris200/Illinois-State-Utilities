@@ -9,6 +9,9 @@ const {
 const {
     startWatchlistAlertMonitor,
 } = require('../services/watchlistAlertMonitor');
+const {
+    startDataBackupService,
+} = require('../services/dataBackupService');
 
 module.exports = {
     name: Events.ClientReady,
@@ -53,6 +56,20 @@ module.exports = {
         } catch (error) {
             console.error(
                 '[WATCHLIST ALERTS] Startup failed:',
+                error
+            );
+        }
+
+        try {
+            const backups =
+                await startDataBackupService();
+
+            console.log(
+                `[DATA BACKUP] ${backups.state}`
+            );
+        } catch (error) {
+            console.error(
+                '[DATA BACKUP] Startup failed:',
                 error
             );
         }

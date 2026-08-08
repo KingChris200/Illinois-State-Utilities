@@ -26,6 +26,12 @@ const {
     readDatabase,
     updateDatabase,
 } = require('./database');
+const {
+    DEFAULT_STAFF_GUIDE_VERSION,
+    acknowledgeCurrentGuide,
+    completeStaffOnboarding,
+    getComplianceState,
+} = require('./staffGuideCompliance');
 
 const STAFF_GUIDE_DATABASE = 'staff-guide-panels';
 const STAFF_GUIDE_PREFIX = 'staff_guide:';
@@ -33,6 +39,12 @@ const SECTION_SELECT_ID = `${STAFF_GUIDE_PREFIX}section`;
 const RANK_SELECT_ID = `${STAFF_GUIDE_PREFIX}ranks`;
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
+const ACKNOWLEDGE_BUTTON_ID =
+    `${STAFF_GUIDE_PREFIX}acknowledge`;
+const ONBOARDING_BUTTON_ID =
+    `${STAFF_GUIDE_PREFIX}onboarding`;
+const ONBOARDING_COMPLETE_BUTTON_ID =
+    `${STAFF_GUIDE_PREFIX}onboarding_complete`;
 const WHITELISTED_GROUP_URL =
     'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about';
 const MELONLY_PANEL_URL =
@@ -101,8 +113,14 @@ function createBaseEmbed(guild, color = brands.isrp.color) {
         .setTimestamp();
 }
 
-function createGuidePanelPayload(guild) {
+function createGuidePanelPayload(
+    guild,
+    complianceState = null
+) {
     const guildIcon = getGuildIcon(guild);
+    const guideVersion =
+        complianceState?.currentVersion ||
+        DEFAULT_STAFF_GUIDE_VERSION;
     const banner = new EmbedBuilder()
         .setColor(brands.isrp.color)
         .setImage(brands.assets.wordmark);
@@ -129,6 +147,11 @@ function createGuidePanelPayload(guild) {
                 name: 'Rank Divisions',
                 value:
                     `${RANK_GUIDES.length} chain-of-command groups`,
+                inline: true,
+            },
+            {
+                name: 'Current Version',
+                value: `**${guideVersion}**`,
                 inline: true,
             },
             {
@@ -170,6 +193,16 @@ function createGuidePanelPayload(guild) {
             .setCustomId(HELP_BUTTON_ID)
             .setLabel('How This Works')
             .setEmoji('❔')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId(ACKNOWLEDGE_BUTTON_ID)
+            .setLabel('Acknowledge Guide')
+            .setEmoji('✅')
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId(ONBOARDING_BUTTON_ID)
+            .setLabel('Staff Onboarding')
+            .setEmoji('🎓')
             .setStyle(ButtonStyle.Secondary)
     );
 
@@ -422,6 +455,115 @@ function createHelpPayload(guild) {
     };
 }
 
+function createOnboardingPayload(
+    guild,
+    complianceState,
+    userId
+) {
+    const version =
+        complianceState?.currentVersion ||
+        DEFAULT_STAFF_GUIDE_VERSION;
+    const acknowledged = Boolean(
+        complianceState?.acknowledgements?.[
+            version
+        ]?.[userId]
+    );
+    const completed =
+        complianceState
+            ?.onboardingCompletions?.[userId]
+            ?.completedVersion === version;
+    const embed = createBaseEmbed(guild, 0x2ecc71)
+        .setTitle('🎓 Staff Onboarding Checklist')
+        .setDescription(
+            'Complete each step honestly before marking onboarding complete. This checklist records completion but never changes roles or applies discipline automatically.'
+        )
+        .addFields(
+            {
+                name: '1 • Read the Staff Handbook',
+                value:
+                    'Review the rules, punishment guide, commands, moderation workflow, evidence standards, emergencies, and expectations for your division.',
+            },
+            {
+                name: '2 • Join the Whitelisted Group',
+                value:
+                    'Open the official Roblox group and confirm that you have completed any membership requirements assigned by leadership.',
+            },
+            {
+                name: '3 • Open Melonly',
+                value:
+                    'Confirm you can access the staff panel and understand the server’s approved shift workflow.',
+            },
+            {
+                name: '4 • Complete Training',
+                value:
+                    'Finish required training or certification and ask a supervisor about anything that remains unclear.',
+            },
+            {
+                name: '5 • Confirm the Current Guide',
+                value:
+                    `Version **${version}** acknowledgment: ${acknowledged ? '✅ Complete' : '⚠️ Still required'}\nOnboarding status: ${completed ? '✅ Complete' : '⏳ Incomplete'}`,
+            }
+        );
+
+    return {
+        embeds: [embed],
+        components: [
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Staff Handbook')
+                    .setEmoji('📖')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(
+                        STAFF_GUIDE_DOCUMENT_URL
+                    ),
+                new ButtonBuilder()
+                    .setLabel('Whitelisted Group')
+                    .setEmoji('🎮')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(
+                        WHITELISTED_GROUP_URL
+                    ),
+                new ButtonBuilder()
+                    .setLabel('Melonly Panel')
+                    .setEmoji('🕒')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(MELONLY_PANEL_URL)
+            ),
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(
+                        ACKNOWLEDGE_BUTTON_ID
+                    )
+                    .setLabel(
+                        acknowledged
+                            ? 'Guide Acknowledged'
+                            : 'Acknowledge Guide'
+                    )
+                    .setEmoji('✅')
+                    .setStyle(ButtonStyle.Success)
+                    .setDisabled(acknowledged),
+                new ButtonBuilder()
+                    .setCustomId(
+                        ONBOARDING_COMPLETE_BUTTON_ID
+                    )
+                    .setLabel(
+                        completed
+                            ? 'Onboarding Complete'
+                            : 'Mark Onboarding Complete'
+                    )
+                    .setEmoji('🎓')
+                    .setStyle(ButtonStyle.Primary)
+                    .setDisabled(completed)
+            ),
+        ],
+        allowedMentions: {
+            parse: [],
+            users: [],
+            roles: [],
+        },
+    };
+}
+
 function memberHasRole(member, roleId) {
     if (!member || !roleId) {
         return false;
@@ -512,6 +654,91 @@ async function handleStaffGuideInteraction(interaction) {
     }
 
     let payload = null;
+
+    if (
+        interaction.customId ===
+        ACKNOWLEDGE_BUTTON_ID
+    ) {
+        const result =
+            await acknowledgeCurrentGuide({
+                guildId: interaction.guildId,
+                userId: interaction.user.id,
+                username:
+                    interaction.user.username,
+                displayName:
+                    interaction.member?.displayName,
+            });
+        const timestamp = Math.floor(
+            new Date(
+                result.record.acknowledgedAt
+            ).getTime() / 1000
+        );
+
+        await interaction.reply({
+            content: result.created
+                ? `✅ You acknowledged Staff Guide version **${result.record.version}**. Your confirmation was recorded.`
+                : `ℹ️ You already acknowledged version **${result.record.version}** <t:${timestamp}:R>.`,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: { parse: [] },
+        });
+        return;
+    }
+
+    if (
+        interaction.customId ===
+        ONBOARDING_BUTTON_ID
+    ) {
+        const state = await getComplianceState(
+            interaction.guildId
+        );
+
+        payload = createOnboardingPayload(
+            interaction.guild,
+            state,
+            interaction.user.id
+        );
+    } else if (
+        interaction.customId ===
+        ONBOARDING_COMPLETE_BUTTON_ID
+    ) {
+        const state = await getComplianceState(
+            interaction.guildId
+        );
+        const acknowledged = Boolean(
+            state.acknowledgements?.[
+                state.currentVersion
+            ]?.[interaction.user.id]
+        );
+
+        if (!acknowledged) {
+            await interaction.reply({
+                content:
+                    '⚠️ Please acknowledge the current Staff Guide before marking onboarding complete.',
+                flags: MessageFlags.Ephemeral,
+                allowedMentions: { parse: [] },
+            });
+            return;
+        }
+
+        const result =
+            await completeStaffOnboarding({
+                guildId: interaction.guildId,
+                userId: interaction.user.id,
+                username:
+                    interaction.user.username,
+                displayName:
+                    interaction.member?.displayName,
+            });
+
+        await interaction.reply({
+            content: result.created
+                ? `✅ Your staff onboarding checklist for guide version **${result.record.completedVersion}** is complete and recorded.`
+                : `ℹ️ Your onboarding for version **${result.record.completedVersion}** was already completed.`,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: { parse: [] },
+        });
+        return;
+    }
 
     if (
         interaction.customId ===
@@ -622,10 +849,13 @@ async function fetchStoredGuideMessage(client, panel) {
 }
 
 module.exports = {
+    ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
     CHAIN_GROUPS,
     HELP_BUTTON_ID,
     MELONLY_PANEL_URL,
+    ONBOARDING_BUTTON_ID,
+    ONBOARDING_COMPLETE_BUTTON_ID,
     RANK_SELECT_ID,
     SECTION_SELECT_ID,
     STAFF_GUIDE_DATABASE,
@@ -636,6 +866,7 @@ module.exports = {
     createGuidePanelPayload,
     createGuideSectionPayload,
     createHelpPayload,
+    createOnboardingPayload,
     createRankGuidePayload,
     fetchStoredGuideMessage,
     getStoredGuidePanel,

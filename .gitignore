@@ -7,6 +7,7 @@ node_modules/
 
 # Live bot data
 data/
+backups/
 
 # Logs and temporary files
 *.log
