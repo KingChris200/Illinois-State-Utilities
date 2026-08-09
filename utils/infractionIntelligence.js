@@ -6,6 +6,7 @@ const ACTION_SEVERITY = {
     inactivity_notice: 1,
     warning: 2,
     strike: 3,
+    demotion: 3,
     termination: 4,
     blacklist: 4,
 };
@@ -96,6 +97,11 @@ function analyzeInfractionHistory({
     ) {
         recommendation =
             'Leadership approval and complete evidence should be verified before confirmation.';
+    } else if (
+        infractionType === 'demotion'
+    ) {
+        recommendation =
+            'Leadership should verify the replacement rank, role update, supporting evidence, and future advancement expectations.';
     } else if (infractionType === 'strike' || activeStrikes > 0) {
         recommendation =
             'Escalated management review is recommended due to strike-level history.';

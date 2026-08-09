@@ -68,3 +68,18 @@ test('raises its recommendation for repeat conduct', () => {
     assert.equal(analysis.activeWarnings, 1);
     assert.match(analysis.recommendation, /Repeat conduct/);
 });
+
+test('treats disciplinary demotions as high-severity management actions', () => {
+    const analysis = analyzeInfractionHistory({
+        records: [],
+        staffMemberId: 'member',
+        infractionType: 'demotion',
+        now: NOW,
+    });
+
+    assert.equal(analysis.level, 'High');
+    assert.match(
+        analysis.recommendation,
+        /replacement rank/i
+    );
+});

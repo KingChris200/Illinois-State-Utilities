@@ -184,10 +184,20 @@ test('central interaction handler routes persistent Staff Guide menus', async ()
 
 test('infraction rank option uses live autocomplete', async () => {
     const command = infractionCommand.data.toJSON();
+    const typeOption = command.options.find(
+        (option) => option.name === 'type'
+    );
     const rankOption = command.options.find(
         (option) => option.name === 'current-rank'
     );
 
+    assert.ok(
+        typeOption.choices.some(
+            (choice) =>
+                choice.name === 'Demotion' &&
+                choice.value === 'demotion'
+        )
+    );
     assert.equal(rankOption.autocomplete, true);
 
     let choices = null;

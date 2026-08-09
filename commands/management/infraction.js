@@ -81,6 +81,18 @@ const INFRACTION_TYPES = {
             'This is a serious disciplinary action. Further violations may result in demotion or termination.',
     },
 
+    demotion: {
+        label: 'Demotion',
+        title: 'ISRP | Staff Demotion',
+        color: 0xc0392b,
+        recordPrefix: 'demotion',
+        counterField: 'demotionCount',
+        opening:
+            'has received an official disciplinary demotion within Illinois State Roleplay.',
+        closing:
+            'This demotion has been formally documented. Future advancement should follow management review and demonstrated improvement.',
+    },
+
     termination: {
         label: 'Termination',
         title: 'ISRP | Staff Termination',
@@ -197,6 +209,10 @@ module.exports = {
                     {
                         name: 'Strike',
                         value: 'strike',
+                    },
+                    {
+                        name: 'Demotion',
+                        value: 'demotion',
                     },
                     {
                         name: 'Termination',
