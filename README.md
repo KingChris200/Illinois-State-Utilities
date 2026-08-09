@@ -32,7 +32,7 @@ ERLC_SENIOR_MOD_ROLE_IDS=567890123456789012
 ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 
 # Optional Staff Guide source and private permission-log shortcut
-STAFF_GUIDE_DOCUMENT_URL=https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit
+STAFF_GUIDE_DOCUMENT_URL=https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit?tab=t.3qivgdyxzvm9
 STAFF_PERMISSION_LOGS_CHANNEL_ID=
 STAFF_GUIDE_VERSION=1.0
 
@@ -113,6 +113,12 @@ matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
 Welcome, Staff Guide, About, Announcements, and the future Dashboard.
 These headers share one gradient, type system, logo lockup, tagline, and
 spacing grid so public panels remain visually consistent.
+
+The official `assets/branding/v2` logo kit includes light and dark
+lockups, transparent white and navy marks, a circular badge, bot icon,
+horizontal wordmarks, and a subtle watermark. Its palette is deliberately
+limited to white, ice, light blue, soft navy, and neutral slate. Run
+`scripts/generate-logo-kit.ps1` to regenerate the complete versioned kit.
 
 Run `scripts/generate-brand-banners.ps1` after changing the shared banner
 template. It deterministically regenerates the complete header family;
@@ -203,9 +209,11 @@ acknowledgment button instead.
 
 The official chain of command is organized into Foundership, Directorate,
 Staff Supervision, Management, Internal Affairs, Administration, and
-Moderation. The panel links every operational summary back to its matching
-tab in the official Staff Handbook. Quick-access buttons also open the
-ISRP Whitelisted Roblox group and the Melonly staff panel.
+Moderation. The public panel stays minimal: it has two action buttons and
+two dropdown menus. **How This Guide Works** lives in the handbook menu,
+and the complete chain lives in the rank menu. The official Staff Guide,
+Whitelisted Roblox group, and Melonly invite are clean links inside the
+embed instead of a separate row of buttons.
 
 Staff with **Manage Server** can use:
 
@@ -224,10 +232,9 @@ directly from the permanent panel. Acknowledgments and checklist
 completion are private, versioned, and recorded without automatically
 changing roles, sending reminders, or applying discipline.
 
-Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if the panel should include a
-shortcut to a private permission-log channel. The bot needs **View
-Channel**, **Send Messages**, and **Embed Links** in the selected guide
-channel.
+Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if private guide pages should
+hand staff off to a permission-log channel. The bot needs **View Channel**,
+**Send Messages**, and **Embed Links** in the selected guide channel.
 
 Run `npm run deploy-commands` once after installing this feature, then
 restart the bot and begin with `/guide preview`.

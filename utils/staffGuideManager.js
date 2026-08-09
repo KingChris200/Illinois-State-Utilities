@@ -47,6 +47,8 @@ const STAFF_GUIDE_DATABASE = 'staff-guide-panels';
 const STAFF_GUIDE_PREFIX = 'staff_guide:';
 const SECTION_SELECT_ID = `${STAFF_GUIDE_PREFIX}section`;
 const RANK_SELECT_ID = `${STAFF_GUIDE_PREFIX}ranks`;
+const HELP_SELECT_VALUE = 'how_it_works';
+const CHAIN_SELECT_VALUE = 'complete_chain';
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
 const ACKNOWLEDGE_BUTTON_ID =
@@ -57,8 +59,8 @@ const ONBOARDING_COMPLETE_BUTTON_ID =
     `${STAFF_GUIDE_PREFIX}onboarding_complete`;
 const WHITELISTED_GROUP_URL =
     'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about';
-const MELONLY_PANEL_URL =
-    'https://melonly.xyz/panel/7470913514073231360';
+const MELONLY_INVITE_URL =
+    'https://melon.ly/join/FHMKHP';
 const STAFF_GUIDE_BANNER_NAME =
     'staff-guide-banner-v3.png';
 const STAFF_GUIDE_BANNER_PATH = path.join(
@@ -337,7 +339,15 @@ function createGuidePanelPayload(
             {
                 name: 'How to Use',
                 value:
-                    'Choose a topic or rank division below. Use **Chain of Command** for the complete official order.',
+                    'Choose a handbook topic or rank division below. Guide pages open privately for you.',
+            },
+            {
+                name: 'Quick Links',
+                value: [
+                    `[Staff Guide](${STAFF_GUIDE_DOCUMENT_URL})`,
+                    `[WL Group](${WHITELISTED_GROUP_URL})`,
+                    `[Melonly Invite](${MELONLY_INVITE_URL})`,
+                ].join(' • '),
             }
         );
 
@@ -345,35 +355,7 @@ function createGuidePanelPayload(
         overview.setThumbnail(guildIcon);
     }
 
-    const resourceButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setLabel('Full Staff Handbook')
-            .setEmoji('📖')
-            .setStyle(ButtonStyle.Link)
-            .setURL(STAFF_GUIDE_DOCUMENT_URL),
-        new ButtonBuilder()
-            .setLabel('Whitelisted Group')
-            .setEmoji('🎮')
-            .setStyle(ButtonStyle.Link)
-            .setURL(WHITELISTED_GROUP_URL),
-        new ButtonBuilder()
-            .setLabel('Melonly Panel')
-            .setEmoji('🕒')
-            .setStyle(ButtonStyle.Link)
-            .setURL(MELONLY_PANEL_URL)
-    );
-
     const guideButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(CHAIN_BUTTON_ID)
-            .setLabel('Chain of Command')
-            .setEmoji('📋')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId(HELP_BUTTON_ID)
-            .setLabel('How This Works')
-            .setEmoji('❔')
-            .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId(ACKNOWLEDGE_BUTTON_ID)
             .setLabel('Acknowledge Guide')
@@ -386,22 +368,6 @@ function createGuidePanelPayload(
             .setStyle(ButtonStyle.Secondary)
     );
 
-    const permissionLogsChannelId = String(
-        process.env.STAFF_PERMISSION_LOGS_CHANNEL_ID || ''
-    ).trim();
-
-    if (/^\d{17,20}$/.test(permissionLogsChannelId)) {
-        guideButtons.addComponents(
-            new ButtonBuilder()
-                .setLabel('Permission Logs')
-                .setEmoji('🗂️')
-                .setStyle(ButtonStyle.Link)
-                .setURL(
-                    `https://discord.com/channels/${guild?.id || MAIN_SERVER_ID}/${permissionLogsChannelId}`
-                )
-        );
-    }
-
     const sectionMenu =
         new StringSelectMenuBuilder()
             .setCustomId(SECTION_SELECT_ID)
@@ -409,12 +375,21 @@ function createGuidePanelPayload(
                 'Choose an official handbook section…'
             )
             .addOptions(
-                GUIDE_SECTIONS.map((section) => ({
-                    label: section.label,
-                    description: section.description,
-                    value: section.id,
-                    emoji: section.emoji,
-                }))
+                [
+                    {
+                        label: 'How This Guide Works',
+                        description:
+                            'A quick explanation of the private guide panel.',
+                        value: HELP_SELECT_VALUE,
+                        emoji: '❔',
+                    },
+                    ...GUIDE_SECTIONS.map((section) => ({
+                        label: section.label,
+                        description: section.description,
+                        value: section.id,
+                        emoji: section.emoji,
+                    })),
+                ]
             );
 
     const rankMenu =
@@ -424,19 +399,27 @@ function createGuidePanelPayload(
                 'Choose a chain-of-command division…'
             )
             .addOptions(
-                RANK_GUIDES.map((guide) => ({
-                    label: guide.label,
-                    description: guide.description,
-                    value: guide.id,
-                    emoji: guide.emoji,
-                }))
+                [
+                    {
+                        label: 'Complete Chain of Command',
+                        description:
+                            'View all 21 ranks from highest to lowest.',
+                        value: CHAIN_SELECT_VALUE,
+                        emoji: '📋',
+                    },
+                    ...RANK_GUIDES.map((guide) => ({
+                        label: guide.label,
+                        description: guide.description,
+                        value: guide.id,
+                        emoji: guide.emoji,
+                    })),
+                ]
             );
 
     return {
         embeds: [banner, overview],
         files: [createStaffGuideBannerAttachment()],
         components: [
-            resourceButtons,
             guideButtons,
             new ActionRowBuilder().addComponents(
                 sectionMenu
@@ -479,10 +462,10 @@ function createGuideSectionPayload(
     if (section.id === 'melonly') {
         buttons.push(
             new ButtonBuilder()
-                .setLabel('Open Melonly')
+                .setLabel('Join Melonly')
                 .setEmoji('🕒')
                 .setStyle(ButtonStyle.Link)
-                .setURL(MELONLY_PANEL_URL)
+                .setURL(MELONLY_INVITE_URL)
         );
     }
 
@@ -726,10 +709,10 @@ function createOnboardingPayload(
                         WHITELISTED_GROUP_URL
                     ),
                 new ButtonBuilder()
-                    .setLabel('Melonly Panel')
+                    .setLabel('Melonly Invite')
                     .setEmoji('🕒')
                     .setStyle(ButtonStyle.Link)
-                    .setURL(MELONLY_PANEL_URL)
+                    .setURL(MELONLY_INVITE_URL)
             ),
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
@@ -952,20 +935,34 @@ async function handleStaffGuideInteraction(interaction) {
         interaction.customId ===
         SECTION_SELECT_ID
     ) {
-        payload = createGuideSectionPayload(
-            interaction.values?.[0],
-            interaction.guild,
-            complianceState
-        );
+        const sectionId = interaction.values?.[0];
+        payload =
+            sectionId === HELP_SELECT_VALUE
+                ? createHelpPayload(
+                      interaction.guild,
+                      complianceState
+                  )
+                : createGuideSectionPayload(
+                      sectionId,
+                      interaction.guild,
+                      complianceState
+                  );
     } else if (
         interaction.customId ===
         RANK_SELECT_ID
     ) {
-        payload = createRankGuidePayload(
-            interaction.values?.[0],
-            interaction.guild,
-            complianceState
-        );
+        const rankGuideId = interaction.values?.[0];
+        payload =
+            rankGuideId === CHAIN_SELECT_VALUE
+                ? createChainPayload(
+                      interaction.guild,
+                      complianceState
+                  )
+                : createRankGuidePayload(
+                      rankGuideId,
+                      interaction.guild,
+                      complianceState
+                  );
     } else if (
         interaction.customId ===
         CHAIN_BUTTON_ID
@@ -1064,10 +1061,12 @@ async function fetchStoredGuideMessage(client, panel) {
 
 module.exports = {
     ACKNOWLEDGE_BUTTON_ID,
+    CHAIN_SELECT_VALUE,
     CHAIN_BUTTON_ID,
     CHAIN_GROUPS,
     HELP_BUTTON_ID,
-    MELONLY_PANEL_URL,
+    HELP_SELECT_VALUE,
+    MELONLY_INVITE_URL,
     ONBOARDING_BUTTON_ID,
     ONBOARDING_COMPLETE_BUTTON_ID,
     RANK_SELECT_ID,

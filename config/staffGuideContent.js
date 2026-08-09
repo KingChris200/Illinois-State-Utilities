@@ -1,5 +1,5 @@
 const DEFAULT_STAFF_GUIDE_DOCUMENT_URL =
-    'https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit';
+    'https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit?tab=t.3qivgdyxzvm9';
 
 const STAFF_GUIDE_DOCUMENT_URL =
     process.env.STAFF_GUIDE_DOCUMENT_URL ||
@@ -778,11 +778,13 @@ function getStaffGuideTabUrl(tabId) {
         return STAFF_GUIDE_DOCUMENT_URL;
     }
 
-    const separator = STAFF_GUIDE_DOCUMENT_URL.includes('?')
-        ? '&'
-        : '?';
-
-    return `${STAFF_GUIDE_DOCUMENT_URL}${separator}tab=${encodeURIComponent(tabId)}`;
+    try {
+        const url = new URL(STAFF_GUIDE_DOCUMENT_URL);
+        url.searchParams.set('tab', tabId);
+        return url.toString();
+    } catch {
+        return STAFF_GUIDE_DOCUMENT_URL;
+    }
 }
 
 module.exports = {

@@ -12,6 +12,16 @@ const expectedAssets = [
     'branding/isrp-logo-silver.jpg',
     'branding/isrp-wordmark.jpg',
     'branding/isrp-roblox-avatar.jpg',
+    'branding/v2/isrp-mark-white-v2.png',
+    'branding/v2/isrp-mark-navy-v2.png',
+    'branding/v2/isrp-logo-primary-v2.png',
+    'branding/v2/isrp-logo-dark-v2.png',
+    'branding/v2/isrp-logo-light-v2.png',
+    'branding/v2/isrp-circular-badge-v2.png',
+    'branding/v2/isrp-bot-icon-v2.png',
+    'branding/v2/isrp-wordmark-white-v2.png',
+    'branding/v2/isrp-wordmark-navy-v2.png',
+    'branding/v2/isrp-watermark-white-v2.png',
     'thumbnails/sessions-banner-v2.png',
     'thumbnails/welcome-banner-v2.png',
     'thumbnails/staff-guide-banner-v3.png',
@@ -34,6 +44,17 @@ test('brand URLs are durable and every branded asset exists locally', () => {
         assert.match(url, /^https:\/\/raw\.githubusercontent\.com\//);
         assert.doesNotMatch(url, /media\.discordapp\.net|[?&](?:ex|hm)=/i);
     }
+});
+
+test('brand palette uses the minimal white and light-blue system', () => {
+    assert.equal(brands.palette.white, '#FFFFFF');
+    assert.equal(brands.palette.ice, '#F4F9FF');
+    assert.equal(brands.palette.lightBlue, '#8FC7FF');
+    assert.equal(brands.isrp.color, brands.palette.lightBlue);
+    assert.match(
+        brands.assets.logo,
+        /branding\/v2\/isrp-bot-icon-v2\.png$/
+    );
 });
 
 test('/about presents the minimal about banner and guild identity', async () => {

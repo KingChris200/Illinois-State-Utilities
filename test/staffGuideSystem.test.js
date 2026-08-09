@@ -11,6 +11,7 @@ const {
     CHAIN_OF_COMMAND,
     GUIDE_SECTIONS,
     RANK_GUIDES,
+    STAFF_GUIDE_DOCUMENT_URL,
 } = require('../config/staffGuideContent');
 const {
     MAIN_SERVER_ID,
@@ -18,7 +19,9 @@ const {
 const {
     ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
-    MELONLY_PANEL_URL,
+    CHAIN_SELECT_VALUE,
+    HELP_SELECT_VALUE,
+    MELONLY_INVITE_URL,
     ONBOARDING_BUTTON_ID,
     RANK_SELECT_ID,
     SECTION_SELECT_ID,
@@ -134,57 +137,77 @@ test('public guide panel contains branded embeds and persistent controls', () =>
         payload.files[0].name,
         'staff-guide-banner-v3.png'
     );
-    assert.equal(rows.length, 4);
-    assert.ok(
-        rows[0].components.some(
-            (component) =>
-                component.url ===
-                WHITELISTED_GROUP_URL
-        )
-    );
-    assert.ok(
-        rows[0].components.some(
-            (component) =>
-                component.url ===
-                MELONLY_PANEL_URL
-        )
-    );
+    assert.equal(rows.length, 3);
+    const quickLinks = payload.embeds[1]
+        .toJSON()
+        .fields.find(
+            (field) => field.name === 'Quick Links'
+        ).value;
+    assert.match(quickLinks, /Staff Guide/);
+    assert.ok(quickLinks.includes(STAFF_GUIDE_DOCUMENT_URL));
+    assert.ok(quickLinks.includes(WHITELISTED_GROUP_URL));
+    assert.ok(quickLinks.includes(MELONLY_INVITE_URL));
     assert.equal(
-        rows[2].components[0].custom_id,
+        rows[1].components[0].custom_id,
         SECTION_SELECT_ID
     );
     assert.equal(
-        rows[2].components[0].options.length,
-        15
+        rows[1].components[0].options.length,
+        16
     );
     assert.equal(
-        rows[3].components[0].custom_id,
+        rows[1].components[0].options[0].value,
+        HELP_SELECT_VALUE
+    );
+    assert.equal(
+        rows[2].components[0].custom_id,
         RANK_SELECT_ID
     );
     assert.equal(
-        rows[3].components[0].options.length,
-        7
+        rows[2].components[0].options.length,
+        8
     );
-    assert.ok(
-        rows[1].components.some(
-            (component) =>
-                component.custom_id ===
-                CHAIN_BUTTON_ID
-        )
+    assert.equal(
+        rows[2].components[0].options[0].value,
+        CHAIN_SELECT_VALUE
     );
+    assert.equal(rows[0].components.length, 2);
     assert.ok(
-        rows[1].components.some(
+        rows[0].components.some(
             (component) =>
                 component.custom_id ===
                 ACKNOWLEDGE_BUTTON_ID
         )
     );
     assert.ok(
-        rows[1].components.some(
+        rows[0].components.some(
             (component) =>
                 component.custom_id ===
                 ONBOARDING_BUTTON_ID
         )
+    );
+    assert.equal(
+        rows.flatMap((row) => row.components).some(
+            (component) =>
+                component.custom_id ===
+                CHAIN_BUTTON_ID
+        ),
+        false
+    );
+});
+
+test('staff guide uses the approved official resource links', () => {
+    assert.equal(
+        STAFF_GUIDE_DOCUMENT_URL,
+        'https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit?tab=t.3qivgdyxzvm9'
+    );
+    assert.equal(
+        WHITELISTED_GROUP_URL,
+        'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about'
+    );
+    assert.equal(
+        MELONLY_INVITE_URL,
+        'https://melon.ly/join/FHMKHP'
     );
 });
 
@@ -217,7 +240,7 @@ test('onboarding checklist includes all required resources and safe completion c
         components.some(
             (component) =>
                 component.url ===
-                MELONLY_PANEL_URL
+                MELONLY_INVITE_URL
         )
     );
     assert.equal(

@@ -9,10 +9,31 @@ function assetUrl(relativePath) {
 }
 
 const assets = {
-    logo: assetUrl('branding/isrp-logo-clean.jpg'),
-    logoDark: assetUrl('branding/isrp-logo-dark.jpg'),
-    logoSilver: assetUrl('branding/isrp-logo-silver.jpg'),
-    wordmark: assetUrl('branding/isrp-wordmark.jpg'),
+    logo: assetUrl('branding/v2/isrp-bot-icon-v2.png'),
+    logoDark: assetUrl('branding/v2/isrp-logo-dark-v2.png'),
+    logoLight: assetUrl('branding/v2/isrp-logo-light-v2.png'),
+    logoSilver: assetUrl('branding/v2/isrp-mark-white-v2.png'),
+    logoPrimary: assetUrl(
+        'branding/v2/isrp-logo-primary-v2.png'
+    ),
+    circularBadge: assetUrl(
+        'branding/v2/isrp-circular-badge-v2.png'
+    ),
+    markWhite: assetUrl(
+        'branding/v2/isrp-mark-white-v2.png'
+    ),
+    markNavy: assetUrl(
+        'branding/v2/isrp-mark-navy-v2.png'
+    ),
+    wordmark: assetUrl(
+        'branding/v2/isrp-wordmark-white-v2.png'
+    ),
+    wordmarkNavy: assetUrl(
+        'branding/v2/isrp-wordmark-navy-v2.png'
+    ),
+    watermark: assetUrl(
+        'branding/v2/isrp-watermark-white-v2.png'
+    ),
     robloxAvatar: assetUrl(
         'branding/isrp-roblox-avatar.jpg'
     ),
@@ -37,11 +58,20 @@ const assets = {
     ),
 };
 
+const palette = {
+    white: '#FFFFFF',
+    ice: '#F4F9FF',
+    lightBlue: '#8FC7FF',
+    skyBlue: '#6FAFEF',
+    softNavy: '#284B7A',
+    slate: '#667085',
+};
+
 module.exports = {
     utilities: {
         name: 'Illinois State Utilities',
         shortName: 'IS Utilities',
-        color: '#4F76B8',
+        color: palette.lightBlue,
         logo: assets.logo,
         wordmark: assets.wordmark,
         footer:
@@ -65,7 +95,7 @@ module.exports = {
     isrp: {
         name: 'Illinois State Roleplay',
         shortName: 'ISRP',
-        color: '#4F76B8',
+        color: palette.lightBlue,
         logo: assets.logo,
         wordmark: assets.wordmark,
         footer:
@@ -73,6 +103,7 @@ module.exports = {
     },
 
     assets,
+    palette,
     assetBaseUrl,
     assetUrl,
     DEFAULT_ASSET_BASE_URL,
