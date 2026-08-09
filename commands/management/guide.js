@@ -479,6 +479,17 @@ async function publishUpdate(interaction) {
                 result.state
             )
         );
+
+        await saveGuidePanel(
+            interaction.guildId,
+            {
+                ...panel,
+                updatedAt:
+                    new Date().toISOString(),
+                updatedById:
+                    interaction.user.id,
+            }
+        );
     }
 
     await interaction.editReply({
@@ -536,7 +547,8 @@ async function showComplianceReport(
         .addFields(
             {
                 name: 'Completed',
-                value: `**${completedMembers.length || records.length}**`,
+                value:
+                    `**${eligibleMembers.length > 0 ? completedMembers.length : records.length}**`,
                 inline: true,
             },
             {

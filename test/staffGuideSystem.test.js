@@ -16,8 +16,10 @@ const {
     MAIN_SERVER_ID,
 } = require('../config/serverConfigs');
 const {
+    ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
     MELONLY_PANEL_URL,
+    ONBOARDING_BUTTON_ID,
     RANK_SELECT_ID,
     SECTION_SELECT_ID,
     WHITELISTED_GROUP_URL,
@@ -25,9 +27,16 @@ const {
     createChainPayload,
     createGuidePanelPayload,
     createGuideSectionPayload,
+    createOnboardingPayload,
     createRankGuidePayload,
     handleStaffGuideInteraction,
 } = require('../utils/staffGuideManager');
+const {
+    createDefaultComplianceState,
+    getCurrentAcknowledgements,
+    getCurrentOnboardingCompletions,
+    normalizeComplianceState,
+} = require('../utils/staffGuideCompliance');
 
 const EXPECTED_CHAIN = [
     'Founder',
@@ -154,6 +163,93 @@ test('public guide panel contains branded embeds and persistent controls', () =>
                 CHAIN_BUTTON_ID
         )
     );
+    assert.ok(
+        rows[1].components.some(
+            (component) =>
+                component.custom_id ===
+                ACKNOWLEDGE_BUTTON_ID
+        )
+    );
+    assert.ok(
+        rows[1].components.some(
+            (component) =>
+                component.custom_id ===
+                ONBOARDING_BUTTON_ID
+        )
+    );
+});
+
+test('onboarding checklist includes all required resources and safe completion controls', () => {
+    const state = createDefaultComplianceState(
+        MAIN_SERVER_ID
+    );
+    const payload = createOnboardingPayload(
+        mockGuild,
+        state,
+        'staff-user'
+    );
+    const rows = payload.components.map((row) =>
+        row.toJSON()
+    );
+
+    assert.equal(payload.embeds.length, 1);
+    assert.equal(rows.length, 2);
+    assert.ok(
+        rows[0].components.some(
+            (component) =>
+                component.url ===
+                WHITELISTED_GROUP_URL
+        )
+    );
+    assert.ok(
+        rows[0].components.some(
+            (component) =>
+                component.url ===
+                MELONLY_PANEL_URL
+        )
+    );
+    assert.equal(
+        rows[1].components.every(
+            (component) => component.style !== 5
+        ),
+        true
+    );
+});
+
+test('guide compliance state preserves versioned acknowledgements and onboarding', () => {
+    const normalized = normalizeComplianceState(
+        MAIN_SERVER_ID,
+        {
+            currentVersion: '2.0',
+            acknowledgements: {
+                '2.0': {
+                    one: { userId: 'one' },
+                },
+            },
+            onboardingCompletions: {
+                one: {
+                    userId: 'one',
+                    completedVersion: '2.0',
+                },
+                old: {
+                    userId: 'old',
+                    completedVersion: '1.0',
+                },
+            },
+        }
+    );
+
+    assert.equal(
+        getCurrentAcknowledgements(normalized)
+            .length,
+        1
+    );
+    assert.equal(
+        getCurrentOnboardingCompletions(
+            normalized
+        ).length,
+        1
+    );
 });
 
 test('every handbook and rank selection builds a valid private page', () => {
@@ -264,7 +360,7 @@ test('staff guide component responses are ephemeral', async () => {
     assert.equal(response.embeds.length, 1);
 });
 
-test('/guide deploys setup, preview, update, and remove subcommands', () => {
+test('/guide deploys panel, compliance, and publishing subcommands', () => {
     const command = guideCommand.data.toJSON();
 
     assert.equal(command.name, 'guide');
@@ -272,7 +368,15 @@ test('/guide deploys setup, preview, update, and remove subcommands', () => {
         command.options.map(
             (option) => option.name
         ),
-        ['setup', 'preview', 'update', 'remove']
+        [
+            'setup',
+            'preview',
+            'update',
+            'remove',
+            'acknowledgements',
+            'onboarding-status',
+            'publish-update',
+        ]
     );
     assert.equal(
         command.default_member_permissions,

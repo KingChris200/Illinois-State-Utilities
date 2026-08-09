@@ -34,6 +34,12 @@ ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 # Optional Staff Guide source and private permission-log shortcut
 STAFF_GUIDE_DOCUMENT_URL=https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit
 STAFF_PERMISSION_LOGS_CHANNEL_ID=
+STAFF_GUIDE_VERSION=1.0
+
+# Automatic private JSON snapshots (defaults shown)
+DATA_BACKUPS_ENABLED=true
+DATA_BACKUP_INTERVAL_MS=21600000
+DATA_BACKUP_RETENTION=14
 
 # Optional channel for detailed moderation lifecycle embeds
 ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
@@ -195,6 +201,15 @@ Staff with **Manage Server** can use:
   uses the current channel.
 - `/guide update` to refresh the saved message after future changes.
 - `/guide remove` to remove the message and its saved location.
+- `/guide acknowledgements` to review current-version confirmations.
+- `/guide onboarding-status` to review staff onboarding completion.
+- `/guide publish-update version:1.1 summary:...` to publish a new
+  version and request fresh acknowledgments.
+
+Authorized staff can use **Acknowledge Guide** and **Staff Onboarding**
+directly from the permanent panel. Acknowledgments and checklist
+completion are private, versioned, and recorded without automatically
+changing roles, sending reminders, or applying discipline.
 
 Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if the panel should include a
 shortcut to a private permission-log channel. The bot needs **View
@@ -203,6 +218,29 @@ channel.
 
 Run `npm run deploy-commands` once after installing this feature, then
 restart the bot and begin with `/guide preview`.
+
+## Configuration doctor and data backups
+
+`/doctor` runs a private, read-only review of the Discord connection,
+required gateway intents, ER:LC mode, configured channels, channel
+permissions, permanent Staff Guide, live data directory, and automatic
+backup service. It reports problems without changing configuration.
+
+Automatic backups copy every JSON file from `data` into timestamped
+folders under the gitignored `backups` directory. They run once when the
+bot starts and then every six hours by default. The newest 14 snapshots
+are retained; cleanup is restricted to verified timestamped folders
+inside `backups`.
+
+Management can use:
+
+- `/backup status` to review scheduling and the most recent result.
+- `/backup create` to create a snapshot immediately.
+
+Local snapshots protect against accidental data damage, but they remain
+on the same computer. Periodically copy the `backups` folder to a secure
+off-device location for full disaster recovery. Restoring data remains a
+manual operation so the bot cannot overwrite live records accidentally.
 
 ## Private watchlist
 

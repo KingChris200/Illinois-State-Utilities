@@ -15,6 +15,7 @@ const BACKUP_DIRECTORY = path.resolve(
 );
 
 let backupTimer = null;
+let backupOperationQueue = Promise.resolve();
 let runtimeState = {
     enabled: null,
     running: false,
@@ -106,7 +107,18 @@ async function listJsonFiles(directory) {
     }
 }
 
-async function createDataBackup(options = {}) {
+function createDataBackup(options = {}) {
+    const operation = backupOperationQueue
+        .catch(() => undefined)
+        .then(() =>
+            performDataBackup(options)
+        );
+
+    backupOperationQueue = operation;
+    return operation;
+}
+
+async function performDataBackup(options = {}) {
     const configuration =
         getDataBackupConfiguration();
     const sourceDirectory = path.resolve(
@@ -146,42 +158,64 @@ async function createDataBackup(options = {}) {
         backupDirectory,
         createBackupDirectoryName(createdAt)
     );
-    await fs.mkdir(snapshotDirectory, {
+    const temporaryDirectory =
+        `${snapshotDirectory}.tmp-${process.pid}`;
+    await fs.mkdir(temporaryDirectory, {
         recursive: false,
     });
 
-    for (const fileName of files) {
-        await fs.copyFile(
-            path.join(sourceDirectory, fileName),
-            path.join(snapshotDirectory, fileName)
+    try {
+        for (const fileName of files) {
+            await fs.copyFile(
+                path.join(sourceDirectory, fileName),
+                path.join(
+                    temporaryDirectory,
+                    fileName
+                )
+            );
+        }
+
+        const manifest = {
+            createdAt: createdAt.toISOString(),
+            fileCount: files.length,
+            files,
+        };
+
+        await fs.writeFile(
+            path.join(
+                temporaryDirectory,
+                'manifest.json'
+            ),
+            JSON.stringify(manifest, null, 4),
+            'utf8'
         );
+
+        await fs.rename(
+            temporaryDirectory,
+            snapshotDirectory
+        );
+
+        const removedBackups =
+            await pruneDataBackups({
+                backupDirectory,
+                retention,
+            });
+        const result = {
+            status: 'created',
+            ...manifest,
+            backupPath: snapshotDirectory,
+            removedBackups,
+        };
+
+        updateRuntimeState(result);
+        return result;
+    } catch (error) {
+        await fs.rm(temporaryDirectory, {
+            recursive: true,
+            force: true,
+        }).catch(() => undefined);
+        throw error;
     }
-
-    const manifest = {
-        createdAt: createdAt.toISOString(),
-        fileCount: files.length,
-        files,
-    };
-
-    await fs.writeFile(
-        path.join(snapshotDirectory, 'manifest.json'),
-        JSON.stringify(manifest, null, 4),
-        'utf8'
-    );
-
-    const removedBackups = await pruneDataBackups({
-        backupDirectory,
-        retention,
-    });
-    const result = {
-        status: 'created',
-        ...manifest,
-        backupPath: snapshotDirectory,
-        removedBackups,
-    };
-
-    updateRuntimeState(result);
-    return result;
 }
 
 async function listBackupDirectories(
