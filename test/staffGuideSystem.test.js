@@ -558,8 +558,6 @@ test('/guide deploys panel, compliance, and publishing subcommands', () => {
             'preview',
             'update',
             'remove',
-            'acknowledgements',
-            'onboarding-status',
             'publish-update',
         ]
     );

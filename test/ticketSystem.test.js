@@ -15,7 +15,7 @@ const {
 } = require('../config/serverConfigs');
 const {
     CREATE_MENU_ID,
-    createAppealModal,
+    createAppealQuestionnaire,
     createTicketOpeningMentions,
     createTicketPanelPayload,
     createTicketTranscript,
@@ -228,18 +228,27 @@ test('ticket transcripts preserve messages, embeds, and attachment links', () =>
     );
 });
 
-test('both guided appeal types create complete five-question forms', () => {
-    for (const type of ['ingame', 'staff']) {
-        const modal = createAppealModal(type, 'ticket-example').toJSON();
+test('appeal questionnaire is copyable and mentions only the ticket opener', () => {
+    const openerId = '123456789012345678';
+    const payload = createAppealQuestionnaire({ openerId });
 
-        assert.match(modal.custom_id, new RegExp(`:${type}:`));
-        assert.equal(modal.components.length, 5);
-        assert.ok(
-            modal.components.every(
-                (row) => row.components.length === 1
-            )
-        );
-    }
+    assert.match(payload.content, /Appeal Questionnaire/);
+    assert.match(
+        payload.content,
+        /Appeal Type: In-Game Punishment \/ Staff Infraction/
+    );
+    assert.match(payload.content, /Roblox Username:/);
+    assert.match(
+        payload.content,
+        /Why Should This Action Be Reconsidered\?/
+    );
+    assert.match(payload.content, /```text/);
+    assert.equal(payload.components, undefined);
+    assert.deepEqual(payload.allowedMentions, {
+        users: [openerId],
+        roles: [],
+        parse: [],
+    });
 });
 
 test('/tickets provides setup, preview, and status management actions', () => {

@@ -1,6 +1,5 @@
 const {
     ChannelType,
-    EmbedBuilder,
     MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
@@ -8,9 +7,7 @@ const {
 
 const {
     MAIN_SERVER_ID,
-    getServerConfig,
 } = require('../../config/serverConfigs');
-const brands = require('../../config/branding');
 const {
     createGuidePanelPayload,
     fetchStoredGuideMessage,
@@ -20,8 +17,6 @@ const {
 } = require('../../utils/staffGuideManager');
 const {
     getComplianceState,
-    getCurrentAcknowledgements,
-    getCurrentOnboardingCompletions,
     publishGuideVersion,
 } = require('../../utils/staffGuideCompliance');
 
@@ -76,23 +71,9 @@ module.exports = {
         )
         .addSubcommand((subcommand) =>
             subcommand
-                .setName('acknowledgements')
-                .setDescription(
-                    'Reviews acknowledgments for the current guide version.'
-                )
-        )
-        .addSubcommand((subcommand) =>
-            subcommand
-                .setName('onboarding-status')
-                .setDescription(
-                    'Reviews current staff onboarding completion.'
-                )
-        )
-        .addSubcommand((subcommand) =>
-            subcommand
                 .setName('publish-update')
                 .setDescription(
-                    'Publishes a new guide version for acknowledgment.'
+                    'Publishes a new version of the Staff Guide panel.'
                 )
                 .addStringOption((option) =>
                     option
@@ -178,28 +159,6 @@ module.exports = {
 
             if (subcommand === 'remove') {
                 await removeGuide(interaction);
-                return;
-            }
-
-            if (
-                subcommand ===
-                'acknowledgements'
-            ) {
-                await showComplianceReport(
-                    interaction,
-                    'acknowledgements'
-                );
-                return;
-            }
-
-            if (
-                subcommand ===
-                'onboarding-status'
-            ) {
-                await showComplianceReport(
-                    interaction,
-                    'onboarding'
-                );
                 return;
             }
 
@@ -509,168 +468,7 @@ async function publishUpdate(interaction) {
 
     await interaction.editReply({
         content:
-            `✅ Staff Guide version **${result.state.currentVersion}** was published. Staff members now need to acknowledge the new version.${message ? ' The permanent panel was refreshed.' : ' Run `/guide setup` when you are ready to post the panel.'}`,
+            `✅ Staff Guide version **${result.state.currentVersion}** was published.${message ? ' The permanent panel was refreshed.' : ' Run `/guide setup` when you are ready to post the panel.'}`,
         allowedMentions: { parse: [] },
     });
-}
-
-async function showComplianceReport(
-    interaction,
-    reportType
-) {
-    const state = await getComplianceState(
-        interaction.guildId
-    );
-    const records =
-        reportType === 'onboarding'
-            ? getCurrentOnboardingCompletions(
-                  state
-              )
-            : getCurrentAcknowledgements(state);
-    const completedIds = new Set(
-        records.map((record) => record.userId)
-    );
-    const eligibleMembers =
-        await getEligibleStaffMembers(
-            interaction.guild
-        );
-    const completedMembers =
-        eligibleMembers.filter((member) =>
-            completedIds.has(member.id)
-        );
-    const outstandingMembers =
-        eligibleMembers.filter(
-            (member) =>
-                !completedIds.has(member.id)
-        );
-    const isOnboarding =
-        reportType === 'onboarding';
-    const embed = new EmbedBuilder()
-        .setColor(
-            isOnboarding
-                ? 0x2ecc71
-                : brands.isrp.color
-        )
-        .setTitle(
-            isOnboarding
-                ? '🎓 Staff Onboarding Status'
-                : '✅ Staff Guide Acknowledgments'
-        )
-        .setDescription(
-            `Current Staff Guide version: **${state.currentVersion}**\n${state.currentSummary}`
-        )
-        .addFields(
-            {
-                name: 'Completed',
-                value:
-                    `**${eligibleMembers.length > 0 ? completedMembers.length : records.length}**`,
-                inline: true,
-            },
-            {
-                name: 'Outstanding',
-                value:
-                    eligibleMembers.length > 0
-                        ? `**${outstandingMembers.length}**`
-                        : '**Unavailable**',
-                inline: true,
-            },
-            {
-                name: 'Tracked Staff',
-                value:
-                    eligibleMembers.length > 0
-                        ? `**${eligibleMembers.length}**`
-                        : 'Staff role membership was unavailable; recorded completions are still shown.',
-                inline: true,
-            },
-            {
-                name: 'Completed Staff',
-                value: formatMemberList(
-                    completedMembers,
-                    records.map(
-                        (record) => record.userId
-                    )
-                ),
-            },
-            {
-                name: 'Still Outstanding',
-                value:
-                    eligibleMembers.length > 0
-                        ? formatMemberList(
-                              outstandingMembers,
-                              []
-                          )
-                        : 'Use the configured ISRP Staff Team role to enable an outstanding-staff comparison.',
-            }
-        )
-        .setFooter({
-            text:
-                'Private management report • No reminders or punishments are sent automatically',
-        })
-        .setTimestamp();
-
-    const guildIcon = interaction.guild.iconURL?.({
-        extension: 'png',
-        size: 256,
-    });
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
-
-    await interaction.editReply({
-        embeds: [embed],
-        components: [],
-        allowedMentions: { parse: [] },
-    });
-}
-
-async function getEligibleStaffMembers(guild) {
-    const staffRoleId = getServerConfig(
-        guild.id
-    )?.roleGroups?.serverStaffTeam;
-
-    if (!staffRoleId) {
-        return [];
-    }
-
-    await guild.members
-        ?.fetch?.()
-        .catch(() => null);
-
-    const role = guild.roles?.cache?.get(
-        staffRoleId
-    );
-
-    if (!role?.members) {
-        return [];
-    }
-
-    return Array.from(role.members.values())
-        .filter((member) => !member.user?.bot)
-        .sort((left, right) =>
-            String(left.displayName).localeCompare(
-                String(right.displayName)
-            )
-        );
-}
-
-function formatMemberList(members, fallbackIds) {
-    const ids =
-        members.length > 0
-            ? members.map((member) => member.id)
-            : fallbackIds;
-
-    if (ids.length === 0) {
-        return 'None yet.';
-    }
-
-    const visible = ids
-        .slice(0, 30)
-        .map((id) => `<@${id}>`)
-        .join(', ');
-    const remaining = ids.length - 30;
-
-    return remaining > 0
-        ? `${visible}\n…and **${remaining}** more.`
-        : visible;
 }

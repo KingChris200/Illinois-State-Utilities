@@ -10,14 +10,11 @@ const {
     MediaGalleryBuilder,
     MediaGalleryItemBuilder,
     MessageFlags,
-    ModalBuilder,
     PermissionFlagsBits,
     SeparatorBuilder,
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
     TextDisplayBuilder,
-    TextInputBuilder,
-    TextInputStyle,
 } = require('discord.js');
 
 const brands = require('../config/branding');
@@ -37,7 +34,6 @@ const { detectMemberRank } = require('./rankManager');
 
 const TICKET_DATABASE = 'tickets';
 const TICKET_PANEL_DATABASE = 'ticket-panels';
-const APPEAL_DATABASE = 'ticket-appeals';
 const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
 const TRANSCRIPT_MESSAGE_LIMIT = 1000;
@@ -229,9 +225,9 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
                 'Please describe what happened, what outcome you are requesting, and attach any relevant screenshots or links.',
                 '',
                 category.id.endsWith('appeal')
-                    ? 'An Internal Affairs team member can start the appropriate guided appeal form with `!appeal`.'
+                    ? 'An Internal Affairs team member can post the appeal questionnaire with `!appeal`.'
                     : category.id === 'internal_affairs'
-                      ? 'Internal Affairs can start the guided appeal form with `!appeal` when needed.'
+                      ? 'Internal Affairs can post the appeal questionnaire with `!appeal` when needed.'
                     : 'A support team member will greet you and begin assisting as soon as possible.',
             ].join('\n')
         )
@@ -903,207 +899,43 @@ async function closeTicket(interaction, ticketId) {
     );
 }
 
-function createAppealChoiceRow(ticket) {
-    return new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId(
-                `${TICKET_PREFIX}appeal:${ticket.id}:${ticket.openerId}`
-            )
-            .setPlaceholder('Choose an appeal form…')
-            .addOptions(
-                {
-                    label: 'In-Game Punishment Appeal',
-                    description:
-                        'Warnings, kicks, bans, and other ER:LC punishments.',
-                    value: 'ingame',
-                    emoji: '🚓',
-                },
-                {
-                    label: 'Staff Infraction Appeal',
-                    description:
-                        'Notices, strikes, demotions, or staff discipline.',
-                    value: 'staff',
-                    emoji: '📋',
-                }
-            )
-    );
-}
+function createAppealQuestionnaire(ticket) {
+    const questions = [
+        'Appeal Type: In-Game Punishment / Staff Infraction',
+        'Roblox Username:',
+        'Punishment or Infraction Being Appealed:',
+        'Approximate Date and Time:',
+        'Staff Member Involved (if known):',
+        'Why Should This Action Be Reconsidered?',
+        'Evidence or Supporting Links:',
+        'Anything Else We Should Know:',
+    ].join('\n\n');
 
-function createAppealModal(type, ticketId) {
-    const isStaff = type === 'staff';
-    const modal = new ModalBuilder()
-        .setCustomId(
-            `${TICKET_PREFIX}appeal_modal:${type}:${ticketId}`
-        )
-        .setTitle(
-            isStaff
-                ? 'Staff Infraction Appeal'
-                : 'In-Game Punishment Appeal'
-        );
-    const fields = isStaff
-        ? [
-              ['identity', 'Your Roblox username', TextInputStyle.Short, true],
-              ['action', 'Infraction type or record ID', TextInputStyle.Short, true],
-              ['issuer', 'Who issued it and when?', TextInputStyle.Short, false],
-              ['reason', 'Why should the action be reconsidered?', TextInputStyle.Paragraph, true],
-              ['evidence', 'Evidence or supporting links', TextInputStyle.Paragraph, false],
-          ]
-        : [
-              ['identity', 'Your Roblox username', TextInputStyle.Short, true],
-              ['action', 'Punishment type and approximate date', TextInputStyle.Short, true],
-              ['issuer', 'Staff member involved (if known)', TextInputStyle.Short, false],
-              ['reason', 'Why should the punishment be reconsidered?', TextInputStyle.Paragraph, true],
-              ['evidence', 'Evidence or supporting links', TextInputStyle.Paragraph, false],
-          ];
-
-    for (const [id, label, style, required] of fields) {
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId(id)
-                    .setLabel(label)
-                    .setStyle(style)
-                    .setRequired(required)
-                    .setMaxLength(style === TextInputStyle.Short ? 200 : 1000)
-            )
-        );
-    }
-
-    return modal;
-}
-
-async function showAppealModal(interaction) {
-    const [, , ticketId, allowedUserId] =
-        interaction.customId.split(':');
-    const ticket = await getTicketById(
-        interaction.guildId,
-        ticketId
-    );
-
-    if (
-        !ticket ||
-        ticket.status !== 'open' ||
-        interaction.channelId !== ticket.channelId
-    ) {
-        await interaction.reply({
-            content: 'This appeal form is no longer available.',
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    if (interaction.user.id !== allowedUserId) {
-        await interaction.reply({
-            content: 'This appeal form belongs to the ticket creator.',
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    await interaction.showModal(
-        createAppealModal(interaction.values[0], ticket.id)
-    );
-}
-
-async function submitAppeal(interaction) {
-    const [, , type, ticketId] = interaction.customId.split(':');
-    const ticket = await getTicketById(
-        interaction.guildId,
-        ticketId
-    );
-
-    if (
-        !ticket ||
-        ticket.status !== 'open' ||
-        interaction.user.id !== ticket.openerId
-    ) {
-        await interaction.reply({
-            content: 'This appeal form is invalid or expired.',
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    const appeal = {
-        id: createRecordId('appeal'),
-        guildId: interaction.guildId,
-        ticketId: ticket.id,
-        channelId: ticket.channelId,
-        submittedById: interaction.user.id,
-        type,
-        identity: interaction.fields.getTextInputValue('identity').trim(),
-        action: interaction.fields.getTextInputValue('action').trim(),
-        issuer: interaction.fields.getTextInputValue('issuer').trim() || null,
-        reason: interaction.fields.getTextInputValue('reason').trim(),
-        evidence:
-            interaction.fields.getTextInputValue('evidence').trim() || null,
-        status: 'submitted',
-        createdAt: new Date().toISOString(),
-    };
-
-    await updateDatabase(
-        APPEAL_DATABASE,
-        (database) => {
-            database =
-                database && typeof database === 'object'
-                    ? database
-                    : {};
-            const records = Array.isArray(database[interaction.guildId])
-                ? database[interaction.guildId]
-                : [];
-            records.push(appeal);
-            database[interaction.guildId] = records;
-            return database;
+    return {
+        content: [
+            '## Appeal Questionnaire',
+            `<@${ticket.openerId}>, copy the template below, add your answers, and send the completed version as a normal message in this ticket.`,
+            '',
+            '```text',
+            questions,
+            '```',
+            'A ticket handler will review your answers and tell you whether the appeal is accepted, denied, or needs more information.',
+        ].join('\n'),
+        allowedMentions: {
+            users: [ticket.openerId],
+            roles: [],
+            parse: [],
         },
-        {}
-    );
-
-    const title =
-        type === 'staff'
-            ? '📋 Staff Infraction Appeal Submitted'
-            : '🚓 In-Game Punishment Appeal Submitted';
-    await interaction.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor(0xf1c40f)
-                .setTitle(title)
-                .setDescription(
-                    `Submitted by <@${interaction.user.id}> for support-team review.`
-                )
-                .addFields(
-                    { name: 'Roblox Username', value: appeal.identity },
-                    { name: 'Action Being Appealed', value: appeal.action },
-                    {
-                        name: 'Staff Member / Date',
-                        value: appeal.issuer || 'Not provided',
-                    },
-                    { name: 'Appeal Explanation', value: appeal.reason },
-                    {
-                        name: 'Evidence',
-                        value: appeal.evidence || 'None provided',
-                    },
-                    {
-                        name: 'Appeal ID',
-                        value: `\`${appeal.id}\``,
-                    }
-                )
-                .setFooter({
-                    text: 'Illinois State Utilities • Appeal record',
-                })
-                .setTimestamp(),
-        ],
-        allowedMentions: { parse: [] },
-    });
-    await interaction.reply({
-        content:
-            `✅ Your appeal was submitted successfully. Appeal ID: \`${appeal.id}\``,
-        flags: MessageFlags.Ephemeral,
-    });
+    };
 }
 
 async function handleTicketInteraction(interaction) {
     if (interaction.isModalSubmit?.()) {
-        await submitAppeal(interaction);
+        await interaction.reply({
+            content:
+                'This form has been retired. Ask the ticket handler to run `!appeal` for the in-ticket questionnaire.',
+            flags: MessageFlags.Ephemeral,
+        });
         return;
     }
 
@@ -1114,7 +946,11 @@ async function handleTicketInteraction(interaction) {
         }
 
         if (interaction.customId.startsWith(`${TICKET_PREFIX}appeal:`)) {
-            await showAppealModal(interaction);
+            await interaction.reply({
+                content:
+                    'This form has been retired. Ask the ticket handler to run `!appeal` again.',
+                flags: MessageFlags.Ephemeral,
+            });
         }
         return;
     }
@@ -1156,6 +992,8 @@ async function handleTicketMessage(message) {
     }
 
     if (command === '!hello') {
+        await message.delete().catch(() => null);
+
         const detectedRank = detectMemberRank(
             message.guildId,
             message.member
@@ -1187,17 +1025,9 @@ async function handleTicketMessage(message) {
         return true;
     }
 
-    await message.channel.send({
-        content:
-            `<@${ticket.openerId}>, please choose the appeal form that matches your situation. ` +
-            'The completed form will be posted privately in this ticket for review.',
-        components: [createAppealChoiceRow(ticket)],
-        allowedMentions: {
-            users: [ticket.openerId],
-            roles: [],
-            parse: [],
-        },
-    });
+    await message.channel.send(
+        createAppealQuestionnaire(ticket)
+    );
     return true;
 }
 
@@ -1208,14 +1038,13 @@ async function countOpenTickets(guildId) {
 }
 
 module.exports = {
-    APPEAL_DATABASE,
     CREATE_MENU_ID,
     TICKET_DATABASE,
     TICKET_PANEL_DATABASE,
     TICKET_PREFIX,
     archiveTicketTranscript,
     countOpenTickets,
-    createAppealModal,
+    createAppealQuestionnaire,
     createTicketTranscript,
     createTicketOpeningMentions,
     createTicketPanelPayload,

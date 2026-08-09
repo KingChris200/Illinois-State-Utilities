@@ -225,10 +225,8 @@ Staff with **Manage Server** can use:
   uses the current channel.
 - `/guide update` to refresh the saved message after future changes.
 - `/guide remove` to remove the message and its saved location.
-- `/guide acknowledgements` to review current-version confirmations.
-- `/guide onboarding-status` to review staff onboarding completion.
 - `/guide publish-update version:1.1 summary:...` to publish a new
-  version and request fresh acknowledgments.
+  version and refresh the official guide.
 
 The public panel intentionally has no acknowledgment or onboarding
 controls. Existing historical compliance records remain preserved, but
@@ -333,10 +331,13 @@ the bot, and server administrators. Management Support also covers
 partnership requests and serious leadership concerns.
 
 Inside an open ticket, authorized staff can use `!hello` to claim the
-ticket and send a rank-aware introduction to its creator. `!appeal`
-presents the ticket creator with a choice between an in-game punishment
-appeal and a staff-infraction appeal. Both options open a five-question
-form and preserve the completed submission in `data/ticket-appeals.json`.
+ticket and send a rank-aware introduction to its creator. The command
+message is automatically removed when the bot has permission, leaving
+only the professional greeting. An authorized ticket handler can use
+`!appeal` to post a copyable in-channel questionnaire for either an
+in-game punishment or staff-infraction appeal. The ticket creator pastes
+their completed answers back into the ticket, where the handler can
+review them and the normal ticket transcript preserves the conversation.
 
 Ticket and panel state is stored in the gitignored `data` directory. The
 bot requires **Manage Channels**, **View Channel**, **Send Messages**,
