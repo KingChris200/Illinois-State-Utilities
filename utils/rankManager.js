@@ -4,6 +4,7 @@ const {
 
 const {
     getServerConfig,
+    getGuildRanks,
     findGuildRank,
     getGuildRankIndex,
 } = require('../config/serverConfigs');
@@ -141,6 +142,38 @@ function getRankChangeErrorMessage(result) {
 }
 
 /**
+ * Detect the member's highest configured rank from their live Discord roles.
+ * The saved staff profile is intentionally not used because it may be missing
+ * or older than the member's actual role assignment.
+ *
+ * @param {string} guildId
+ * @param {import('discord.js').GuildMember} member
+ * @returns {{name: string, roleId: string, index: number}|null}
+ */
+function detectMemberRank(guildId, member) {
+    const roleCache = member?.roles?.cache;
+
+    if (!roleCache || typeof roleCache.has !== 'function') {
+        return null;
+    }
+
+    const ranks = getGuildRanks(guildId);
+
+    for (let index = ranks.length - 1; index >= 0; index -= 1) {
+        const rank = ranks[index];
+
+        if (roleCache.has(rank.roleId)) {
+            return {
+                ...rank,
+                index,
+            };
+        }
+    }
+
+    return null;
+}
+
+/**
  * Automatically replace one configured rank role with another.
  *
  * Rank arrays must be ordered from lowest to highest.
@@ -148,7 +181,7 @@ function getRankChangeErrorMessage(result) {
  * @param {object} options
  * @param {import('discord.js').Guild} options.guild
  * @param {import('discord.js').GuildMember|string} options.member
- * @param {string} options.previousRank
+ * @param {string|null} [options.previousRank]
  * @param {string} options.newRank
  * @param {'promotion'|'demotion'|'movement'} [options.actionType]
  * @param {string} [options.reason]
@@ -245,13 +278,18 @@ async function applyRankChange({
             };
         }
 
+        const isInitialAssignment =
+            actionType === 'promotion' &&
+            !String(previousRank || '').trim();
         const previousRankConfig =
-            findGuildRank(
-                guild.id,
-                previousRank
-            );
+            isInitialAssignment
+                ? null
+                : findGuildRank(
+                      guild.id,
+                      previousRank
+                  );
 
-        if (!previousRankConfig) {
+        if (!isInitialAssignment && !previousRankConfig) {
             return {
                 success: false,
                 reason:
@@ -274,6 +312,7 @@ async function applyRankChange({
         }
 
         if (
+            previousRankConfig &&
             previousRankConfig.name ===
             newRankConfig.name
         ) {
@@ -283,11 +322,12 @@ async function applyRankChange({
             };
         }
 
-        const previousRankIndex =
-            getGuildRankIndex(
-                guild.id,
-                previousRankConfig.name
-            );
+        const previousRankIndex = previousRankConfig
+            ? getGuildRankIndex(
+                  guild.id,
+                  previousRankConfig.name
+              )
+            : -1;
 
         const newRankIndex =
             getGuildRankIndex(
@@ -315,13 +355,14 @@ async function applyRankChange({
             };
         }
 
-        const previousRole =
-            await fetchGuildRole(
-                guild,
-                previousRankConfig.roleId
-            );
+        const previousRole = previousRankConfig
+            ? await fetchGuildRole(
+                  guild,
+                  previousRankConfig.roleId
+              )
+            : null;
 
-        if (!previousRole) {
+        if (previousRankConfig && !previousRole) {
             return {
                 success: false,
                 reason:
@@ -346,7 +387,7 @@ async function applyRankChange({
             };
         }
 
-        if (previousRole.managed) {
+        if (previousRole?.managed) {
             return {
                 success: false,
                 reason:
@@ -362,6 +403,7 @@ async function applyRankChange({
         }
 
         if (
+            previousRole &&
             botMember.roles.highest.position <=
             previousRole.position
         ) {
@@ -385,6 +427,7 @@ async function applyRankChange({
         }
 
         if (
+            previousRole &&
             !guildMember.roles.cache.has(
                 previousRole.id
             )
@@ -441,10 +484,12 @@ async function applyRankChange({
          * Remove the previous role after the new role is assigned.
          */
         try {
-            await guildMember.roles.remove(
-                previousRole,
-                `${actionType}: ${reason}`
-            );
+            if (previousRole) {
+                await guildMember.roles.remove(
+                    previousRole,
+                    `${actionType}: ${reason}`
+                );
+            }
         } catch (error) {
             console.error(
                 'Failed to remove previous rank role:',
@@ -497,13 +542,16 @@ async function applyRankChange({
             actionType,
 
             previousRank:
-                previousRankConfig.name,
+                previousRankConfig?.name || null,
 
             newRank:
                 newRankConfig.name,
 
             removedRole: previousRole,
             addedRole: newRole,
+
+            initialAssignment:
+                isInitialAssignment,
 
             previousRankIndex,
             newRankIndex,
@@ -557,6 +605,7 @@ async function reverseRankChange({
 
 module.exports = {
     applyRankChange,
+    detectMemberRank,
     reverseRankChange,
     getRankChangeErrorMessage,
 };

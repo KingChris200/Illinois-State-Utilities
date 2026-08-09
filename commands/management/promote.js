@@ -23,6 +23,7 @@ const {
 
 const {
     applyRankChange,
+    detectMemberRank,
     getRankChangeErrorMessage,
 } = require('../../utils/rankManager');
 
@@ -1178,7 +1179,10 @@ function buildLogEmbed({
 
         `**Promoted By:** ${interaction.user} (\`${interaction.user.id}\`)`,
 
-        `**Role Removed:** ${rankResult.removedRole}`,
+        `**Role Removed:** ${
+            rankResult.removedRole ||
+            'None (initial appointment)'
+        }`,
 
         `**Role Added:** ${rankResult.addedRole}`,
 
@@ -1262,27 +1266,6 @@ module.exports = {
 
                         .setDescription(
                             'The member receiving the promotion.'
-                        )
-
-                        .setRequired(
-                            true
-                        )
-            )
-
-            .addStringOption(
-                (option) =>
-                    option
-
-                        .setName(
-                            'previous-rank'
-                        )
-
-                        .setDescription(
-                            'The member’s current rank.'
-                        )
-
-                        .setAutocomplete(
-                            true
                         )
 
                         .setRequired(
@@ -1401,8 +1384,6 @@ module.exports = {
 
             if (
                 focusedOption.name !==
-                    'previous-rank' &&
-                focusedOption.name !==
                     'new-rank'
             ) {
                 return interaction
@@ -1416,49 +1397,33 @@ module.exports = {
                 );
 
             /*
-             * When selecting a new rank, hide ranks that are
-             * equal to or below the selected previous rank.
+             * Use the selected member's live Discord rank when it is
+             * already cached. Members without a configured rank keep
+             * every option, including Trial Moderator.
              */
-            if (
-                focusedOption.name ===
-                'new-rank'
-            ) {
-                const selectedPreviousRank =
-                    interaction.options
-                        .getString(
-                            'previous-rank'
-                        );
+            const selectedUser =
+                interaction.options.getUser(
+                    'staff-member'
+                );
+            const selectedMember = selectedUser
+                ? interaction.guild?.members?.cache?.get(
+                      selectedUser.id
+                  )
+                : null;
+            const detectedRank =
+                detectMemberRank(
+                    interaction.guildId,
+                    selectedMember
+                );
 
-                if (
-                    selectedPreviousRank
-                ) {
-                    const previousRankIndex =
+            if (detectedRank) {
+                choices = choices.filter(
+                    (choice) =>
                         getGuildRankIndex(
                             interaction.guildId,
-                            selectedPreviousRank
-                        );
-
-                    if (
-                        previousRankIndex !==
-                        -1
-                    ) {
-                        choices =
-                            choices.filter(
-                                (choice) => {
-                                    const choiceIndex =
-                                        getGuildRankIndex(
-                                            interaction.guildId,
-                                            choice.value
-                                        );
-
-                                    return (
-                                        choiceIndex >
-                                        previousRankIndex
-                                    );
-                                }
-                            );
-                    }
-                }
+                            choice.value
+                        ) > detectedRank.index
+                );
             }
 
             return interaction.respond(
@@ -1556,14 +1521,6 @@ module.exports = {
                         true
                     );
 
-            const previousRank =
-                interaction.options
-                    .getString(
-                        'previous-rank',
-                        true
-                    )
-                    .trim();
-
             const newRank =
                 interaction.options
                     .getString(
@@ -1613,27 +1570,11 @@ module.exports = {
             /*
              * Validate the selected ranks.
              */
-            const previousRankIndex =
-                getGuildRankIndex(
-                    interaction.guildId,
-                    previousRank
-                );
-
             const newRankIndex =
                 getGuildRankIndex(
                     interaction.guildId,
                     newRank
                 );
-
-            if (
-                previousRankIndex ===
-                -1
-            ) {
-                return interaction.editReply({
-                    content:
-                        `❌ **${previousRank}** is not a configured rank for ${serverConfig.serverName}.`,
-                });
-            }
 
             if (
                 newRankIndex ===
@@ -1642,26 +1583,6 @@ module.exports = {
                 return interaction.editReply({
                     content:
                         `❌ **${newRank}** is not a configured rank for ${serverConfig.serverName}.`,
-                });
-            }
-
-            if (
-                previousRankIndex ===
-                newRankIndex
-            ) {
-                return interaction.editReply({
-                    content:
-                        '❌ The previous rank and new rank cannot be the same.',
-                });
-            }
-
-            if (
-                newRankIndex <
-                previousRankIndex
-            ) {
-                return interaction.editReply({
-                    content:
-                        '❌ That rank change would be a demotion. Please use `/demote` instead.',
                 });
             }
 
@@ -1684,6 +1605,43 @@ module.exports = {
                 return interaction.editReply({
                     content:
                         '❌ I could not find that member inside this Discord server.',
+                });
+            }
+
+            const detectedPreviousRank =
+                detectMemberRank(
+                    interaction.guildId,
+                    targetGuildMember
+                );
+            const previousRank =
+                detectedPreviousRank?.name ||
+                'Initial Appointment';
+            const previousRankIndex =
+                detectedPreviousRank?.index ?? -1;
+
+            if (
+                previousRankIndex ===
+                newRankIndex
+            ) {
+                return interaction.editReply({
+                    content:
+                        `❌ ${staffMember} already has the **${newRank}** rank role.`,
+                    allowedMentions: {
+                        parse: [],
+                    },
+                });
+            }
+
+            if (
+                newRankIndex <
+                previousRankIndex
+            ) {
+                return interaction.editReply({
+                    content:
+                        `❌ ${staffMember} is currently **${previousRank}**. Changing them to **${newRank}** would be a demotion, so please use \`/demote\` instead.`,
+                    allowedMentions: {
+                        parse: [],
+                    },
                 });
             }
 
@@ -1726,19 +1684,12 @@ module.exports = {
                     interaction.guildId
                 ]?.[staffMember.id] || null;
 
-            if (
-                savedStaffRecord?.currentRank &&
-                savedStaffRecord.currentRank !==
-                    previousRank
-            ) {
-                return interaction.editReply({
-                    content:
-                        `❌ The permanent staff profile lists ${staffMember} as **${savedStaffRecord.currentRank}**, not **${previousRank}**. Please review the profile before continuing.`,
-                    allowedMentions: {
-                        parse: [],
-                    },
-                });
-            }
+            const savedProfileRank =
+                savedStaffRecord?.currentRank ||
+                null;
+            const profileRankReconciled =
+                savedProfileRank !== null &&
+                savedProfileRank !== previousRank;
 
             /*
              * Automatically resolve the official promotion channel.
@@ -1853,7 +1804,9 @@ module.exports = {
                     member:
                         targetGuildMember,
 
-                    previousRank,
+                    previousRank:
+                        detectedPreviousRank?.name ||
+                        null,
 
                     newRank,
 
@@ -1930,9 +1883,21 @@ module.exports = {
 
                 newRank,
 
+                rankDetectionSource:
+                    'discord_roles',
+
+                initialAppointment:
+                    !detectedPreviousRank,
+
+                profileRankBeforePromotion:
+                    savedProfileRank,
+
+                profileRankReconciled,
+
                 previousRoleId:
                     rankResult
-                        .removedRole.id,
+                        .removedRole?.id ||
+                    null,
 
                 newRoleId:
                     rankResult
@@ -2246,7 +2211,10 @@ module.exports = {
 
                         `**Announcement:** ${announcementMessage.url}`,
 
-                        `**Role Removed:** ${rankResult.removedRole}`,
+                        `**Role Removed:** ${
+                            rankResult.removedRole ||
+                            'None (initial appointment)'
+                        }`,
 
                         `**Role Added:** ${rankResult.addedRole}`,
 
