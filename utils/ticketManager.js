@@ -860,7 +860,7 @@ async function closeTicket(interaction, ticketId) {
                 .setColor(0x95a5a6)
                 .setTitle('🔒 Ticket Closed')
                 .setDescription(
-                    `Closed by ${interaction.user}. A private transcript will be archived for staff recordkeeping.`
+                    `Closed by ${interaction.user}. A private transcript will be archived, then this channel will be deleted automatically.`
                 )
                 .setTimestamp(),
         ],
@@ -892,11 +892,32 @@ async function closeTicket(interaction, ticketId) {
         );
     }
 
+    if (!transcriptArchived) {
+        await interaction.editReply(
+            '⚠️ Ticket closed and locked, but its transcript could not be archived. The channel was kept to prevent evidence loss. Please check the transcript channel permissions.'
+        );
+        return;
+    }
+
     await interaction.editReply(
-        transcriptArchived
-            ? '✅ Ticket closed, locked, and privately archived.'
-            : '⚠️ Ticket closed and locked, but its transcript could not be archived. Please check the transcript channel permissions.'
+        '✅ Ticket closed and privately archived. This channel will be deleted in 5 seconds.'
     );
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    try {
+        await interaction.channel.delete(
+            `Ticket ${ticket.id} closed by ${interaction.user.username}`
+        );
+        ticket.channelDeletedAt = new Date().toISOString();
+        ticket.updatedAt = ticket.channelDeletedAt;
+        await saveTicket(ticket);
+    } catch (error) {
+        console.error(
+            `[TICKETS] Could not delete closed ticket channel ${ticket.channelId}:`,
+            error
+        );
+    }
 }
 
 function createAppealQuestionnaire(ticket) {

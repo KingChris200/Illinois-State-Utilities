@@ -341,6 +341,12 @@ review them and the normal ticket transcript preserves the conversation.
 If either command is used outside a bot-created ticket, the bot removes
 the trigger when possible and briefly explains where it must be used.
 
+Closing a ticket locks it, archives its private transcript, and deletes
+the ticket channel after a five-second notice. If transcript archiving
+fails, the bot intentionally keeps the locked channel so evidence is not
+lost. The close action therefore requires **Manage Channels** and a
+working transcript destination.
+
 Ticket and panel state is stored in the gitignored `data` directory. The
 bot requires **Manage Channels**, **View Channel**, **Send Messages**,
 **Read Message History**, **Attach Files**, and **Embed Links** for the
