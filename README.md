@@ -338,6 +338,8 @@ only the professional greeting. An authorized ticket handler can use
 in-game punishment or staff-infraction appeal. The ticket creator pastes
 their completed answers back into the ticket, where the handler can
 review them and the normal ticket transcript preserves the conversation.
+If either command is used outside a bot-created ticket, the bot removes
+the trigger when possible and briefly explains where it must be used.
 
 Ticket and panel state is stored in the gitignored `data` directory. The
 bot requires **Manage Channels**, **View Channel**, **Send Messages**,

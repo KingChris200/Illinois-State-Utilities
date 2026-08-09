@@ -981,7 +981,25 @@ async function handleTicketMessage(message) {
     );
 
     if (!ticket) {
-        return false;
+        await message.delete().catch(() => null);
+
+        const notice = await message.channel
+            .send({
+                content:
+                    '`!hello` and `!appeal` only work inside a ticket created from the Assistance panel. Open a ticket from the dropdown first, then use the command inside that private ticket channel.',
+                allowedMentions: { parse: [] },
+            })
+            .catch(() => null);
+
+        if (notice?.delete) {
+            const cleanupTimer = setTimeout(
+                () => notice.delete().catch(() => null),
+                10_000
+            );
+            cleanupTimer.unref?.();
+        }
+
+        return true;
     }
 
     if (!memberCanManageTicket(message.member, ticket)) {
