@@ -293,3 +293,34 @@ audit history, and every detailed response is ephemeral.
 
 Run `npm run deploy-commands` after installing this feature, wait for the
 global slash-command update to appear, and restart the bot.
+
+## Assistance tickets and guided appeals
+
+The permanent Assistance panel is configured for channel
+`1490730143508070540`. Management can use `/tickets preview`, then
+`/tickets setup` to post or refresh it. `/tickets status` reports the
+saved panel and current open-ticket count.
+
+Ticket channels are routed automatically:
+
+- General Assistance → category `1490870667795763412`
+- Partnership Support → category `1490870767632646365`
+- Management, appeals, reports, and Internal Affairs → category
+  `1490870524245577899`
+
+General and partnership tickets are visible to the configured support
+team. Management tickets are restricted to configured reviewers.
+Internal Affairs, appeal, and report tickets are restricted to the ticket
+creator, Internal Affairs, Directorate/Ownership, and the bot.
+
+Inside an open ticket, authorized staff can use `!hello` to claim the
+ticket and send a rank-aware introduction to its creator. `!appeal`
+presents the ticket creator with a choice between an in-game punishment
+appeal and a staff-infraction appeal. Both options open a five-question
+form and preserve the completed submission in `data/ticket-appeals.json`.
+
+Ticket and panel state is stored in the gitignored `data` directory. The
+bot requires **Manage Channels**, **View Channel**, **Send Messages**,
+**Read Message History**, **Attach Files**, and **Embed Links** for the
+Assistance categories. Deploy slash commands once, restart the bot, and
+run `/tickets setup`.

@@ -6,6 +6,9 @@ const {
     memberCanUseCommand,
 } = require('../utils/prefixCommandPermissions');
 const erlcService = require('../services/erlcService');
+const {
+    handleTicketMessage,
+} = require('../utils/ticketManager');
 
 const cooldowns = new Map();
 
@@ -15,9 +18,16 @@ module.exports = {
     async execute(message, client) {
         if (
             message.author.bot ||
-            !message.guild ||
-            !message.content.startsWith(config.prefix)
+            !message.guild
         ) {
+            return;
+        }
+
+        if (await handleTicketMessage(message)) {
+            return;
+        }
+
+        if (!message.content.startsWith(config.prefix)) {
             return;
         }
 

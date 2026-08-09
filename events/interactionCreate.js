@@ -31,6 +31,9 @@ const {
     handleStaffGuideInteraction,
 } = require('../utils/staffGuideManager');
 const {
+    handleTicketInteraction,
+} = require('../utils/ticketManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -80,6 +83,20 @@ module.exports = {
 
         if (interaction.isChatInputCommand()) {
             await handleSlashCommand(interaction);
+            return;
+        }
+
+        if (
+            (
+                interaction.isModalSubmit?.() ||
+                interaction.isStringSelectMenu?.() ||
+                interaction.isButton?.()
+            ) &&
+            interaction.customId?.startsWith(
+                'ticket:'
+            )
+        ) {
+            await handleTicketInteraction(interaction);
             return;
         }
 
