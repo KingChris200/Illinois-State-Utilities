@@ -14,6 +14,7 @@ const expectedAssets = [
     'branding/isrp-roblox-avatar.jpg',
     'thumbnails/session-started.png',
     'thumbnails/welcome-banner.png',
+    'thumbnails/staff-guide-banner-v2.png',
 ];
 
 test('brand URLs are durable and every branded asset exists locally', () => {

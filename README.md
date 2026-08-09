@@ -110,7 +110,8 @@ minutes to appear.
 Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
 stored in `assets/branding`. The generated Discord welcome artwork is at
 `assets/thumbnails/welcome-banner.png`, and the session artwork is at
-`assets/thumbnails/session-started.png`.
+`assets/thumbnails/session-started.png`. The dedicated interactive guide
+header is at `assets/thumbnails/staff-guide-banner-v2.png`.
 
 The local files are the source of truth. Shared embeds use stable GitHub
 asset URLs instead of temporary Discord attachment links, while commands
@@ -187,6 +188,13 @@ The `/guide` command manages a branded, persistent staff handbook panel
 for the main Illinois State Roleplay server. Its topic and rank menus open
 private responses, so staff can study policies without filling the public
 channel with messages. The panel continues working after bot restarts.
+
+Private guide pages use Discord Components V2 for a mobile-friendly
+handbook-card layout: dedicated ISRP artwork, accent rail, dividers,
+larger section headings, grouped policy text, direct resource buttons,
+and a final handoff to the configured permission-log channel. When no
+permission-log channel is configured, that handoff safely becomes an
+acknowledgment button instead.
 
 The official chain of command is organized into Foundership, Directorate,
 Staff Supervision, Management, Internal Affairs, Administration, and

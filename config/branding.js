@@ -22,6 +22,9 @@ const assets = {
     welcomeBanner: assetUrl(
         'thumbnails/welcome-banner.png'
     ),
+    staffGuideBanner: assetUrl(
+        'thumbnails/staff-guide-banner-v2.png'
+    ),
 };
 
 module.exports = {

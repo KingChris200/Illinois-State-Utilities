@@ -174,8 +174,12 @@ test('central interaction handler routes persistent Staff Guide menus', async ()
         },
     });
 
-    assert.equal(reply.flags, MessageFlags.Ephemeral);
-    assert.equal(reply.embeds.length, 1);
+    assert.equal(
+        reply.flags,
+        MessageFlags.Ephemeral |
+            MessageFlags.IsComponentsV2
+    );
+    assert.ok(reply.components.length > 0);
 });
 
 test('infraction rank option uses live autocomplete', async () => {

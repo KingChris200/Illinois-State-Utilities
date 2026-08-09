@@ -125,6 +125,10 @@ test('public guide panel contains branded embeds and persistent controls', () =>
     );
 
     assert.equal(payload.embeds.length, 2);
+    assert.match(
+        payload.embeds[0].toJSON().image.url,
+        /staff-guide-banner-v2\.png$/
+    );
     assert.equal(rows.length, 4);
     assert.ok(
         rows[0].components.some(
@@ -188,29 +192,34 @@ test('onboarding checklist includes all required resources and safe completion c
         state,
         'staff-user'
     );
-    const rows = payload.components.map((row) =>
-        row.toJSON()
+    const components = collectComponents(
+        payload.components[0].toJSON()
     );
 
-    assert.equal(payload.embeds.length, 1);
-    assert.equal(rows.length, 2);
+    assert.equal(
+        payload.flags,
+        MessageFlags.IsComponentsV2
+    );
+    assert.equal(payload.components.length, 1);
     assert.ok(
-        rows[0].components.some(
+        components.some(
             (component) =>
                 component.url ===
                 WHITELISTED_GROUP_URL
         )
     );
     assert.ok(
-        rows[0].components.some(
+        components.some(
             (component) =>
                 component.url ===
                 MELONLY_PANEL_URL
         )
     );
     assert.equal(
-        rows[1].components.every(
-            (component) => component.style !== 5
+        components.some(
+            (component) =>
+                component.custom_id ===
+                ACKNOWLEDGE_BUTTON_ID
         ),
         true
     );
@@ -260,15 +269,28 @@ test('every handbook and rank selection builds a valid private page', () => {
                 mockGuild
             );
 
-        assert.equal(payload.embeds.length, 1);
-        assert.match(
-            payload.components[0]
-                .toJSON()
-                .components[0].url,
-            /docs\.google\.com/
+        const components = collectComponents(
+            payload.components[0].toJSON()
         );
-        assert.doesNotThrow(() =>
-            payload.embeds[0].toJSON()
+        assert.equal(
+            payload.flags,
+            MessageFlags.IsComponentsV2
+        );
+        assert.ok(
+            components.some(
+                (component) =>
+                    component.url?.includes(
+                        'docs.google.com'
+                    )
+            )
+        );
+        assert.ok(
+            components.some(
+                (component) =>
+                    component.media?.url?.endsWith(
+                        'staff-guide-banner-v2.png'
+                    )
+            )
         );
     }
 
@@ -278,15 +300,18 @@ test('every handbook and rank selection builds a valid private page', () => {
             mockGuild
         );
 
-        assert.equal(payload.embeds.length, 1);
         assert.doesNotThrow(() =>
-            payload.embeds[0].toJSON()
+            payload.components[0].toJSON()
+        );
+        assert.equal(
+            payload.flags,
+            MessageFlags.IsComponentsV2
         );
     }
 
     assert.doesNotThrow(() =>
         createChainPayload(mockGuild)
-            .embeds[0]
+            .components[0]
             .toJSON()
     );
 });
@@ -355,10 +380,37 @@ test('staff guide component responses are ephemeral', async () => {
 
     assert.equal(
         response.flags,
-        MessageFlags.Ephemeral
+        MessageFlags.Ephemeral |
+            MessageFlags.IsComponentsV2
     );
-    assert.equal(response.embeds.length, 1);
+    assert.ok(response.components.length > 0);
 });
+
+function collectComponents(component) {
+    const collected = [component];
+
+    if (Array.isArray(component.components)) {
+        for (const child of component.components) {
+            collected.push(
+                ...collectComponents(child)
+            );
+        }
+    }
+
+    if (Array.isArray(component.items)) {
+        collected.push(...component.items);
+    }
+
+    if (component.accessory) {
+        collected.push(
+            ...collectComponents(
+                component.accessory
+            )
+        );
+    }
+
+    return collected;
+}
 
 test('/guide deploys panel, compliance, and publishing subcommands', () => {
     const command = guideCommand.data.toJSON();

@@ -2,10 +2,17 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    ContainerBuilder,
     EmbedBuilder,
+    MediaGalleryBuilder,
+    MediaGalleryItemBuilder,
     MessageFlags,
     PermissionFlagsBits,
+    SectionBuilder,
+    SeparatorBuilder,
+    SeparatorSpacingSize,
     StringSelectMenuBuilder,
+    TextDisplayBuilder,
 } = require('discord.js');
 
 const brands = require('../config/branding');
@@ -113,6 +120,155 @@ function createBaseEmbed(guild, color = brands.isrp.color) {
         .setTimestamp();
 }
 
+function createStaffGuidePagePayload({
+    guild,
+    color = brands.isrp.color,
+    title,
+    intro,
+    sections = [],
+    actionRows = [],
+    complianceState = null,
+    includeHandoff = true,
+}) {
+    const version =
+        complianceState?.currentVersion ||
+        DEFAULT_STAFF_GUIDE_VERSION;
+    const container = new ContainerBuilder()
+        .setAccentColor(
+            resolveGuideAccentColor(color)
+        )
+        .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+                new MediaGalleryItemBuilder()
+                    .setURL(
+                        brands.assets.staffGuideBanner
+                    )
+                    .setDescription(
+                        'Illinois State Roleplay Staff Guide'
+                    )
+            )
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(
+                    SeparatorSpacingSize.Large
+                )
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                [
+                    `## ${title}`,
+                    intro,
+                    `-# Official Staff Guide • Version ${version} • Private staff resource`,
+                ].join('\n\n')
+            )
+        );
+
+    for (const section of sections) {
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                `### ${section.name}\n${section.value}`
+            )
+        );
+    }
+
+    if (actionRows.length > 0) {
+        container.addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(
+                    SeparatorSpacingSize.Small
+                )
+        );
+        container.addActionRowComponents(
+            ...actionRows
+        );
+    }
+
+    const components = [container];
+    const handoff = includeHandoff
+        ? createGuideHandoff(guild?.id)
+        : null;
+
+    if (handoff) {
+        components.push(handoff);
+    }
+
+    return {
+        components,
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: {
+            parse: [],
+            users: [],
+            roles: [],
+        },
+    };
+}
+
+function resolveGuideAccentColor(color) {
+    if (
+        typeof color === 'number' &&
+        Number.isInteger(color)
+    ) {
+        return color;
+    }
+
+    const normalized = String(color || '')
+        .trim()
+        .replace(/^#/, '');
+
+    if (/^[0-9a-f]{6}$/i.test(normalized)) {
+        return Number.parseInt(normalized, 16);
+    }
+
+    return 0x1e90ff;
+}
+
+function createGuideHandoff(guildId) {
+    const permissionLogsChannelId = String(
+        process.env.STAFF_PERMISSION_LOGS_CHANNEL_ID || ''
+    ).trim();
+    const section = new SectionBuilder()
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                /^\d{17,20}$/.test(
+                    permissionLogsChannelId
+                )
+                    ? `**Done reading?** Continue to <#${permissionLogsChannelId}> for the appropriate staff record.`
+                    : '**Done reading?** Acknowledge the current guide version so leadership can confirm receipt.'
+            )
+        );
+
+    if (
+        /^\d{17,20}$/.test(
+            permissionLogsChannelId
+        )
+    ) {
+        section.setButtonAccessory(
+            new ButtonBuilder()
+                .setLabel('Open')
+                .setEmoji('➡️')
+                .setStyle(ButtonStyle.Link)
+                .setURL(
+                    `https://discord.com/channels/${guildId || MAIN_SERVER_ID}/${permissionLogsChannelId}`
+                )
+        );
+    } else {
+        section.setButtonAccessory(
+            new ButtonBuilder()
+                .setCustomId(
+                    ACKNOWLEDGE_BUTTON_ID
+                )
+                .setLabel('Acknowledge')
+                .setEmoji('✅')
+                .setStyle(ButtonStyle.Success)
+        );
+    }
+
+    return section;
+}
+
 function createGuidePanelPayload(
     guild,
     complianceState = null
@@ -123,7 +279,9 @@ function createGuidePanelPayload(
         DEFAULT_STAFF_GUIDE_VERSION;
     const banner = new EmbedBuilder()
         .setColor(brands.isrp.color)
-        .setImage(brands.assets.wordmark);
+        .setImage(
+            brands.assets.staffGuideBanner
+        );
 
     const overview = createBaseEmbed(guild)
         .setTitle('Illinois State Roleplay Staff Guide')
@@ -272,58 +430,85 @@ function createGuidePanelPayload(
     };
 }
 
-function createGuideSectionPayload(sectionId, guild) {
+function createGuideSectionPayload(
+    sectionId,
+    guild,
+    complianceState = null
+) {
     const section = getGuideSection(sectionId);
 
     if (!section) {
         return null;
     }
 
-    const embed = createBaseEmbed(
+    const buttons = [
+        new ButtonBuilder()
+            .setLabel('Full Section')
+            .setEmoji('📖')
+            .setStyle(ButtonStyle.Link)
+            .setURL(
+                getStaffGuideTabUrl(
+                    section.tabId
+                )
+            ),
+    ];
+
+    if (section.id === 'melonly') {
+        buttons.push(
+            new ButtonBuilder()
+                .setLabel('Open Melonly')
+                .setEmoji('🕒')
+                .setStyle(ButtonStyle.Link)
+                .setURL(MELONLY_PANEL_URL)
+        );
+    }
+
+    if (section.id === 'introduction') {
+        buttons.push(
+            new ButtonBuilder()
+                .setLabel('WL Group')
+                .setEmoji('🎮')
+                .setStyle(ButtonStyle.Link)
+                .setURL(
+                    WHITELISTED_GROUP_URL
+                )
+        );
+    }
+
+    return createStaffGuidePagePayload({
         guild,
-        section.color
-    )
-        .setTitle(`${section.emoji} ${section.label}`)
-        .setDescription(section.intro)
-        .addFields(section.fields);
-
-    const sourceButton = new ButtonBuilder()
-        .setLabel('Open Full Handbook Section')
-        .setEmoji('📖')
-        .setStyle(ButtonStyle.Link)
-        .setURL(getStaffGuideTabUrl(section.tabId));
-
-    return {
-        embeds: [embed],
-        components: [
+        color: section.color,
+        title: `${section.emoji} ${section.label}`,
+        intro: section.intro,
+        sections: section.fields,
+        actionRows: [
             new ActionRowBuilder().addComponents(
-                sourceButton
+                ...buttons
             ),
         ],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    };
+        complianceState,
+    });
 }
 
-function createRankGuidePayload(guideId, guild) {
+function createRankGuidePayload(
+    guideId,
+    guild,
+    complianceState = null
+) {
     const guide = getRankGuide(guideId);
 
     if (!guide) {
         return null;
     }
 
-    const embed = createBaseEmbed(
+    return createStaffGuidePagePayload({
         guild,
-        guide.color
-    )
-        .setTitle(`${guide.emoji} ${guide.label} Guide`)
-        .setDescription(guide.purpose)
-        .addFields(
+        color: guide.color,
+        title: `${guide.emoji} ${guide.label} Guide`,
+        intro: guide.purpose,
+        sections: [
             {
-                name: 'Ranks • Highest to Lowest',
+                name: 'Ranks — Highest to Lowest',
                 value: guide.ranks
                     .map(
                         (rank, index) =>
@@ -344,12 +529,9 @@ function createRankGuidePayload(guideId, guild) {
                 name: 'Important',
                 value:
                     'This page summarizes responsibilities. Current leadership directives and the full Staff Handbook remain authoritative.',
-            }
-        );
-
-    return {
-        embeds: [embed],
-        components: [
+            },
+        ],
+        actionRows: [
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setLabel('Open Leadership Guide')
@@ -362,22 +544,22 @@ function createRankGuidePayload(guideId, guild) {
                     )
             ),
         ],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    };
+        complianceState,
+    });
 }
 
-function createChainPayload(guild) {
-    const embed = createBaseEmbed(guild, 0xf1c40f)
-        .setTitle('📋 Official Chain of Command')
-        .setDescription(
-            'Ranks are displayed from **highest to lowest**. Follow the proper chain unless safety, confidentiality, a conflict of interest, or an authorized policy requires a different route.'
-        )
-        .addFields(
-            CHAIN_GROUPS.map((group) => ({
+function createChainPayload(
+    guild,
+    complianceState = null
+) {
+    return createStaffGuidePagePayload({
+        guild,
+        color: 0xf1c40f,
+        title: '📋 Official Chain of Command',
+        intro:
+            'Ranks are displayed from **highest to lowest**. Follow the proper chain unless safety, confidentiality, a conflict of interest, or an authorized policy requires a different route.',
+        sections: CHAIN_GROUPS.map(
+            (group) => ({
                 name: group.name,
                 value: group.ranks
                     .map((rank) => {
@@ -389,13 +571,9 @@ function createChainPayload(guild) {
                         return `**${position}.** ${rank}`;
                     })
                     .join('\n'),
-                inline: true,
-            }))
-        );
-
-    return {
-        embeds: [embed],
-        components: [
+            })
+        ),
+        actionRows: [
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setLabel('Open Leadership Guide')
@@ -408,21 +586,20 @@ function createChainPayload(guild) {
                     )
             ),
         ],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    };
+        complianceState,
+    });
 }
 
-function createHelpPayload(guild) {
-    const embed = createBaseEmbed(guild)
-        .setTitle('❔ Using the Staff Guide')
-        .setDescription(
-            'The public panel stays in the staff channel while every guide page opens privately for the staff member who selected it.'
-        )
-        .addFields(
+function createHelpPayload(
+    guild,
+    complianceState = null
+) {
+    return createStaffGuidePagePayload({
+        guild,
+        title: '❔ Using the Staff Guide',
+        intro:
+            'The public panel stays in the staff channel while every guide page opens privately for the staff member who selected it.',
+        sections: [
             {
                 name: 'Handbook Sections',
                 value:
@@ -442,17 +619,21 @@ function createHelpPayload(guild) {
                 name: 'Policy Questions',
                 value:
                     'When a summary and the current handbook differ, stop, ask the proper supervisor, and follow the current authorized policy.',
-            }
-        );
-
-    return {
-        embeds: [embed],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    };
+            },
+        ],
+        actionRows: [
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Full Handbook')
+                    .setEmoji('📖')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(
+                        STAFF_GUIDE_DOCUMENT_URL
+                    )
+            ),
+        ],
+        complianceState,
+    });
 }
 
 function createOnboardingPayload(
@@ -472,42 +653,40 @@ function createOnboardingPayload(
         complianceState
             ?.onboardingCompletions?.[userId]
             ?.completedVersion === version;
-    const embed = createBaseEmbed(guild, 0x2ecc71)
-        .setTitle('🎓 Staff Onboarding Checklist')
-        .setDescription(
-            'Complete each step honestly before marking onboarding complete. This checklist records completion but never changes roles or applies discipline automatically.'
-        )
-        .addFields(
+    return createStaffGuidePagePayload({
+        guild,
+        color: 0x2ecc71,
+        title: '🎓 Staff Onboarding Checklist',
+        intro:
+            'Complete each step honestly before marking onboarding complete. This checklist records completion but never changes roles or applies discipline automatically.',
+        sections: [
             {
-                name: '1 • Read the Staff Handbook',
+                name: '1 — Read the Staff Handbook',
                 value:
                     'Review the rules, punishment guide, commands, moderation workflow, evidence standards, emergencies, and expectations for your division.',
             },
             {
-                name: '2 • Join the Whitelisted Group',
+                name: '2 — Join the Whitelisted Group',
                 value:
                     'Open the official Roblox group and confirm that you have completed any membership requirements assigned by leadership.',
             },
             {
-                name: '3 • Open Melonly',
+                name: '3 — Open Melonly',
                 value:
                     'Confirm you can access the staff panel and understand the server’s approved shift workflow.',
             },
             {
-                name: '4 • Complete Training',
+                name: '4 — Complete Training',
                 value:
                     'Finish required training or certification and ask a supervisor about anything that remains unclear.',
             },
             {
-                name: '5 • Confirm the Current Guide',
+                name: '5 — Confirm the Current Guide',
                 value:
                     `Version **${version}** acknowledgment: ${acknowledged ? '✅ Complete' : '⚠️ Still required'}\nOnboarding status: ${completed ? '✅ Complete' : '⏳ Incomplete'}`,
-            }
-        );
-
-    return {
-        embeds: [embed],
-        components: [
+            },
+        ],
+        actionRows: [
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setLabel('Staff Handbook')
@@ -556,12 +735,9 @@ function createOnboardingPayload(
                     .setDisabled(completed)
             ),
         ],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    };
+        complianceState,
+        includeHandoff: false,
+    });
 }
 
 function memberHasRole(member, roleId) {
@@ -654,6 +830,7 @@ async function handleStaffGuideInteraction(interaction) {
     }
 
     let payload = null;
+    let complianceState = null;
 
     if (
         interaction.customId ===
@@ -691,6 +868,7 @@ async function handleStaffGuideInteraction(interaction) {
         const state = await getComplianceState(
             interaction.guildId
         );
+        complianceState = state;
 
         payload = createOnboardingPayload(
             interaction.guild,
@@ -740,13 +918,21 @@ async function handleStaffGuideInteraction(interaction) {
         return;
     }
 
+    if (!complianceState) {
+        complianceState =
+            await getComplianceState(
+                interaction.guildId
+            );
+    }
+
     if (
         interaction.customId ===
         SECTION_SELECT_ID
     ) {
         payload = createGuideSectionPayload(
             interaction.values?.[0],
-            interaction.guild
+            interaction.guild,
+            complianceState
         );
     } else if (
         interaction.customId ===
@@ -754,21 +940,24 @@ async function handleStaffGuideInteraction(interaction) {
     ) {
         payload = createRankGuidePayload(
             interaction.values?.[0],
-            interaction.guild
+            interaction.guild,
+            complianceState
         );
     } else if (
         interaction.customId ===
         CHAIN_BUTTON_ID
     ) {
         payload = createChainPayload(
-            interaction.guild
+            interaction.guild,
+            complianceState
         );
     } else if (
         interaction.customId ===
         HELP_BUTTON_ID
     ) {
         payload = createHelpPayload(
-            interaction.guild
+            interaction.guild,
+            complianceState
         );
     }
 
@@ -784,7 +973,9 @@ async function handleStaffGuideInteraction(interaction) {
 
     await interaction.reply({
         ...payload,
-        flags: MessageFlags.Ephemeral,
+        flags:
+            MessageFlags.Ephemeral |
+            (payload.flags || 0),
     });
 }
 
