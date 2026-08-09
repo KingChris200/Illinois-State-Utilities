@@ -182,13 +182,21 @@ test('central interaction handler routes persistent Staff Guide menus', async ()
     assert.ok(reply.components.length > 0);
 });
 
-test('infraction rank option uses live autocomplete', async () => {
+test('infraction exposes a compact automatic workflow', () => {
     const command = infractionCommand.data.toJSON();
     const typeOption = command.options.find(
         (option) => option.name === 'type'
     );
-    const rankOption = command.options.find(
-        (option) => option.name === 'current-rank'
+
+    assert.deepEqual(
+        command.options.map((option) => option.name),
+        [
+            'staff-member',
+            'type',
+            'reason',
+            'evidence',
+            'duration',
+        ]
     );
 
     assert.ok(
@@ -198,24 +206,5 @@ test('infraction rank option uses live autocomplete', async () => {
                 choice.value === 'demotion'
         )
     );
-    assert.equal(rankOption.autocomplete, true);
-
-    let choices = null;
-
-    await infractionCommand.autocomplete({
-        inGuild: () => true,
-        guildId: MAIN_SERVER_ID,
-        options: {
-            getFocused: () => ({
-                name: 'current-rank',
-                value: 'trial',
-            }),
-        },
-        respond: async (response) => {
-            choices = response;
-        },
-    });
-
-    assert.ok(choices.length > 0);
-    assert.equal(choices[0].value, 'Trial Moderator');
+    assert.equal(infractionCommand.autocomplete, undefined);
 });

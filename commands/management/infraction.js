@@ -1,7 +1,6 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
-    ChannelType,
     MessageFlags,
     PermissionFlagsBits,
     ActionRowBuilder,
@@ -23,9 +22,11 @@ const {
 const {
     getConfiguredChannelId,
     memberCanReviewMovements,
-    getRankAutocompleteChoices,
-    findGuildRank,
 } = require('../../config/serverConfigs');
+
+const {
+    detectMemberRank,
+} = require('../../utils/rankManager');
 
 const {
     findRecentDuplicate,
@@ -227,15 +228,6 @@ module.exports = {
         )
         .addStringOption((option) =>
             option
-                .setName('current-rank')
-                .setDescription(
-                    'The staff member’s current or final staff rank.'
-                )
-                .setAutocomplete(true)
-                .setRequired(true)
-        )
-        .addStringOption((option) =>
-            option
                 .setName('reason')
                 .setDescription(
                     'The reason for this disciplinary action.'
@@ -263,73 +255,7 @@ module.exports = {
                 )
                 .setMaxLength(100)
                 .setRequired(false)
-        )
-        .addStringOption((option) =>
-            option
-                .setName('notes')
-                .setDescription(
-                    'Optional additional management notes.'
-                )
-                .setMaxLength(750)
-                .setRequired(false)
-        )
-        .addChannelOption((option) =>
-            option
-                .setName('channel')
-                .setDescription(
-                    'The channel where the disciplinary action will be announced.'
-                )
-                .addChannelTypes(
-                    ChannelType.GuildText,
-                    ChannelType.GuildAnnouncement
-                )
-                .setRequired(false)
-        )
-        .addRoleOption((option) =>
-            option
-                .setName('ping')
-                .setDescription(
-                    'An optional role to notify about this action.'
-                )
-                .setRequired(false)
         ),
-
-    async autocomplete(interaction) {
-        try {
-            if (!interaction.inGuild()) {
-                return interaction.respond([]);
-            }
-
-            const focusedOption =
-                interaction.options.getFocused(true);
-
-            if (
-                focusedOption.name !==
-                'current-rank'
-            ) {
-                return interaction.respond([]);
-            }
-
-            const choices =
-                getRankAutocompleteChoices(
-                    interaction.guildId,
-                    focusedOption.value
-                );
-
-            return interaction.respond(
-                choices.slice(0, 25)
-            );
-        } catch (error) {
-            console.error(
-                'Error handling /infraction autocomplete:',
-                error
-            );
-
-            return interaction
-                .respond([])
-                .catch(() => {});
-        }
-    },
 
     async execute(interaction) {
         try {
@@ -364,12 +290,6 @@ module.exports = {
                     true
                 );
 
-            let currentRank =
-                interaction.options.getString(
-                    'current-rank',
-                    true
-                );
-
             const reason =
                 interaction.options
                     .getString('reason', true)
@@ -380,21 +300,12 @@ module.exports = {
                     .getString('evidence')
                     ?.trim() || null;
 
-            const duration =
+            let duration =
                 interaction.options
                     .getString('duration')
                     ?.trim() || null;
 
-            const notes =
-                interaction.options
-                    .getString('notes')
-                    ?.trim() || null;
-
-            const selectedChannel =
-                interaction.options.getChannel('channel');
-
-            const pingRole =
-                interaction.options.getRole('ping');
+            const notes = null;
 
             const infractionType =
                 INFRACTION_TYPES[infractionTypeKey];
@@ -420,6 +331,13 @@ module.exports = {
                 });
             }
 
+            if (
+                infractionTypeKey === 'blacklist' &&
+                !duration
+            ) {
+                duration = 'Permanent';
+            }
+
             /*
              * Load server configuration.
              */
@@ -438,21 +356,6 @@ module.exports = {
                         '❌ Illinois State Utilities has not been configured in this server yet.\n\nRun `/setup` before using the discipline system.',
                 });
             }
-
-            const configuredRank =
-                findGuildRank(
-                    interaction.guildId,
-                    currentRank
-                );
-
-            if (!configuredRank) {
-                return interaction.editReply({
-                    content:
-                        '❌ The selected rank is not configured for this server. Please choose one of the live rank suggestions.',
-                });
-            }
-
-            currentRank = configuredRank.name;
 
             const targetMember =
                 await interaction.guild.members
@@ -488,7 +391,8 @@ module.exports = {
             }
 
             /*
-             * Confirm the selected rank matches the saved staff profile.
+             * Prefer the member's live Discord rank. A saved profile is a
+             * safe fallback for members whose configured role is unavailable.
              */
             const staffRecordsDatabase =
                 await readDatabase(
@@ -500,28 +404,20 @@ module.exports = {
                 staffRecordsDatabase[
                     interaction.guildId
                 ]?.[staffMember.id] || null;
-
-            if (
-                existingStaffRecord?.currentRank &&
-                existingStaffRecord.currentRank !==
-                    currentRank
-            ) {
-                return interaction.editReply({
-                    content:
-                        `❌ The saved staff profile lists ${staffMember} as **${existingStaffRecord.currentRank}**, not **${currentRank}**.\n\n` +
-                        'Please select the rank currently saved in their profile.',
-                    allowedMentions: {
-                        parse: [],
-                    },
-                });
-            }
-
-            const configuredSessionChannel =
-                guildConfiguration.sessionChannelId
-                    ? interaction.guild.channels.cache.get(
-                          guildConfiguration.sessionChannelId
-                      )
-                    : null;
+            const detectedRank =
+                detectMemberRank(
+                    interaction.guildId,
+                    targetMember
+                );
+            const currentRank =
+                detectedRank?.name ||
+                existingStaffRecord?.currentRank ||
+                'Not detected';
+            const rankDetectionSource = detectedRank
+                ? 'discord_roles'
+                : existingStaffRecord?.currentRank
+                  ? 'staff_profile'
+                  : 'unavailable';
 
             const configuredInfractionChannelId =
                 getConfiguredChannelId(
@@ -529,18 +425,17 @@ module.exports = {
                     'infractions'
                 );
 
-            const configuredInfractionChannel =
+            const destinationChannel =
                 configuredInfractionChannelId
                     ? interaction.guild.channels.cache.get(
                           configuredInfractionChannelId
-                      )
+                      ) ||
+                      await interaction.guild.channels
+                          .fetch(
+                              configuredInfractionChannelId
+                          )
+                          .catch(() => null)
                     : null;
-
-            const destinationChannel =
-                selectedChannel ||
-                configuredInfractionChannel ||
-                configuredSessionChannel ||
-                interaction.channel;
 
             if (
                 !destinationChannel ||
@@ -548,7 +443,7 @@ module.exports = {
             ) {
                 return interaction.editReply({
                     content:
-                        '❌ I could not find a valid channel for this disciplinary announcement.',
+                        `❌ I could not access the configured infractions channel (<#${configuredInfractionChannelId || 'not-configured'}>).`,
                 });
             }
 
@@ -776,6 +671,7 @@ module.exports = {
                     getDisplayName(staffMember),
 
                 currentRank,
+                rankDetectionSource,
                 reason,
                 evidence,
                 duration,
@@ -863,6 +759,7 @@ module.exports = {
 
                     metadata: {
                         currentRank,
+                        rankDetectionSource,
                         duration,
                         infractionType:
                             infractionTypeKey,
@@ -1309,24 +1206,14 @@ module.exports = {
 
             const announcementMessage =
                 await destinationChannel.send({
-                    content:
-                        pingRole
-                            ? `${pingRole}`
-                            : undefined,
-
                     embeds: [
                         infractionEmbed,
                     ],
 
                     allowedMentions: {
-                        roles:
-                            pingRole
-                                ? [pingRole.id]
-                                : [],
-
-                        users: [
-                            staffMember.id,
-                        ],
+                        parse: [],
+                        roles: [],
+                        users: [],
                     },
                 });
 
