@@ -11,10 +11,10 @@ const path = require('path');
 const brands = require('../../config/branding');
 
 const DEFAULT_TITLE = 'Community Announcement';
-const ANNOUNCEMENT_BANNER_NAME = 'isrp-wordmark.jpg';
+const ANNOUNCEMENT_BANNER_NAME = 'announcements-banner-v1.png';
 const ANNOUNCEMENT_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/branding/isrp-wordmark.jpg'
+    '../../assets/thumbnails/announcements-banner-v1.png'
 );
 
 module.exports = {

@@ -12,9 +12,13 @@ const expectedAssets = [
     'branding/isrp-logo-silver.jpg',
     'branding/isrp-wordmark.jpg',
     'branding/isrp-roblox-avatar.jpg',
-    'thumbnails/session-started.png',
-    'thumbnails/welcome-banner.png',
-    'thumbnails/staff-guide-banner-v2.png',
+    'thumbnails/sessions-banner-v2.png',
+    'thumbnails/welcome-banner-v2.png',
+    'thumbnails/staff-guide-banner-v3.png',
+    'thumbnails/assistance-banner-v2.png',
+    'thumbnails/announcements-banner-v1.png',
+    'thumbnails/about-banner-v1.png',
+    'thumbnails/dashboard-banner-v1.png',
 ];
 
 test('brand URLs are durable and every branded asset exists locally', () => {
@@ -32,7 +36,7 @@ test('brand URLs are durable and every branded asset exists locally', () => {
     }
 });
 
-test('/about presents the community wordmark and guild identity', async () => {
+test('/about presents the minimal about banner and guild identity', async () => {
     const replies = [];
     const interaction = {
         guild: {
@@ -50,10 +54,10 @@ test('/about presents the community wordmark and guild identity', async () => {
 
     assert.equal(replies.length, 1);
     assert.equal(replies[0].files.length, 1);
-    assert.equal(replies[0].files[0].name, 'isrp-wordmark.jpg');
+    assert.equal(replies[0].files[0].name, 'about-banner-v1.png');
 
     const embed = replies[0].embeds[0].toJSON();
-    assert.equal(embed.image.url, 'attachment://isrp-wordmark.jpg');
+    assert.equal(embed.image.url, 'attachment://about-banner-v1.png');
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
     assert.equal(
         embed.thumbnail.url,

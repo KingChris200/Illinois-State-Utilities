@@ -127,12 +127,12 @@ test('public guide panel contains branded embeds and persistent controls', () =>
     assert.equal(payload.embeds.length, 2);
     assert.match(
         payload.embeds[0].toJSON().image.url,
-        /^attachment:\/\/staff-guide-banner-v2\.png$/
+        /^attachment:\/\/staff-guide-banner-v3\.png$/
     );
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'staff-guide-banner-v2.png'
+        'staff-guide-banner-v3.png'
     );
     assert.equal(rows.length, 4);
     assert.ok(
@@ -284,7 +284,7 @@ test('every handbook and rank selection builds a valid private page', () => {
         assert.equal(payload.files.length, 1);
         assert.equal(
             payload.files[0].name,
-            'staff-guide-banner-v2.png'
+            'staff-guide-banner-v3.png'
         );
         assert.ok(
             components.some(
@@ -298,7 +298,7 @@ test('every handbook and rank selection builds a valid private page', () => {
             components.some(
                 (component) =>
                     component.media?.url?.endsWith(
-                        'staff-guide-banner-v2.png'
+                        'staff-guide-banner-v3.png'
                     )
             )
         );

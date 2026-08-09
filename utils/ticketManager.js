@@ -35,13 +35,13 @@ const APPEAL_DATABASE = 'ticket-appeals';
 const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
 const TRANSCRIPT_MESSAGE_LIMIT = 1000;
-const PANEL_IMAGE_NAME = 'isrp-assistance-banner.png';
+const PANEL_IMAGE_NAME = 'assistance-banner-v2.png';
 const PANEL_IMAGE_PATH = path.join(
     __dirname,
     '..',
     'assets',
     'thumbnails',
-    'assistance-banner.png'
+    PANEL_IMAGE_NAME
 );
 const PANEL_IMAGE_URL = `attachment://${PANEL_IMAGE_NAME}`;
 
@@ -122,18 +122,11 @@ function createTicketPanelPayload(guild) {
     const guildIcon = guild?.iconURL?.({ size: 256 }) || null;
     const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
-        .setTitle('Illinois State Roleplay Assistance Center')
+        .setTitle('Support Tickets')
         .setDescription(
             [
-                'Welcome to the official Illinois State Roleplay support center.',
-                '',
-                'Choose the option that best matches your request. A private channel will be created for you and the appropriate support staff.',
-                '',
-                '**Before opening a ticket**',
-                '• Use one ticket for one issue.',
-                '• Explain the situation clearly and preserve relevant evidence.',
-                '• Do not ping staff repeatedly; the team will respond when available.',
-                '• False reports, spam, and misuse may result in moderation.',
+                'Choose the department that best matches your request.',
+                'A private channel will be created for you and the selected team.',
             ].join('\n')
         )
         .addFields(

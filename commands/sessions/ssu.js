@@ -55,15 +55,15 @@ const SESSION_PING_ROLE_ID =
  *
  * assets/
  * └── thumbnails/
- *     └── session-started.png
+ *     └── sessions-banner-v2.png
  */
 
 const SESSION_BANNER_NAME =
-    'session-started.png';
+    'sessions-banner-v2.png';
 
 const SESSION_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/thumbnails/session-started.png'
+    '../../assets/thumbnails/sessions-banner-v2.png'
 );
 
 /*
@@ -208,7 +208,7 @@ module.exports = {
                 content:
                     '❌ The Sessions banner could not be found.\n\n' +
                     'Make sure the real image is located here:\n' +
-                    '`assets/thumbnails/session-started.png`',
+                    '`assets/thumbnails/sessions-banner-v2.png`',
                 ephemeral: true,
             });
         }

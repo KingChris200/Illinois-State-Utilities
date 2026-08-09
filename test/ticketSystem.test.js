@@ -88,7 +88,7 @@ test('Assistance panel exposes exactly three branded ticket choices', () => {
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'isrp-assistance-banner.png'
+        'assistance-banner-v2.png'
     );
 });
 

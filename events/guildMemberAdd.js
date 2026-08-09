@@ -11,10 +11,10 @@ const {
     getWelcomeConfig,
 } = require('../config/welcome');
 
-const WELCOME_BANNER_NAME = 'welcome-banner.png';
+const WELCOME_BANNER_NAME = 'welcome-banner-v2.png';
 const WELCOME_BANNER_PATH = path.join(
     __dirname,
-    '../assets/thumbnails/welcome-banner.png'
+    '../assets/thumbnails/welcome-banner-v2.png'
 );
 const WELCOME_DEDUPLICATION_MS = 30_000;
 const recentWelcomes = new Map();
@@ -90,7 +90,7 @@ function createWelcomePayload(member) {
     const welcomeEmbed = new EmbedBuilder()
         .setColor(brand.color)
         .setTitle(
-            `☆ Welcome to ${brand.name}!`
+            `Welcome to ${brand.name}`
         )
         .setDescription(
             [

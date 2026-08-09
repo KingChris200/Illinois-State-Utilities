@@ -104,7 +104,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     );
     assert.equal(
         embed.image.url,
-        'attachment://isrp-wordmark.jpg'
+        'attachment://announcements-banner-v1.png'
     );
     assert.equal(
         embed.footer.icon_url,
@@ -114,7 +114,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'isrp-wordmark.jpg'
+        'announcements-banner-v1.png'
     );
     assert.deepEqual(payload.allowedMentions, {
         parse: [],

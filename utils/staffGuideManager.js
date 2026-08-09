@@ -60,7 +60,7 @@ const WHITELISTED_GROUP_URL =
 const MELONLY_PANEL_URL =
     'https://melonly.xyz/panel/7470913514073231360';
 const STAFF_GUIDE_BANNER_NAME =
-    'staff-guide-banner-v2.png';
+    'staff-guide-banner-v3.png';
 const STAFF_GUIDE_BANNER_PATH = path.join(
     __dirname,
     '..',

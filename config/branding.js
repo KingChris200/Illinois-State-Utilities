@@ -17,13 +17,23 @@ const assets = {
         'branding/isrp-roblox-avatar.jpg'
     ),
     sessionBanner: assetUrl(
-        'thumbnails/session-started.png'
+        'thumbnails/sessions-banner-v2.png'
     ),
     welcomeBanner: assetUrl(
-        'thumbnails/welcome-banner.png'
+        'thumbnails/welcome-banner-v2.png'
     ),
     staffGuideBanner: assetUrl(
-        'thumbnails/staff-guide-banner-v2.png'
+        'thumbnails/staff-guide-banner-v3.png'
+    ),
+    assistanceBanner: assetUrl(
+        'thumbnails/assistance-banner-v2.png'
+    ),
+    announcementBanner: assetUrl(
+        'thumbnails/announcements-banner-v1.png'
+    ),
+    aboutBanner: assetUrl('thumbnails/about-banner-v1.png'),
+    dashboardBanner: assetUrl(
+        'thumbnails/dashboard-banner-v1.png'
     ),
 };
 
@@ -31,7 +41,7 @@ module.exports = {
     utilities: {
         name: 'Illinois State Utilities',
         shortName: 'IS Utilities',
-        color: '#0A4D8C',
+        color: '#4F76B8',
         logo: assets.logo,
         wordmark: assets.wordmark,
         footer:
@@ -55,7 +65,7 @@ module.exports = {
     isrp: {
         name: 'Illinois State Roleplay',
         shortName: 'ISRP',
-        color: '#1E90FF',
+        color: '#4F76B8',
         logo: assets.logo,
         wordmark: assets.wordmark,
         footer:

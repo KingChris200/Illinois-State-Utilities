@@ -98,7 +98,7 @@ with only three options:
 - `channel` (optional): defaults to the channel where the command runs
 
 The bot automatically applies the Illinois State Roleplay color, live
-Discord server logo, wide official wordmark, official footer, and
+Discord server logo, minimal announcement header, official footer, and
 timestamp. Custom text cannot trigger user, role, or everyone mentions.
 
 After changing the `/embed` command, run `npm run deploy-commands` once
@@ -108,10 +108,15 @@ minutes to appear.
 ## Brand assets
 
 Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
-stored in `assets/branding`. The generated Discord welcome artwork is at
-`assets/thumbnails/welcome-banner.png`, and the session artwork is at
-`assets/thumbnails/session-started.png`. The dedicated interactive guide
-header is at `assets/thumbnails/staff-guide-banner-v2.png`.
+stored in `assets/branding`. The second-generation visual system uses
+matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
+Welcome, Staff Guide, About, Announcements, and the future Dashboard.
+These headers share one gradient, type system, logo lockup, tagline, and
+spacing grid so public panels remain visually consistent.
+
+Run `scripts/generate-brand-banners.ps1` after changing the shared banner
+template. It deterministically regenerates the complete header family;
+the design does not rely on AI-generated scenery or text.
 
 The local files are the source of truth. Shared embeds use stable GitHub
 asset URLs instead of temporary Discord attachment links, while commands

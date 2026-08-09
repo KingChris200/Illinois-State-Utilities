@@ -5,10 +5,10 @@ const {
 } = require('discord.js');
 const createEmbed = require('../../utils/createEmbed');
 
-const ABOUT_BANNER_NAME = 'isrp-wordmark.jpg';
+const ABOUT_BANNER_NAME = 'about-banner-v1.png';
 const ABOUT_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/branding/isrp-wordmark.jpg'
+    '../../assets/thumbnails/about-banner-v1.png'
 );
 
 module.exports = {
