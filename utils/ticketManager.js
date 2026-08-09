@@ -34,6 +34,7 @@ const TICKET_PANEL_DATABASE = 'ticket-panels';
 const APPEAL_DATABASE = 'ticket-appeals';
 const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
+const TRANSCRIPT_MESSAGE_LIMIT = 1000;
 const PANEL_IMAGE_NAME = 'isrp-assistance-banner.png';
 const PANEL_IMAGE_PATH = path.join(
     __dirname,
@@ -254,6 +255,207 @@ function createTicketOpeningMentions(openerId, category) {
             parse: [],
         },
     };
+}
+
+function getMessageCollectionValues(collection) {
+    if (!collection) {
+        return [];
+    }
+
+    if (Array.isArray(collection)) {
+        return collection;
+    }
+
+    return typeof collection.values === 'function'
+        ? [...collection.values()]
+        : [];
+}
+
+function createTicketTranscript(ticket, messages) {
+    const orderedMessages = [...messages].sort(
+        (left, right) =>
+            Number(left.createdTimestamp || 0) -
+            Number(right.createdTimestamp || 0)
+    );
+    const lines = [
+        'Illinois State Roleplay | Assistance Ticket Transcript',
+        `Ticket ID: ${ticket.id}`,
+        `Category: ${ticket.categoryLabel}`,
+        `Opened By: ${ticket.openerUsername} (${ticket.openerId})`,
+        `Created: ${ticket.createdAt}`,
+        `Closed: ${ticket.closedAt || 'Not recorded'}`,
+        `Closed By: ${ticket.closedById || 'Not recorded'}`,
+        `Messages: ${orderedMessages.length}`,
+        '',
+        '============================================================',
+        '',
+    ];
+
+    for (const message of orderedMessages) {
+        const timestamp = message.createdAt instanceof Date
+            ? message.createdAt.toISOString()
+            : new Date(
+                  message.createdTimestamp || Date.now()
+              ).toISOString();
+        const authorName =
+            message.member?.displayName ||
+            message.author?.globalName ||
+            message.author?.username ||
+            'Unknown User';
+        const authorId = message.author?.id || 'unknown';
+        const content = String(message.content || '').trim();
+
+        lines.push(`[${timestamp}] ${authorName} (${authorId})`);
+        lines.push(content || '[No text content]');
+
+        for (const attachment of getMessageCollectionValues(
+            message.attachments
+        )) {
+            lines.push(
+                `[Attachment] ${attachment.name || 'file'}: ${attachment.url}`
+            );
+        }
+
+        for (const embed of message.embeds || []) {
+            const embedParts = [
+                embed.author?.name,
+                embed.title,
+                embed.description,
+                ...(embed.fields || []).map(
+                    (field) => `${field.name}: ${field.value}`
+                ),
+                embed.footer?.text,
+            ].filter(Boolean);
+            lines.push(
+                `[Embed] ${embedParts.join(' | ') || 'Embedded content'}`
+            );
+        }
+
+        lines.push('');
+    }
+
+    return lines.join('\n');
+}
+
+async function fetchTicketMessages(channel) {
+    const messages = [];
+    let before;
+
+    while (messages.length < TRANSCRIPT_MESSAGE_LIMIT) {
+        const limit = Math.min(
+            100,
+            TRANSCRIPT_MESSAGE_LIMIT - messages.length
+        );
+        const page = await channel.messages.fetch({
+            limit,
+            ...(before ? { before } : {}),
+        });
+        const pageMessages = getMessageCollectionValues(page);
+
+        if (pageMessages.length === 0) {
+            break;
+        }
+
+        messages.push(...pageMessages);
+        before = pageMessages[pageMessages.length - 1].id;
+
+        if (pageMessages.length < limit) {
+            break;
+        }
+    }
+
+    return messages;
+}
+
+async function archiveTicketTranscript(
+    guild,
+    sourceChannel,
+    ticket,
+    closedByUser
+) {
+    const config = getTicketConfig(guild.id);
+    const transcriptChannelId = config?.transcriptChannelId;
+
+    if (!transcriptChannelId) {
+        return null;
+    }
+
+    const transcriptChannel =
+        guild.channels.cache.get(transcriptChannelId) ||
+        (await guild.channels
+            .fetch(transcriptChannelId)
+            .catch(() => null));
+
+    if (!transcriptChannel?.isTextBased()) {
+        return null;
+    }
+
+    const messages = await fetchTicketMessages(sourceChannel);
+    const transcript = createTicketTranscript(ticket, messages);
+    const category = getTicketCategory(
+        guild.id,
+        ticket.categoryId
+    );
+    const attachmentName = `ticket-${ticket.id}.txt`;
+
+    return transcriptChannel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor(brands.isrp.color)
+                .setTitle('📄 Assistance Transcript Archived')
+                .setDescription(
+                    'A private record of the completed assistance ticket is attached.'
+                )
+                .addFields(
+                    {
+                        name: 'Ticket',
+                        value: `\`${ticket.id}\``,
+                        inline: true,
+                    },
+                    {
+                        name: 'Category',
+                        value:
+                            category?.label ||
+                            ticket.categoryLabel ||
+                            'Unknown',
+                        inline: true,
+                    },
+                    {
+                        name: 'Messages',
+                        value: String(messages.length),
+                        inline: true,
+                    },
+                    {
+                        name: 'Opened By',
+                        value: `<@${ticket.openerId}>`,
+                        inline: true,
+                    },
+                    {
+                        name: 'Closed By',
+                        value: `<@${closedByUser.id}>`,
+                        inline: true,
+                    },
+                    {
+                        name: 'Claimed By',
+                        value: ticket.claimedById
+                            ? `<@${ticket.claimedById}>`
+                            : 'Unclaimed',
+                        inline: true,
+                    }
+                )
+                .setThumbnail(guild.iconURL({ size: 256 }) || null)
+                .setFooter({
+                    text: 'Illinois State Utilities • Private ticket archive',
+                })
+                .setTimestamp(),
+        ],
+        files: [
+            new AttachmentBuilder(Buffer.from(transcript, 'utf8'), {
+                name: attachmentName,
+            }),
+        ],
+        allowedMentions: { parse: [] },
+    });
 }
 
 async function readGuildTickets(guildId) {
@@ -632,13 +834,43 @@ async function closeTicket(interaction, ticketId) {
                 .setColor(0x95a5a6)
                 .setTitle('🔒 Ticket Closed')
                 .setDescription(
-                    `Closed by ${interaction.user}. This channel remains available to support staff for recordkeeping.`
+                    `Closed by ${interaction.user}. A private transcript will be archived for staff recordkeeping.`
                 )
                 .setTimestamp(),
         ],
         allowedMentions: { parse: [] },
     });
-    await interaction.editReply('✅ Ticket closed and locked.');
+
+    let transcriptArchived = false;
+
+    try {
+        const transcriptMessage = await archiveTicketTranscript(
+            interaction.guild,
+            interaction.channel,
+            ticket,
+            interaction.user
+        );
+
+        if (transcriptMessage) {
+            ticket.transcriptChannelId = transcriptMessage.channel.id;
+            ticket.transcriptMessageId = transcriptMessage.id;
+            ticket.transcriptSavedAt = new Date().toISOString();
+            ticket.updatedAt = ticket.transcriptSavedAt;
+            await saveTicket(ticket);
+            transcriptArchived = true;
+        }
+    } catch (error) {
+        console.error(
+            `[TICKETS] Could not archive transcript for ${ticket.id}:`,
+            error
+        );
+    }
+
+    await interaction.editReply(
+        transcriptArchived
+            ? '✅ Ticket closed, locked, and privately archived.'
+            : '⚠️ Ticket closed and locked, but its transcript could not be archived. Please check the transcript channel permissions.'
+    );
 }
 
 function createAppealChoiceRow(ticket) {
@@ -951,8 +1183,10 @@ module.exports = {
     TICKET_DATABASE,
     TICKET_PANEL_DATABASE,
     TICKET_PREFIX,
+    archiveTicketTranscript,
     countOpenTickets,
     createAppealModal,
+    createTicketTranscript,
     createTicketOpeningMentions,
     createTicketPanelPayload,
     fetchStoredTicketMessage,

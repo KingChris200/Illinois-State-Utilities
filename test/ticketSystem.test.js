@@ -17,6 +17,7 @@ const {
     createAppealModal,
     createTicketOpeningMentions,
     createTicketPanelPayload,
+    createTicketTranscript,
     getCategorySupportRoleIds,
     memberCanManageTickets,
 } = require('../utils/ticketManager');
@@ -38,6 +39,10 @@ test('three ticket categories use the supplied destinations and team roles', () 
     assert.equal(
         config.assistanceChannelId,
         '1490730143508070540'
+    );
+    assert.equal(
+        config.transcriptChannelId,
+        '1490813707289362533'
     );
     const categoryRoles = Object.fromEntries(
         config.categories.map((category) => [
@@ -115,6 +120,76 @@ test('a new ticket pings its creator and selected support team only', () => {
         roles: ['1526344302618218656'],
         parse: [],
     });
+});
+
+test('ticket transcripts preserve messages, embeds, and attachment links', () => {
+    const transcript = createTicketTranscript(
+        {
+            id: 'ticket-example',
+            categoryLabel: 'General Support',
+            openerUsername: 'ExampleUser',
+            openerId: '123456789012345678',
+            createdAt: '2026-08-08T12:00:00.000Z',
+            closedAt: '2026-08-08T12:10:00.000Z',
+            closedById: '987654321098765432',
+        },
+        [
+            {
+                id: '2',
+                createdTimestamp: Date.parse(
+                    '2026-08-08T12:02:00.000Z'
+                ),
+                author: { id: '2', username: 'StaffMember' },
+                content: '',
+                attachments: new Map([
+                    [
+                        'file',
+                        {
+                            name: 'evidence.png',
+                            url: 'https://cdn.example/evidence.png',
+                        },
+                    ],
+                ]),
+                embeds: [
+                    {
+                        title: 'Appeal Submitted',
+                        description: 'Private appeal details',
+                        fields: [
+                            {
+                                name: 'Reason',
+                                value: 'Example reason',
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                id: '1',
+                createdTimestamp: Date.parse(
+                    '2026-08-08T12:01:00.000Z'
+                ),
+                author: { id: '1', username: 'ExampleUser' },
+                content: 'I need assistance.',
+                attachments: new Map(),
+                embeds: [],
+            },
+        ]
+    );
+
+    assert.match(transcript, /Ticket ID: ticket-example/);
+    assert.match(transcript, /I need assistance\./);
+    assert.match(
+        transcript,
+        /\[Attachment\] evidence\.png: https:\/\/cdn\.example\/evidence\.png/
+    );
+    assert.match(
+        transcript,
+        /\[Embed\] Appeal Submitted \| Private appeal details \| Reason: Example reason/
+    );
+    assert.ok(
+        transcript.indexOf('I need assistance.') <
+            transcript.indexOf('[Attachment]')
+    );
 });
 
 test('both guided appeal types create complete five-question forms', () => {

@@ -327,3 +327,10 @@ bot requires **Manage Channels**, **View Channel**, **Send Messages**,
 **Read Message History**, **Attach Files**, and **Embed Links** for the
 Assistance categories. Deploy slash commands once, restart the bot, and
 run `/tickets setup`.
+
+Closing a ticket automatically saves a branded archive post and a plain
+text transcript in private channel `1490813707289362533`. The transcript
+contains the complete ticket conversation, embed text, and attachment
+links, while its archive post suppresses Discord mentions. Up to the most
+recent 1,000 messages are preserved. If archiving fails, the ticket still
+closes safely and staff receive a permissions warning.
