@@ -34,13 +34,13 @@ const TICKET_PANEL_DATABASE = 'ticket-panels';
 const APPEAL_DATABASE = 'ticket-appeals';
 const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
-const PANEL_IMAGE_NAME = 'isrp-ticket-wordmark.jpg';
+const PANEL_IMAGE_NAME = 'isrp-assistance-banner.png';
 const PANEL_IMAGE_PATH = path.join(
     __dirname,
     '..',
     'assets',
-    'branding',
-    'isrp-wordmark.jpg'
+    'thumbnails',
+    'assistance-banner.png'
 );
 const PANEL_IMAGE_URL = `attachment://${PANEL_IMAGE_NAME}`;
 
@@ -61,6 +61,10 @@ function getSupportRoleIds(guildId) {
 }
 
 function getCategorySupportRoleIds(guildId, category) {
+    if (category?.teamRoleId) {
+        return [category.teamRoleId];
+    }
+
     const serverConfig = getServerConfig(guildId);
 
     if (category?.accessLevel === 'internal_affairs') {
@@ -131,6 +135,13 @@ function createTicketPanelPayload(guild) {
                 '• False reports, spam, and misuse may result in moderation.',
             ].join('\n')
         )
+        .addFields(
+            ...(config?.categories || []).map((category) => ({
+                name: `${category.emoji} ${category.label}`,
+                value: category.description,
+                inline: true,
+            }))
+        )
         .setImage(PANEL_IMAGE_URL)
         .setFooter({
             text: 'Illinois State Utilities • Private support and appeals',
@@ -187,7 +198,9 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
                 'Please describe what happened, what outcome you are requesting, and attach any relevant screenshots or links.',
                 '',
                 category.id.endsWith('appeal')
-                    ? 'A support team member can start the appropriate guided appeal form with `!appeal`.'
+                    ? 'An Internal Affairs team member can start the appropriate guided appeal form with `!appeal`.'
+                    : category.id === 'internal_affairs'
+                      ? 'Internal Affairs can start the guided appeal form with `!appeal` when needed.'
                     : 'A support team member will greet you and begin assisting as soon as possible.',
             ].join('\n')
         )
@@ -200,6 +213,13 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
             {
                 name: 'Status',
                 value: 'Open • Unclaimed',
+                inline: true,
+            },
+            {
+                name: 'Assigned Team',
+                value: category.teamRoleId
+                    ? `<@&${category.teamRoleId}>`
+                    : 'ISRP Support Team',
                 inline: true,
             }
         )
@@ -216,6 +236,24 @@ function sanitizeChannelName(value) {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 28) || 'member';
+}
+
+function createTicketOpeningMentions(openerId, category) {
+    const roleIds = category?.teamRoleId
+        ? [category.teamRoleId]
+        : [];
+
+    return {
+        content: [
+            `<@${openerId}>`,
+            ...roleIds.map((roleId) => `<@&${roleId}>`),
+        ].join(' '),
+        allowedMentions: {
+            users: [openerId],
+            roles: roleIds,
+            parse: [],
+        },
+    };
 }
 
 async function readGuildTickets(guildId) {
@@ -451,8 +489,13 @@ async function createTicket(interaction) {
         ticket.channelId = channel.id;
         await saveTicket(ticket);
 
+        const openingMentions = createTicketOpeningMentions(
+            interaction.user.id,
+            category
+        );
+
         await channel.send({
-            content: `<@${interaction.user.id}>`,
+            content: openingMentions.content,
             embeds: [
                 createTicketWelcomeEmbed(
                     ticket,
@@ -461,11 +504,7 @@ async function createTicket(interaction) {
                 ),
             ],
             components: [createTicketControlRow(ticket)],
-            allowedMentions: {
-                users: [interaction.user.id],
-                roles: [],
-                parse: [],
-            },
+            allowedMentions: openingMentions.allowedMentions,
         });
 
         await interaction.editReply({
@@ -914,6 +953,7 @@ module.exports = {
     TICKET_PREFIX,
     countOpenTickets,
     createAppealModal,
+    createTicketOpeningMentions,
     createTicketPanelPayload,
     fetchStoredTicketMessage,
     getStoredTicketPanel,

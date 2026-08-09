@@ -15,6 +15,7 @@ const {
 const {
     CREATE_MENU_ID,
     createAppealModal,
+    createTicketOpeningMentions,
     createTicketPanelPayload,
     getCategorySupportRoleIds,
     memberCanManageTickets,
@@ -25,7 +26,7 @@ const mockGuild = {
     iconURL: () => null,
 };
 
-test('ticket categories use the supplied Assistance destinations', () => {
+test('three ticket categories use the supplied destinations and team roles', () => {
     const config = getTicketConfig(MAIN_SERVER_ID);
     const categoryParents = Object.fromEntries(
         config.categories.map((category) => [
@@ -38,72 +39,82 @@ test('ticket categories use the supplied Assistance destinations', () => {
         config.assistanceChannelId,
         '1490730143508070540'
     );
+    const categoryRoles = Object.fromEntries(
+        config.categories.map((category) => [
+            category.id,
+            category.teamRoleId,
+        ])
+    );
+
+    assert.equal(config.categories.length, 3);
     assert.equal(
         categoryParents.general,
         '1490870667795763412'
-    );
-    assert.equal(
-        categoryParents.partnership,
-        '1490870767632646365'
     );
     assert.equal(
         categoryParents.management,
         '1490870524245577899'
     );
     assert.equal(
-        categoryParents.ingame_appeal,
-        categoryParents.management
-    );
-    assert.equal(
-        categoryParents.staff_appeal,
-        categoryParents.management
-    );
-    assert.equal(
         categoryParents.internal_affairs,
         categoryParents.management
     );
+    assert.deepEqual(categoryRoles, {
+        general: '1490523797629960392',
+        internal_affairs: '1526344302618218656',
+        management: '1490523581187231795',
+    });
 });
 
-test('Assistance panel exposes seven branded ticket choices', () => {
+test('Assistance panel exposes exactly three branded ticket choices', () => {
     const payload = createTicketPanelPayload(mockGuild);
     const menu = payload.components[0].toJSON().components[0];
 
     assert.equal(menu.custom_id, CREATE_MENU_ID);
-    assert.equal(menu.options.length, 7);
+    assert.equal(menu.options.length, 3);
     assert.equal(
         new Set(menu.options.map((option) => option.value)).size,
-        7
+        3
+    );
+    assert.deepEqual(
+        menu.options.map((option) => option.value),
+        ['general', 'internal_affairs', 'management']
     );
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'isrp-ticket-wordmark.jpg'
+        'isrp-assistance-banner.png'
     );
 });
 
-test('Internal Affairs tickets exclude the general staff support role', () => {
+test('each ticket is restricted to only its selected support team', () => {
     const config = getTicketConfig(MAIN_SERVER_ID);
-    const serverConfig = getServerConfig(MAIN_SERVER_ID);
-    const category = config.categories.find(
+    for (const category of config.categories) {
+        assert.deepEqual(
+            getCategorySupportRoleIds(MAIN_SERVER_ID, category),
+            [category.teamRoleId]
+        );
+    }
+});
+
+test('a new ticket pings its creator and selected support team only', () => {
+    const category = getTicketConfig(MAIN_SERVER_ID).categories.find(
         (entry) => entry.id === 'internal_affairs'
     );
-    const roleIds = getCategorySupportRoleIds(
-        MAIN_SERVER_ID,
+    const mentions = createTicketOpeningMentions(
+        '123456789012345678',
         category
     );
 
-    assert.ok(
-        roleIds.includes(
-            serverConfig.roleGroups.internalAffairsTeam
-        )
-    );
-    assert.ok(
-        roleIds.includes(serverConfig.roleGroups.directorTeam)
-    );
     assert.equal(
-        roleIds.includes(serverConfig.roleGroups.serverStaffTeam),
-        false
+        mentions.content,
+        '<@123456789012345678> <@&1526344302618218656>'
     );
+    assert.deepEqual(mentions.allowedMentions, {
+        users: ['123456789012345678'],
+        roles: ['1526344302618218656'],
+        parse: [],
+    });
 });
 
 test('both guided appeal types create complete five-question forms', () => {

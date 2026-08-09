@@ -301,17 +301,20 @@ The permanent Assistance panel is configured for channel
 `/tickets setup` to post or refresh it. `/tickets status` reports the
 saved panel and current open-ticket count.
 
-Ticket channels are routed automatically:
+The panel has three focused choices, and ticket channels are routed and
+assigned automatically:
 
-- General Assistance → category `1490870667795763412`
-- Partnership Support → category `1490870767632646365`
-- Management, appeals, reports, and Internal Affairs → category
-  `1490870524245577899`
+- General Support → category `1490870667795763412`, team role
+  `1490523797629960392`
+- Internal Affairs Support → category `1490870524245577899`, team role
+  `1526344302618218656`
+- Management Support → category `1490870524245577899`, team role
+  `1490523581187231795`
 
-General and partnership tickets are visible to the configured support
-team. Management tickets are restricted to configured reviewers.
-Internal Affairs, appeal, and report tickets are restricted to the ticket
-creator, Internal Affairs, Directorate/Ownership, and the bot.
+Each new ticket pings the ticket creator and only the team selected in the
+panel. Its private channel is visible to that creator, the selected team,
+the bot, and server administrators. Management Support also covers
+partnership requests and serious leadership concerns.
 
 Inside an open ticket, authorized staff can use `!hello` to claim the
 ticket and send a rank-aware introduction to its creator. `!appeal`
