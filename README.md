@@ -210,10 +210,12 @@ acknowledgment button instead.
 The official chain of command is organized into Foundership, Directorate,
 Staff Supervision, Management, Internal Affairs, Administration, and
 Moderation. The public panel is one spacious Components V2 card with the
-banner, official links, controls, and one full-width rank dropdown inside
-the card. That single menu lists the complete chain plus all 21 individual
-ranks. Selecting a rank opens its position, division, and expectations
-privately. The official Staff Guide, Whitelisted Roblox group, and Melonly
+banner, official links, and one full-width team dropdown inside the card.
+That single menu contains Moderation, Administration, High Rank, and
+Senior High Rank. Together, those four team pages cover all 21 official
+ranks exactly once. Each team card uses the matching live Discord team-role
+color when available, with a team-specific blue, red, orange, or green
+fallback. The official Staff Guide, Whitelisted Roblox group, and Melonly
 invite remain clean links inside the panel.
 
 Staff with **Manage Server** can use:
@@ -228,10 +230,9 @@ Staff with **Manage Server** can use:
 - `/guide publish-update version:1.1 summary:...` to publish a new
   version and request fresh acknowledgments.
 
-Authorized staff can use **Acknowledge Guide** and **Staff Onboarding**
-directly from the permanent panel. Acknowledgments and checklist
-completion are private, versioned, and recorded without automatically
-changing roles, sending reminders, or applying discipline.
+The public panel intentionally has no acknowledgment or onboarding
+controls. Existing historical compliance records remain preserved, but
+rank pages end cleanly after their official handbook link.
 
 Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if private guide pages should
 hand staff off to a permission-log channel. The bot needs **View Channel**,

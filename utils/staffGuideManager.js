@@ -11,7 +11,6 @@ const {
     MediaGalleryItemBuilder,
     MessageFlags,
     PermissionFlagsBits,
-    SectionBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
@@ -50,6 +49,7 @@ const RANK_SELECT_ID = `${STAFF_GUIDE_PREFIX}ranks`;
 const HELP_SELECT_VALUE = 'how_it_works';
 const CHAIN_SELECT_VALUE = 'complete_chain';
 const RANK_SELECT_VALUE_PREFIX = 'rank_';
+const TEAM_SELECT_VALUE_PREFIX = 'team_';
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
 const ACKNOWLEDGE_BUTTON_ID =
@@ -112,6 +112,71 @@ const CHAIN_GROUPS = [
     },
 ];
 
+const TEAM_GUIDES = [
+    {
+        id: 'moderation',
+        label: 'Moderation Team',
+        description:
+            'Moderators who provide frontline member support.',
+        emoji: '🔷',
+        color: 0x2f80ed,
+        divisionIds: ['moderation'],
+        purpose:
+            'Respond to members, manage in-game reports, stabilize scenes, and apply server policy professionally.',
+    },
+    {
+        id: 'administration',
+        label: 'Administration Team',
+        description:
+            'Administrators who handle advanced operations.',
+        emoji: '🔻',
+        color: 0xe53935,
+        divisionIds: ['administration'],
+        purpose:
+            'Support moderators, manage advanced situations, and ensure important actions are accurate and documented.',
+    },
+    {
+        id: 'high_rank',
+        label: 'High Rank Team',
+        description:
+            'Internal Affairs and confidential staff oversight.',
+        emoji: '⚙️',
+        color: 0xff5a1f,
+        divisionIds: ['internal_affairs'],
+        purpose:
+            'Review staff concerns, protect confidential evidence, and ensure investigations and appeals remain fair.',
+    },
+    {
+        id: 'senior_high_rank',
+        label: 'Senior High Rank Team',
+        description:
+            'Supervision, management, directors, and ownership.',
+        emoji: '🛡️',
+        color: 0x58b66b,
+        divisionIds: [
+            'foundership',
+            'directorate',
+            'staff_supervision',
+            'management',
+        ],
+        purpose:
+            'Lead staff operations, supervise performance, resolve major concerns, and protect the direction and standards of Illinois State Roleplay.',
+    },
+];
+
+function getTeamRanks(team) {
+    const includedRanks = new Set(
+        team.divisionIds.flatMap(
+            (divisionId) =>
+                getRankGuide(divisionId)?.ranks || []
+        )
+    );
+
+    return CHAIN_OF_COMMAND.filter((rank) =>
+        includedRanks.has(rank)
+    );
+}
+
 function getGuildIcon(guild) {
     return (
         guild?.iconURL?.({
@@ -152,7 +217,6 @@ function createStaffGuidePagePayload({
     sections = [],
     actionRows = [],
     complianceState = null,
-    includeHandoff = true,
 }) {
     const version =
         complianceState?.currentVersion ||
@@ -210,17 +274,8 @@ function createStaffGuidePagePayload({
         );
     }
 
-    const components = [container];
-    const handoff = includeHandoff
-        ? createGuideHandoff(guild?.id)
-        : null;
-
-    if (handoff) {
-        components.push(handoff);
-    }
-
     return {
-        components,
+        components: [container],
         files: [createStaffGuideBannerAttachment()],
         flags: MessageFlags.IsComponentsV2,
         allowedMentions: {
@@ -250,50 +305,6 @@ function resolveGuideAccentColor(color) {
     return 0x1e90ff;
 }
 
-function createGuideHandoff(guildId) {
-    const permissionLogsChannelId = String(
-        process.env.STAFF_PERMISSION_LOGS_CHANNEL_ID || ''
-    ).trim();
-    const section = new SectionBuilder()
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                /^\d{17,20}$/.test(
-                    permissionLogsChannelId
-                )
-                    ? `**Done reading?** Continue to <#${permissionLogsChannelId}> for the appropriate staff record.`
-                    : '**Done reading?** Acknowledge the current guide version so leadership can confirm receipt.'
-            )
-        );
-
-    if (
-        /^\d{17,20}$/.test(
-            permissionLogsChannelId
-        )
-    ) {
-        section.setButtonAccessory(
-            new ButtonBuilder()
-                .setLabel('Open')
-                .setEmoji('➡️')
-                .setStyle(ButtonStyle.Link)
-                .setURL(
-                    `https://discord.com/channels/${guildId || MAIN_SERVER_ID}/${permissionLogsChannelId}`
-                )
-        );
-    } else {
-        section.setButtonAccessory(
-            new ButtonBuilder()
-                .setCustomId(
-                    ACKNOWLEDGE_BUTTON_ID
-                )
-                .setLabel('Acknowledge')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success)
-        );
-    }
-
-    return section;
-}
-
 function createGuidePanelPayload(
     guild,
     complianceState = null
@@ -303,29 +314,15 @@ function createGuidePanelPayload(
         DEFAULT_STAFF_GUIDE_VERSION;
     const rankMenu = new StringSelectMenuBuilder()
         .setCustomId(RANK_SELECT_ID)
-        .setPlaceholder('Select a staff rank to view its guide…')
-        .addOptions([
-            {
-                label: 'Complete Chain of Command',
-                description:
-                    'View all 21 ranks from highest to lowest.',
-                value: CHAIN_SELECT_VALUE,
-                emoji: '📋',
-            },
-            ...CHAIN_OF_COMMAND.map((rank, index) => {
-                const division = RANK_GUIDES.find((guide) =>
-                    guide.ranks.includes(rank)
-                );
-
-                return {
-                    label: rank,
-                    description:
-                        `Rank ${index + 1} of ${CHAIN_OF_COMMAND.length} • ${division?.label || 'Staff Team'}`,
-                    value: `${RANK_SELECT_VALUE_PREFIX}${index}`,
-                    emoji: division?.emoji || '🔹',
-                };
-            }),
-        ]);
+        .setPlaceholder('Select a staff team to view its guide…')
+        .addOptions(
+            TEAM_GUIDES.map((team) => ({
+                label: team.label,
+                description: team.description,
+                value: `${TEAM_SELECT_VALUE_PREFIX}${team.id}`,
+                emoji: team.emoji,
+            }))
+        );
     const container = new ContainerBuilder()
         .setAccentColor(
             resolveGuideAccentColor(
@@ -380,33 +377,11 @@ function createGuidePanelPayload(
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Server Staff Rank Guide\nSelect your rank below to view its position, division, and expectations.'
+                '## Server Staff Team Guide\nSelect a staff team below to view its ranks, responsibilities, and expectations.'
             )
         )
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(rankMenu)
-        )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                '### Staff Confirmation\nConfirm the current guide or open the private onboarding checklist.'
-            )
-        )
-        .addActionRowComponents(
-            new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(ACKNOWLEDGE_BUTTON_ID)
-                    .setLabel('Acknowledge Guide')
-                    .setStyle(ButtonStyle.Success),
-                new ButtonBuilder()
-                    .setCustomId(ONBOARDING_BUTTON_ID)
-                    .setLabel('Staff Onboarding')
-                    .setStyle(ButtonStyle.Secondary)
-            )
         );
 
     return {
@@ -419,6 +394,124 @@ function createGuidePanelPayload(
             roles: [],
         },
     };
+}
+
+function createTeamGuidePayload(
+    teamValue,
+    guild,
+    complianceState = null
+) {
+    const teamId = String(teamValue || '').startsWith(
+        TEAM_SELECT_VALUE_PREFIX
+    )
+        ? String(teamValue).slice(
+              TEAM_SELECT_VALUE_PREFIX.length
+          )
+        : String(teamValue || '');
+    const team = TEAM_GUIDES.find(
+        (entry) => entry.id === teamId
+    );
+
+    if (!team) {
+        return null;
+    }
+
+    const divisions = team.divisionIds
+        .map((divisionId) => getRankGuide(divisionId))
+        .filter(Boolean);
+    const ranks = getTeamRanks(team);
+    const expectations = [
+        ...new Set(
+            divisions.flatMap(
+                (division) => division.expectations
+            )
+        ),
+    ];
+
+    return createStaffGuidePagePayload({
+        guild,
+        color: resolveRankAccentColor(
+            guild,
+            team.label,
+            team.color
+        ),
+        title: team.label,
+        intro: team.purpose,
+        sections: [
+            {
+                name: 'Ranks — Highest to Lowest',
+                value: ranks
+                    .map((rank) => {
+                        const position =
+                            CHAIN_OF_COMMAND.indexOf(rank) + 1;
+                        return `**${position}.** ${rank}`;
+                    })
+                    .join('\n'),
+            },
+            {
+                name: 'Team Responsibilities',
+                value: expectations
+                    .map((expectation) => `• ${expectation}`)
+                    .join('\n'),
+            },
+            {
+                name: 'Official Policy',
+                value:
+                    'This is a quick team summary. The current Staff Handbook and authorized leadership direction remain final.',
+            },
+        ],
+        actionRows: [
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Open Leadership Guide')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(
+                        getStaffGuideTabUrl(
+                            't.x01kjx33zvw3'
+                        )
+                    )
+            ),
+        ],
+        complianceState,
+    });
+}
+
+function normalizeRankRoleName(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function resolveRankAccentColor(guild, rank, fallbackColor) {
+    const target = normalizeRankRoleName(rank);
+    const cache = guild?.roles?.cache;
+    const roles =
+        typeof cache?.values === 'function'
+            ? [...cache.values()]
+            : [];
+    const coloredRoles = roles.filter(
+        (role) =>
+            Number.isInteger(role?.color) &&
+            role.color > 0
+    );
+    const exact = coloredRoles.find(
+        (role) =>
+            normalizeRankRoleName(role.name) === target
+    );
+    const prefixed = coloredRoles
+        .filter((role) =>
+            normalizeRankRoleName(role.name).endsWith(
+                ` ${target}`
+            )
+        )
+        .sort(
+            (left, right) =>
+                normalizeRankRoleName(left.name).length -
+                normalizeRankRoleName(right.name).length
+        )[0];
+
+    return exact?.color || prefixed?.color || fallbackColor;
 }
 
 function createIndividualRankPayload(
@@ -450,7 +543,11 @@ function createIndividualRankPayload(
 
     return createStaffGuidePagePayload({
         guild,
-        color: brands.palette.lightBlue,
+        color: resolveRankAccentColor(
+            guild,
+            rank,
+            division?.color || brands.palette.lightBlue
+        ),
         title: `${rank} Rank Guide`,
         intro:
             division?.purpose ||
@@ -795,7 +892,6 @@ function createOnboardingPayload(
             ),
         ],
         complianceState,
-        includeHandoff: false,
     });
 }
 
@@ -1012,6 +1108,14 @@ async function handleStaffGuideInteraction(interaction) {
                       complianceState
                   )
                 : String(rankGuideId || '').startsWith(
+                        TEAM_SELECT_VALUE_PREFIX
+                    )
+                  ? createTeamGuidePayload(
+                        rankGuideId,
+                        interaction.guild,
+                        complianceState
+                    )
+                : String(rankGuideId || '').startsWith(
                         RANK_SELECT_VALUE_PREFIX
                     )
                   ? createIndividualRankPayload(
@@ -1135,6 +1239,8 @@ module.exports = {
     SECTION_SELECT_ID,
     STAFF_GUIDE_DATABASE,
     STAFF_GUIDE_PREFIX,
+    TEAM_GUIDES,
+    TEAM_SELECT_VALUE_PREFIX,
     WHITELISTED_GROUP_URL,
     canAccessStaffGuide,
     createChainPayload,
@@ -1144,8 +1250,10 @@ module.exports = {
     createIndividualRankPayload,
     createOnboardingPayload,
     createRankGuidePayload,
+    createTeamGuidePayload,
     fetchStoredGuideMessage,
     getStoredGuidePanel,
+    getTeamRanks,
     handleStaffGuideInteraction,
     removeStoredGuidePanel,
     saveGuidePanel,

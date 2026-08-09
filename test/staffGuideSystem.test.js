@@ -19,12 +19,13 @@ const {
 const {
     ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
-    CHAIN_SELECT_VALUE,
     MELONLY_INVITE_URL,
     ONBOARDING_BUTTON_ID,
     RANK_SELECT_ID,
     RANK_SELECT_VALUE_PREFIX,
     SECTION_SELECT_ID,
+    TEAM_GUIDES,
+    TEAM_SELECT_VALUE_PREFIX,
     WHITELISTED_GROUP_URL,
     canAccessStaffGuide,
     createChainPayload,
@@ -33,6 +34,8 @@ const {
     createIndividualRankPayload,
     createOnboardingPayload,
     createRankGuidePayload,
+    createTeamGuidePayload,
+    getTeamRanks,
     handleStaffGuideInteraction,
 } = require('../utils/staffGuideManager');
 const {
@@ -120,7 +123,7 @@ test('staff guide exposes all 15 handbook sections within Discord limits', () =>
     }
 });
 
-test('public guide panel is one large minimal card with one rank menu', () => {
+test('public guide panel is one large minimal card with one team menu', () => {
     const payload = createGuidePanelPayload(
         mockGuild
     );
@@ -162,28 +165,38 @@ test('public guide panel is one large minimal card with one rank menu', () => {
         ).length,
         1
     );
-    assert.equal(menu.options.length, 22);
-    assert.equal(
-        menu.options[0].value,
-        CHAIN_SELECT_VALUE
-    );
+    assert.equal(menu.options.length, 4);
     assert.deepEqual(
-        menu.options.slice(1).map((option) => option.label),
-        CHAIN_OF_COMMAND
+        menu.options.map((option) => option.label),
+        [
+            'Moderation Team',
+            'Administration Team',
+            'High Rank Team',
+            'Senior High Rank Team',
+        ]
     );
     assert.ok(
+        menu.options.every((option) =>
+            option.value.startsWith(
+                TEAM_SELECT_VALUE_PREFIX
+            )
+        )
+    );
+    assert.equal(
         components.some(
             (component) =>
                 component.custom_id ===
                 ACKNOWLEDGE_BUTTON_ID
-        )
+        ),
+        false
     );
-    assert.ok(
+    assert.equal(
         components.some(
             (component) =>
                 component.custom_id ===
                 ONBOARDING_BUTTON_ID
-        )
+        ),
+        false
     );
     assert.equal(
         components.some(
@@ -215,6 +228,52 @@ test('staff guide uses the approved official resource links', () => {
     assert.equal(
         MELONLY_INVITE_URL,
         'https://melon.ly/join/FHMKHP'
+    );
+});
+
+test('team cards follow the matching Discord team role color', () => {
+    const roleColor = 0x4a90e2;
+    const payload = createTeamGuidePayload(
+        `${TEAM_SELECT_VALUE_PREFIX}moderation`,
+        {
+            ...mockGuild,
+            roles: {
+                cache: new Map([
+                    [
+                        'trial-moderator-role',
+                        {
+                            name: 'ISRP | Moderation Team',
+                            color: roleColor,
+                        },
+                    ],
+                ]),
+            },
+        }
+    );
+    const container = payload.components[0].toJSON();
+    const components = collectComponents(container);
+
+    assert.equal(container.accent_color, roleColor);
+    assert.equal(
+        components.some(
+            (component) =>
+                component.custom_id ===
+                ACKNOWLEDGE_BUTTON_ID
+        ),
+        false
+    );
+});
+
+test('the four team guides cover every official rank exactly once', () => {
+    assert.deepEqual(
+        TEAM_GUIDES.flatMap((team) =>
+            getTeamRanks(team)
+        ).sort(
+            (left, right) =>
+                CHAIN_OF_COMMAND.indexOf(left) -
+                CHAIN_OF_COMMAND.indexOf(right)
+        ),
+        CHAIN_OF_COMMAND
     );
 });
 
@@ -346,6 +405,21 @@ test('every handbook and rank selection builds a valid private page', () => {
         assert.equal(
             payload.flags,
             MessageFlags.IsComponentsV2
+        );
+    }
+
+    for (const team of TEAM_GUIDES) {
+        const payload = createTeamGuidePayload(
+            `${TEAM_SELECT_VALUE_PREFIX}${team.id}`,
+            mockGuild
+        );
+
+        assert.equal(
+            payload.flags,
+            MessageFlags.IsComponentsV2
+        );
+        assert.doesNotThrow(() =>
+            payload.components[0].toJSON()
         );
     }
 
