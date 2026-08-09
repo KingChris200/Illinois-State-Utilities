@@ -209,11 +209,12 @@ acknowledgment button instead.
 
 The official chain of command is organized into Foundership, Directorate,
 Staff Supervision, Management, Internal Affairs, Administration, and
-Moderation. The public panel stays minimal: it has two action buttons and
-two dropdown menus. **How This Guide Works** lives in the handbook menu,
-and the complete chain lives in the rank menu. The official Staff Guide,
-Whitelisted Roblox group, and Melonly invite are clean links inside the
-embed instead of a separate row of buttons.
+Moderation. The public panel is one spacious Components V2 card with the
+banner, official links, controls, and one full-width rank dropdown inside
+the card. That single menu lists the complete chain plus all 21 individual
+ranks. Selecting a rank opens its position, division, and expectations
+privately. The official Staff Guide, Whitelisted Roblox group, and Melonly
+invite remain clean links inside the panel.
 
 Staff with **Manage Server** can use:
 
@@ -313,8 +314,10 @@ The permanent Assistance panel is configured for channel
 `/tickets setup` to post or refresh it. `/tickets status` reports the
 saved panel and current open-ticket count.
 
-The panel has three focused choices, and ticket channels are routed and
-assigned automatically:
+The panel is one spacious Components V2 card containing the existing
+Assistance banner, readable category descriptions, and one full-width
+three-option dropdown. Ticket channels are routed and assigned
+automatically:
 
 - General Support → category `1490870667795763412`, team role
   `1490523797629960392`

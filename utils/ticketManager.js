@@ -5,11 +5,17 @@ const {
     ButtonBuilder,
     ButtonStyle,
     ChannelType,
+    ContainerBuilder,
     EmbedBuilder,
+    MediaGalleryBuilder,
+    MediaGalleryItemBuilder,
     MessageFlags,
     ModalBuilder,
     PermissionFlagsBits,
+    SeparatorBuilder,
+    SeparatorSpacingSize,
     StringSelectMenuBuilder,
+    TextDisplayBuilder,
     TextInputBuilder,
     TextInputStyle,
 } = require('discord.js');
@@ -119,34 +125,13 @@ function memberCanManageTicket(member, ticket) {
 
 function createTicketPanelPayload(guild) {
     const config = getTicketConfig(guild?.id);
-    const guildIcon = guild?.iconURL?.({ size: 256 }) || null;
-    const embed = new EmbedBuilder()
-        .setColor(brands.isrp.color)
-        .setTitle('Support Tickets')
-        .setDescription(
-            [
-                'Choose the department that best matches your request.',
-                'A private channel will be created for you and the selected team.',
-            ].join('\n')
-        )
-        .addFields(
-            ...(config?.categories || []).map((category) => ({
-                name: `${category.emoji} ${category.label}`,
-                value: category.description,
-                inline: true,
-            }))
-        )
-        .setImage(PANEL_IMAGE_URL)
-        .setFooter({
-            text: 'Illinois State Utilities • Private support and appeals',
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
-        });
+    const categories = config?.categories || [];
 
     const menu = new StringSelectMenuBuilder()
         .setCustomId(CREATE_MENU_ID)
         .setPlaceholder('Choose the assistance you need…')
         .addOptions(
-            (config?.categories || []).map((category) => ({
+            categories.map((category) => ({
                 label: category.label,
                 description: category.description,
                 value: category.id,
@@ -154,12 +139,64 @@ function createTicketPanelPayload(guild) {
             }))
         );
 
+    const categorySummary = categories
+        .map(
+            (category) =>
+                `### ${category.emoji} ${category.label}\n${category.description}`
+        )
+        .join('\n\n');
+    const container = new ContainerBuilder()
+        .setAccentColor(Number.parseInt(
+            brands.palette.lightBlue.slice(1),
+            16
+        ))
+        .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+                new MediaGalleryItemBuilder()
+                    .setURL(PANEL_IMAGE_URL)
+                    .setDescription(
+                        'Illinois State Roleplay Assistance'
+                    )
+            )
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(SeparatorSpacingSize.Large)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                [
+                    '# Illinois State Roleplay Assistance',
+                    'Choose the team that best matches your request. A private channel will be created for you and that support team.',
+                    '',
+                    categorySummary,
+                ].join('\n')
+            )
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(SeparatorSpacingSize.Large)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                '## Open a Ticket\nSelect one assistance category below.'
+            )
+        )
+        .addActionRowComponents(
+            new ActionRowBuilder().addComponents(menu)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                '-# Private support • One ticket per concern • Illinois State Roleplay'
+            )
+        );
+
     return {
-        embeds: [embed],
         files: [createPanelAttachment()],
-        components: [
-            new ActionRowBuilder().addComponents(menu),
-        ],
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
         allowedMentions: { parse: [] },
     };
 }

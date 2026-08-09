@@ -147,13 +147,17 @@ module.exports = {
                     await getComplianceState(
                         interaction.guildId
                     );
-
-                await interaction.reply({
-                    ...createGuidePanelPayload(
+                const panelPayload =
+                    createGuidePanelPayload(
                         interaction.guild,
                         complianceState
-                    ),
-                    flags: MessageFlags.Ephemeral,
+                    );
+
+                await interaction.reply({
+                    ...panelPayload,
+                    flags:
+                        MessageFlags.Ephemeral |
+                        panelPayload.flags,
                 });
                 return;
             }
@@ -313,6 +317,8 @@ async function setupGuide(interaction) {
         guideMessage = await existingMessage.edit(
             {
                 ...panelPayload,
+                content: null,
+                embeds: [],
                 attachments: [],
             }
         );
@@ -390,6 +396,8 @@ async function updateGuide(interaction) {
                 interaction.guildId
             )
         ),
+        content: null,
+        embeds: [],
         attachments: [],
     });
 
@@ -482,6 +490,8 @@ async function publishUpdate(interaction) {
                 interaction.guild,
                 result.state
             ),
+            content: null,
+            embeds: [],
             attachments: [],
         });
 

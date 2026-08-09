@@ -70,9 +70,13 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'preview') {
+            const panelPayload =
+                createTicketPanelPayload(interaction.guild);
             await interaction.reply({
-                ...createTicketPanelPayload(interaction.guild),
-                flags: MessageFlags.Ephemeral,
+                ...panelPayload,
+                flags:
+                    MessageFlags.Ephemeral |
+                    panelPayload.flags,
             });
             return;
         }
@@ -158,6 +162,8 @@ module.exports = {
         ) {
             panelMessage = await currentMessage.edit({
                 ...panelPayload,
+                content: null,
+                embeds: [],
                 attachments: [],
             });
             outcome = 'updated';

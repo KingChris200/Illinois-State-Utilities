@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+    MessageFlags,
     PermissionFlagsBits,
 } = require('discord.js');
 
@@ -26,6 +27,22 @@ const mockGuild = {
     id: MAIN_SERVER_ID,
     iconURL: () => null,
 };
+
+function collectComponents(component) {
+    const collected = [component];
+
+    if (Array.isArray(component.components)) {
+        for (const child of component.components) {
+            collected.push(...collectComponents(child));
+        }
+    }
+
+    if (Array.isArray(component.items)) {
+        collected.push(...component.items);
+    }
+
+    return collected;
+}
 
 test('three ticket categories use the supplied destinations and team roles', () => {
     const config = getTicketConfig(MAIN_SERVER_ID);
@@ -73,8 +90,20 @@ test('three ticket categories use the supplied destinations and team roles', () 
 
 test('Assistance panel exposes exactly three branded ticket choices', () => {
     const payload = createTicketPanelPayload(mockGuild);
-    const menu = payload.components[0].toJSON().components[0];
+    const components = collectComponents(
+        payload.components[0].toJSON()
+    );
+    const menu = components.find(
+        (component) =>
+            component.custom_id === CREATE_MENU_ID
+    );
 
+    assert.equal(
+        payload.flags,
+        MessageFlags.IsComponentsV2
+    );
+    assert.equal(payload.embeds, undefined);
+    assert.equal(payload.components.length, 1);
     assert.equal(menu.custom_id, CREATE_MENU_ID);
     assert.equal(menu.options.length, 3);
     assert.equal(
@@ -89,6 +118,13 @@ test('Assistance panel exposes exactly three branded ticket choices', () => {
     assert.equal(
         payload.files[0].name,
         'assistance-banner-v2.png'
+    );
+    assert.ok(
+        components.some(
+            (component) =>
+                component.media?.url ===
+                'attachment://assistance-banner-v2.png'
+        )
     );
 });
 

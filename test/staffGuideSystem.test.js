@@ -20,16 +20,17 @@ const {
     ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
     CHAIN_SELECT_VALUE,
-    HELP_SELECT_VALUE,
     MELONLY_INVITE_URL,
     ONBOARDING_BUTTON_ID,
     RANK_SELECT_ID,
+    RANK_SELECT_VALUE_PREFIX,
     SECTION_SELECT_ID,
     WHITELISTED_GROUP_URL,
     canAccessStaffGuide,
     createChainPayload,
     createGuidePanelPayload,
     createGuideSectionPayload,
+    createIndividualRankPayload,
     createOnboardingPayload,
     createRankGuidePayload,
     handleStaffGuideInteraction,
@@ -119,78 +120,84 @@ test('staff guide exposes all 15 handbook sections within Discord limits', () =>
     }
 });
 
-test('public guide panel contains branded embeds and persistent controls', () => {
+test('public guide panel is one large minimal card with one rank menu', () => {
     const payload = createGuidePanelPayload(
         mockGuild
     );
-    const rows = payload.components.map(
-        (row) => row.toJSON()
+    const components = collectComponents(
+        payload.components[0].toJSON()
     );
+    const menu = components.find(
+        (component) =>
+            component.custom_id === RANK_SELECT_ID
+    );
+    const text = components
+        .map((component) => component.content || '')
+        .join('\n');
 
-    assert.equal(payload.embeds.length, 2);
-    assert.match(
-        payload.embeds[0].toJSON().image.url,
-        /^attachment:\/\/staff-guide-banner-v3\.png$/
+    assert.equal(
+        payload.flags,
+        MessageFlags.IsComponentsV2
     );
+    assert.equal(payload.embeds, undefined);
+    assert.equal(payload.components.length, 1);
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
         'staff-guide-banner-v3.png'
     );
-    assert.equal(rows.length, 3);
-    const quickLinks = payload.embeds[1]
-        .toJSON()
-        .fields.find(
-            (field) => field.name === 'Quick Links'
-        ).value;
-    assert.match(quickLinks, /Staff Guide/);
-    assert.ok(quickLinks.includes(STAFF_GUIDE_DOCUMENT_URL));
-    assert.ok(quickLinks.includes(WHITELISTED_GROUP_URL));
-    assert.ok(quickLinks.includes(MELONLY_INVITE_URL));
-    assert.equal(
-        rows[1].components[0].custom_id,
-        SECTION_SELECT_ID
+    assert.ok(
+        components.some(
+            (component) =>
+                component.media?.url ===
+                'attachment://staff-guide-banner-v3.png'
+        )
     );
+    assert.ok(text.includes(STAFF_GUIDE_DOCUMENT_URL));
+    assert.ok(text.includes(WHITELISTED_GROUP_URL));
+    assert.ok(text.includes(MELONLY_INVITE_URL));
     assert.equal(
-        rows[1].components[0].options.length,
-        16
+        components.filter(
+            (component) => component.type === 3
+        ).length,
+        1
     );
+    assert.equal(menu.options.length, 22);
     assert.equal(
-        rows[1].components[0].options[0].value,
-        HELP_SELECT_VALUE
-    );
-    assert.equal(
-        rows[2].components[0].custom_id,
-        RANK_SELECT_ID
-    );
-    assert.equal(
-        rows[2].components[0].options.length,
-        8
-    );
-    assert.equal(
-        rows[2].components[0].options[0].value,
+        menu.options[0].value,
         CHAIN_SELECT_VALUE
     );
-    assert.equal(rows[0].components.length, 2);
+    assert.deepEqual(
+        menu.options.slice(1).map((option) => option.label),
+        CHAIN_OF_COMMAND
+    );
     assert.ok(
-        rows[0].components.some(
+        components.some(
             (component) =>
                 component.custom_id ===
                 ACKNOWLEDGE_BUTTON_ID
         )
     );
     assert.ok(
-        rows[0].components.some(
+        components.some(
             (component) =>
                 component.custom_id ===
                 ONBOARDING_BUTTON_ID
         )
     );
     assert.equal(
-        rows.flatMap((row) => row.components).some(
+        components.some(
             (component) =>
                 component.custom_id ===
                 CHAIN_BUTTON_ID
+        ),
+        false
+    );
+    assert.equal(
+        components.some(
+            (component) =>
+                component.custom_id ===
+                SECTION_SELECT_ID
         ),
         false
     );
@@ -339,6 +346,25 @@ test('every handbook and rank selection builds a valid private page', () => {
         assert.equal(
             payload.flags,
             MessageFlags.IsComponentsV2
+        );
+    }
+
+    for (
+        let index = 0;
+        index < CHAIN_OF_COMMAND.length;
+        index += 1
+    ) {
+        const payload = createIndividualRankPayload(
+            `${RANK_SELECT_VALUE_PREFIX}${index}`,
+            mockGuild
+        );
+
+        assert.equal(
+            payload.flags,
+            MessageFlags.IsComponentsV2
+        );
+        assert.doesNotThrow(() =>
+            payload.components[0].toJSON()
         );
     }
 

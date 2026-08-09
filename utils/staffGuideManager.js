@@ -49,6 +49,7 @@ const SECTION_SELECT_ID = `${STAFF_GUIDE_PREFIX}section`;
 const RANK_SELECT_ID = `${STAFF_GUIDE_PREFIX}ranks`;
 const HELP_SELECT_VALUE = 'how_it_works';
 const CHAIN_SELECT_VALUE = 'complete_chain';
+const RANK_SELECT_VALUE_PREFIX = 'rank_';
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
 const ACKNOWLEDGE_BUTTON_ID =
@@ -297,143 +298,195 @@ function createGuidePanelPayload(
     guild,
     complianceState = null
 ) {
-    const guildIcon = getGuildIcon(guild);
     const guideVersion =
         complianceState?.currentVersion ||
         DEFAULT_STAFF_GUIDE_VERSION;
-    const banner = new EmbedBuilder()
-        .setColor(brands.isrp.color)
-        .setImage(
-            STAFF_GUIDE_BANNER_URL
-        );
+    const rankMenu = new StringSelectMenuBuilder()
+        .setCustomId(RANK_SELECT_ID)
+        .setPlaceholder('Select a staff rank to view its guide…')
+        .addOptions([
+            {
+                label: 'Complete Chain of Command',
+                description:
+                    'View all 21 ranks from highest to lowest.',
+                value: CHAIN_SELECT_VALUE,
+                emoji: '📋',
+            },
+            ...CHAIN_OF_COMMAND.map((rank, index) => {
+                const division = RANK_GUIDES.find((guide) =>
+                    guide.ranks.includes(rank)
+                );
 
-    const overview = createBaseEmbed(guild)
-        .setTitle('Illinois State Roleplay Staff Guide')
-        .setDescription(
-            [
-                'Welcome to the official interactive staff handbook.',
-                '',
-                'Use the menus below to privately review policies, workflows, command standards, emergency procedures, and expectations for each staff division.',
-                '',
-                '**Your selected guide page is visible only to you.** The complete handbook remains the final source for official policy.',
-            ].join('\n')
+                return {
+                    label: rank,
+                    description:
+                        `Rank ${index + 1} of ${CHAIN_OF_COMMAND.length} • ${division?.label || 'Staff Team'}`,
+                    value: `${RANK_SELECT_VALUE_PREFIX}${index}`,
+                    emoji: division?.emoji || '🔹',
+                };
+            }),
+        ]);
+    const container = new ContainerBuilder()
+        .setAccentColor(
+            resolveGuideAccentColor(
+                brands.palette.lightBlue
+            )
         )
-        .addFields(
-            {
-                name: 'Guide Pages',
-                value:
-                    `${GUIDE_SECTIONS.length} official handbook sections`,
-                inline: true,
-            },
-            {
-                name: 'Rank Divisions',
-                value:
-                    `${RANK_GUIDES.length} chain-of-command groups`,
-                inline: true,
-            },
-            {
-                name: 'Current Version',
-                value: `**${guideVersion}**`,
-                inline: true,
-            },
-            {
-                name: 'How to Use',
-                value:
-                    'Choose a handbook topic or rank division below. Guide pages open privately for you.',
-            },
-            {
-                name: 'Quick Links',
-                value: [
-                    `[Staff Guide](${STAFF_GUIDE_DOCUMENT_URL})`,
-                    `[WL Group](${WHITELISTED_GROUP_URL})`,
-                    `[Melonly Invite](${MELONLY_INVITE_URL})`,
-                ].join(' • '),
-            }
+        .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+                new MediaGalleryItemBuilder()
+                    .setURL(STAFF_GUIDE_BANNER_URL)
+                    .setDescription(
+                        'Illinois State Roleplay Staff Guide'
+                    )
+            )
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(SeparatorSpacingSize.Large)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                [
+                    '# Illinois State Roleplay Staff Guide',
+                    'The official handbook for staff policy, conduct, commands, moderation, and leadership expectations.',
+                    '',
+                    `-# Current version: ${guideVersion} • Selected pages open privately`,
+                ].join('\n')
+            )
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                [
+                    '### Official Resources',
+                    `[Staff Guide](${STAFF_GUIDE_DOCUMENT_URL}) • [WL Group](${WHITELISTED_GROUP_URL}) • [Melonly Invite](${MELONLY_INVITE_URL})`,
+                ].join('\n')
+            )
+        )
+        .addActionRowComponents(
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Open Staff Handbook')
+                    .setEmoji('📖')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(STAFF_GUIDE_DOCUMENT_URL)
+            )
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(SeparatorSpacingSize.Large)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                '## Server Staff Rank Guide\nSelect your rank below to view its position, division, and expectations.'
+            )
+        )
+        .addActionRowComponents(
+            new ActionRowBuilder().addComponents(rankMenu)
+        )
+        .addSeparatorComponents(
+            new SeparatorBuilder()
+                .setDivider(true)
+                .setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                '### Staff Confirmation\nConfirm the current guide or open the private onboarding checklist.'
+            )
+        )
+        .addActionRowComponents(
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(ACKNOWLEDGE_BUTTON_ID)
+                    .setLabel('Acknowledge Guide')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId(ONBOARDING_BUTTON_ID)
+                    .setLabel('Staff Onboarding')
+                    .setStyle(ButtonStyle.Secondary)
+            )
         );
-
-    if (guildIcon) {
-        overview.setThumbnail(guildIcon);
-    }
-
-    const guideButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(ACKNOWLEDGE_BUTTON_ID)
-            .setLabel('Acknowledge Guide')
-            .setEmoji('✅')
-            .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-            .setCustomId(ONBOARDING_BUTTON_ID)
-            .setLabel('Staff Onboarding')
-            .setEmoji('🎓')
-            .setStyle(ButtonStyle.Secondary)
-    );
-
-    const sectionMenu =
-        new StringSelectMenuBuilder()
-            .setCustomId(SECTION_SELECT_ID)
-            .setPlaceholder(
-                'Choose an official handbook section…'
-            )
-            .addOptions(
-                [
-                    {
-                        label: 'How This Guide Works',
-                        description:
-                            'A quick explanation of the private guide panel.',
-                        value: HELP_SELECT_VALUE,
-                        emoji: '❔',
-                    },
-                    ...GUIDE_SECTIONS.map((section) => ({
-                        label: section.label,
-                        description: section.description,
-                        value: section.id,
-                        emoji: section.emoji,
-                    })),
-                ]
-            );
-
-    const rankMenu =
-        new StringSelectMenuBuilder()
-            .setCustomId(RANK_SELECT_ID)
-            .setPlaceholder(
-                'Choose a chain-of-command division…'
-            )
-            .addOptions(
-                [
-                    {
-                        label: 'Complete Chain of Command',
-                        description:
-                            'View all 21 ranks from highest to lowest.',
-                        value: CHAIN_SELECT_VALUE,
-                        emoji: '📋',
-                    },
-                    ...RANK_GUIDES.map((guide) => ({
-                        label: guide.label,
-                        description: guide.description,
-                        value: guide.id,
-                        emoji: guide.emoji,
-                    })),
-                ]
-            );
 
     return {
-        embeds: [banner, overview],
         files: [createStaffGuideBannerAttachment()],
-        components: [
-            guideButtons,
-            new ActionRowBuilder().addComponents(
-                sectionMenu
-            ),
-            new ActionRowBuilder().addComponents(
-                rankMenu
-            ),
-        ],
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
         allowedMentions: {
             parse: [],
             users: [],
             roles: [],
         },
     };
+}
+
+function createIndividualRankPayload(
+    rankValue,
+    guild,
+    complianceState = null
+) {
+    const index = Number.parseInt(
+        String(rankValue || '').slice(
+            RANK_SELECT_VALUE_PREFIX.length
+        ),
+        10
+    );
+    const rank = CHAIN_OF_COMMAND[index];
+
+    if (
+        !String(rankValue || '').startsWith(
+            RANK_SELECT_VALUE_PREFIX
+        ) ||
+        !Number.isInteger(index) ||
+        !rank
+    ) {
+        return null;
+    }
+
+    const division = RANK_GUIDES.find((guide) =>
+        guide.ranks.includes(rank)
+    );
+
+    return createStaffGuidePagePayload({
+        guild,
+        color: brands.palette.lightBlue,
+        title: `${rank} Rank Guide`,
+        intro:
+            division?.purpose ||
+            'Review the current handbook and follow the proper chain of command.',
+        sections: [
+            {
+                name: 'Chain Position',
+                value:
+                    `**${index + 1} of ${CHAIN_OF_COMMAND.length}** • ${division?.label || 'Staff Team'}`,
+            },
+            {
+                name: 'Core Expectations',
+                value: (division?.expectations || [])
+                    .map((expectation) => `• ${expectation}`)
+                    .join('\n'),
+            },
+            {
+                name: 'Official Policy',
+                value:
+                    'This is a quick rank summary. The current Staff Handbook and authorized leadership direction remain final.',
+            },
+        ],
+        actionRows: [
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Open Leadership Guide')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(
+                        getStaffGuideTabUrl(
+                            't.x01kjx33zvw3'
+                        )
+                    )
+            ),
+        ],
+        complianceState,
+    });
 }
 
 function createGuideSectionPayload(
@@ -958,6 +1011,14 @@ async function handleStaffGuideInteraction(interaction) {
                       interaction.guild,
                       complianceState
                   )
+                : String(rankGuideId || '').startsWith(
+                        RANK_SELECT_VALUE_PREFIX
+                    )
+                  ? createIndividualRankPayload(
+                        rankGuideId,
+                        interaction.guild,
+                        complianceState
+                    )
                 : createRankGuidePayload(
                       rankGuideId,
                       interaction.guild,
@@ -1070,6 +1131,7 @@ module.exports = {
     ONBOARDING_BUTTON_ID,
     ONBOARDING_COMPLETE_BUTTON_ID,
     RANK_SELECT_ID,
+    RANK_SELECT_VALUE_PREFIX,
     SECTION_SELECT_ID,
     STAFF_GUIDE_DATABASE,
     STAFF_GUIDE_PREFIX,
@@ -1079,6 +1141,7 @@ module.exports = {
     createGuidePanelPayload,
     createGuideSectionPayload,
     createHelpPayload,
+    createIndividualRankPayload,
     createOnboardingPayload,
     createRankGuidePayload,
     fetchStoredGuideMessage,
