@@ -1,5 +1,8 @@
+const path = require('node:path');
+
 const {
     ActionRowBuilder,
+    AttachmentBuilder,
     ButtonBuilder,
     ButtonStyle,
     ContainerBuilder,
@@ -56,6 +59,24 @@ const WHITELISTED_GROUP_URL =
     'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about';
 const MELONLY_PANEL_URL =
     'https://melonly.xyz/panel/7470913514073231360';
+const STAFF_GUIDE_BANNER_NAME =
+    'staff-guide-banner-v2.png';
+const STAFF_GUIDE_BANNER_PATH = path.join(
+    __dirname,
+    '..',
+    'assets',
+    'thumbnails',
+    STAFF_GUIDE_BANNER_NAME
+);
+const STAFF_GUIDE_BANNER_URL =
+    `attachment://${STAFF_GUIDE_BANNER_NAME}`;
+
+function createStaffGuideBannerAttachment() {
+    return new AttachmentBuilder(
+        STAFF_GUIDE_BANNER_PATH,
+        { name: STAFF_GUIDE_BANNER_NAME }
+    );
+}
 
 const CHAIN_GROUPS = [
     {
@@ -141,7 +162,7 @@ function createStaffGuidePagePayload({
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
                     .setURL(
-                        brands.assets.staffGuideBanner
+                        STAFF_GUIDE_BANNER_URL
                     )
                     .setDescription(
                         'Illinois State Roleplay Staff Guide'
@@ -197,6 +218,7 @@ function createStaffGuidePagePayload({
 
     return {
         components,
+        files: [createStaffGuideBannerAttachment()],
         flags: MessageFlags.IsComponentsV2,
         allowedMentions: {
             parse: [],
@@ -280,7 +302,7 @@ function createGuidePanelPayload(
     const banner = new EmbedBuilder()
         .setColor(brands.isrp.color)
         .setImage(
-            brands.assets.staffGuideBanner
+            STAFF_GUIDE_BANNER_URL
         );
 
     const overview = createBaseEmbed(guild)
@@ -412,6 +434,7 @@ function createGuidePanelPayload(
 
     return {
         embeds: [banner, overview],
+        files: [createStaffGuideBannerAttachment()],
         components: [
             resourceButtons,
             guideButtons,

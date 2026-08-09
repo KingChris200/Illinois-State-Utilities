@@ -311,7 +311,10 @@ async function setupGuide(interaction) {
         existingPanel.channelId === channel.id
     ) {
         guideMessage = await existingMessage.edit(
-            panelPayload
+            {
+                ...panelPayload,
+                attachments: [],
+            }
         );
         outcome = 'updated';
     } else {
@@ -380,14 +383,15 @@ async function updateGuide(interaction) {
         return;
     }
 
-    await message.edit(
-        createGuidePanelPayload(
+    await message.edit({
+        ...createGuidePanelPayload(
             interaction.guild,
             await getComplianceState(
                 interaction.guildId
             )
-        )
-    );
+        ),
+        attachments: [],
+    });
 
     await saveGuidePanel(interaction.guildId, {
         ...panel,
@@ -473,12 +477,13 @@ async function publishUpdate(interaction) {
     );
 
     if (message) {
-        await message.edit(
-            createGuidePanelPayload(
+        await message.edit({
+            ...createGuidePanelPayload(
                 interaction.guild,
                 result.state
-            )
-        );
+            ),
+            attachments: [],
+        });
 
         await saveGuidePanel(
             interaction.guildId,
