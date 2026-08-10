@@ -340,6 +340,9 @@ their completed answers back into the ticket, where the handler can
 review them and the normal ticket transcript preserves the conversation.
 If either command is used outside a bot-created ticket, the bot removes
 the trigger when possible and briefly explains where it must be used.
+When the ticket opener mentions `partnership` or `partnerships`, the bot
+automatically posts the official partnership requirements once in that
+ticket. Repeated mentions do not create duplicate requirement messages.
 
 Closing a ticket locks it, archives its private transcript, and deletes
 the ticket channel after a five-second notice. If transcript archiving

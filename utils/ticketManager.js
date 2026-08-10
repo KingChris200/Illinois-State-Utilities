@@ -950,6 +950,49 @@ function createAppealQuestionnaire(ticket) {
     };
 }
 
+function createPartnershipRequirementsPayload(guild) {
+    const embed = new EmbedBuilder()
+        .setColor(brands.isrp.color)
+        .setTitle('🤝 | Partnership Requirements')
+        .setDescription(
+            [
+                'Thank you for your interest in partnering with **Illinois State Roleplay**. Please review every requirement before continuing with your request.',
+                '',
+                '**Representatives**',
+                '• Communities with **200 or more members** require **1 representative**.',
+                '• Communities with **fewer than 200 members** require **2 representatives**.',
+                '• Representatives must remain in both communities and maintain professional communication.',
+                '',
+                '**Basic Requirements**',
+                '• Must comply with the **Discord Terms of Service** and **Roblox Terms of Use**.',
+                '• Must be an active and established community.',
+                '• Must not be blacklisted by Illinois State Roleplay.',
+                '• Must be in good standing with PRC and have no serious reputation concerns.',
+                '• Must maintain professional ownership, staff conduct, and community standards.',
+                '',
+                '**Affiliation Requirement**',
+                'If approved, post the provided ISRP advertisement in a server where your community is affiliated and keep it available for the partnership duration.',
+                '',
+                '*Meeting these requirements does not guarantee approval. Management will review the community before making a final decision.*',
+            ].join('\n')
+        )
+        .setFooter({
+            text: 'Illinois State Utilities • Partnership Review',
+        })
+        .setTimestamp();
+
+    const guildIcon = guild?.iconURL?.({ size: 256 });
+
+    if (guildIcon) {
+        embed.setThumbnail(guildIcon);
+    }
+
+    return {
+        embeds: [embed],
+        allowedMentions: { parse: [] },
+    };
+}
+
 async function handleTicketInteraction(interaction) {
     if (interaction.isModalSubmit?.()) {
         await interaction.reply({
@@ -991,8 +1034,12 @@ async function handleTicketInteraction(interaction) {
 
 async function handleTicketMessage(message) {
     const command = message.content.trim().toLowerCase();
+    const isTicketCommand = ['!hello', '!appeal'].includes(command);
+    const isPartnershipRequest = /\bpartnerships?\b/i.test(
+        message.content
+    );
 
-    if (!['!hello', '!appeal'].includes(command)) {
+    if (!isTicketCommand && !isPartnershipRequest) {
         return false;
     }
 
@@ -1002,6 +1049,10 @@ async function handleTicketMessage(message) {
     );
 
     if (!ticket) {
+        if (!isTicketCommand) {
+            return false;
+        }
+
         await message.delete().catch(() => null);
 
         const notice = await message.channel
@@ -1021,6 +1072,35 @@ async function handleTicketMessage(message) {
         }
 
         return true;
+    }
+
+    if (isPartnershipRequest) {
+        if (
+            message.author.id !== ticket.openerId ||
+            ticket.partnershipRequirementsSentAt
+        ) {
+            return false;
+        }
+
+        ticket.partnershipRequirementsSentAt = new Date().toISOString();
+        ticket.updatedAt = ticket.partnershipRequirementsSentAt;
+        await saveTicket(ticket);
+
+        try {
+            await message.channel.send(
+                createPartnershipRequirementsPayload(message.guild)
+            );
+            return true;
+        } catch (error) {
+            delete ticket.partnershipRequirementsSentAt;
+            ticket.updatedAt = new Date().toISOString();
+            await saveTicket(ticket).catch(() => null);
+            console.error(
+                `[TICKETS] Could not send partnership requirements in ${ticket.id}:`,
+                error
+            );
+            return false;
+        }
     }
 
     if (!memberCanManageTicket(message.member, ticket)) {
@@ -1084,6 +1164,7 @@ module.exports = {
     archiveTicketTranscript,
     countOpenTickets,
     createAppealQuestionnaire,
+    createPartnershipRequirementsPayload,
     createTicketTranscript,
     createTicketOpeningMentions,
     createTicketPanelPayload,

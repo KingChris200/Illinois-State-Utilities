@@ -16,6 +16,7 @@ const {
 const {
     CREATE_MENU_ID,
     createAppealQuestionnaire,
+    createPartnershipRequirementsPayload,
     createTicketOpeningMentions,
     createTicketPanelPayload,
     createTicketTranscript,
@@ -249,6 +250,19 @@ test('appeal questionnaire is copyable and mentions only the ticket opener', () 
         roles: [],
         parse: [],
     });
+});
+
+test('partnership requirements are clear, branded, and mention-safe', () => {
+    const payload = createPartnershipRequirementsPayload(mockGuild);
+    const embed = payload.embeds[0].toJSON();
+
+    assert.match(embed.title, /Partnership Requirements/);
+    assert.match(embed.description, /200 or more members/);
+    assert.match(embed.description, /fewer than 200 members/);
+    assert.match(embed.description, /Discord Terms of Service/);
+    assert.match(embed.description, /Roblox Terms of Use/);
+    assert.match(embed.description, /does not guarantee approval/i);
+    assert.deepEqual(payload.allowedMentions, { parse: [] });
 });
 
 test('/tickets provides setup, preview, and status management actions', () => {
