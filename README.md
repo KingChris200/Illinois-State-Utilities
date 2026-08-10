@@ -110,7 +110,7 @@ minutes to appear.
 Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
 stored in `assets/branding`. The second-generation visual system uses
 matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
-Welcome, Staff Guide, About, Announcements, and the future Dashboard.
+Welcome, Staff Guide, About, Announcements, and the Dashboard.
 These headers share one gradient, type system, logo lockup, tagline, and
 spacing grid so public panels remain visually consistent.
 
@@ -129,6 +129,25 @@ asset URLs instead of temporary Discord attachment links, while commands
 such as `/about`, `/embed`, the welcome system, and session announcements
 attach the wide artwork directly when appropriate. Keep the `assets`
 folder in the same commit as branding changes.
+
+## Permanent ISRP Dashboard
+
+The public Dashboard is one minimal Components V2 card with the official
+ISRP banner, direct links to the guidelines, Assistance, Sessions, Proof,
+Primary, In-Game Chat, and the Whitelisted Roblox group. Its single menu
+opens five private information pages. Staff Resources remain restricted to
+authorized staff members.
+
+Members with **Manage Server** can use:
+
+- `/dashboard preview` to check the complete panel privately
+- `/dashboard setup channel:#dashboard` to post and save it
+- `/dashboard update` to refresh the saved panel after a change
+- `/dashboard remove` to delete the saved panel
+
+The saved channel and message survive bot restarts. No dashboard `.env`
+settings are required. Deploy the slash command once with
+`npm run deploy-commands`, restart the bot, and run `/dashboard setup`.
 
 If the repository or default branch changes, set a new public base URL:
 

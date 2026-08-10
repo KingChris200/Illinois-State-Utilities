@@ -37,6 +37,9 @@ const {
     handleLoaInteraction,
 } = require('../utils/loaManager');
 const {
+    handleDashboardInteraction,
+} = require('../utils/dashboardManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -108,6 +111,14 @@ module.exports = {
             interaction.customId?.startsWith('loa:')
         ) {
             await handleLoaInteraction(interaction);
+            return;
+        }
+
+        if (
+            interaction.isStringSelectMenu?.() &&
+            interaction.customId?.startsWith('dashboard:')
+        ) {
+            await handleDashboardInteraction(interaction);
             return;
         }
 

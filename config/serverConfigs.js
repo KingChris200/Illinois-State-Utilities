@@ -33,6 +33,24 @@ const ISP_SERVER_ID =
  */
 
 const ISRP_CHANNELS = {
+    inGameGuidelines:
+        '1490680506952712233',
+
+    discordGuidelines:
+        '1490680641904185435',
+
+    assistance:
+        '1490730143508070540',
+
+    proof:
+        '1490733647915913246',
+
+    primary:
+        '1490733409037975654',
+
+    inGameChat:
+        '1506444257173704704',
+
     promotions:
         '1490759034847105196',
 

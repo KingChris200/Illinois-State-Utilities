@@ -205,6 +205,30 @@ test('central interaction handler routes protected LOA controls', async () => {
     assert.match(reply.content, /another staff member/i);
 });
 
+test('central interaction handler protects Dashboard staff resources', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => true,
+        isButton: () => false,
+        customId: 'dashboard:explore',
+        values: ['staff'],
+        guildId: MAIN_SERVER_ID,
+        user: { id: 'member-id' },
+        memberPermissions: { has: () => false },
+        member: { roles: { cache: new Map() } },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /only to authorized ISRP staff/i);
+});
+
 test('infraction exposes a compact automatic workflow', () => {
     const command = infractionCommand.data.toJSON();
     const typeOption = command.options.find(
