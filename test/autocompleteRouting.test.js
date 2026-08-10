@@ -182,6 +182,29 @@ test('central interaction handler routes persistent Staff Guide menus', async ()
     assert.ok(reply.components.length > 0);
 });
 
+test('central interaction handler routes protected LOA controls', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => false,
+        isButton: () => true,
+        customId: 'loa:history:another-user',
+        guildId: MAIN_SERVER_ID,
+        user: { id: 'staff-id' },
+        memberPermissions: { has: () => false },
+        member: { roles: { cache: new Map() } },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /another staff member/i);
+});
+
 test('infraction exposes a compact automatic workflow', () => {
     const command = infractionCommand.data.toJSON();
     const typeOption = command.options.find(

@@ -34,6 +34,9 @@ const {
     handleTicketInteraction,
 } = require('../utils/ticketManager');
 const {
+    handleLoaInteraction,
+} = require('../utils/loaManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -97,6 +100,14 @@ module.exports = {
             )
         ) {
             await handleTicketInteraction(interaction);
+            return;
+        }
+
+        if (
+            interaction.isButton?.() &&
+            interaction.customId?.startsWith('loa:')
+        ) {
+            await handleLoaInteraction(interaction);
             return;
         }
 

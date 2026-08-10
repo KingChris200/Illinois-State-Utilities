@@ -239,6 +239,24 @@ hand staff off to a permission-log channel. The bot needs **View Channel**,
 Run `npm run deploy-commands` once after installing this feature, then
 restart the bot and begin with `/guide preview`.
 
+## Leave of absence system
+
+The LOA workflow uses two private, staff-only commands:
+
+- `/loa request duration:<days> reason:<reason> start:<optional date>`
+  submits a request. Duration is limited to 1–90 days, and the optional
+  start date uses `YYYY-MM-DD`; leaving it blank starts the LOA today.
+- `/loa manage` shows the staff member's current request, lets them cancel
+  a pending request or end an approved LOA early, and provides their past
+  LOA history.
+
+New requests are posted to the configured log channel and ping only the
+Ownership and Directive teams. Those teams approve or deny requests with
+buttons—no request IDs or extra management subcommands are required.
+Approved LOAs update the staff profile automatically, and ending one
+returns the staff member to active status. Existing historical LOA data
+is preserved.
+
 ## Configuration doctor and data backups
 
 `/doctor` runs a private, read-only review of the Discord connection,

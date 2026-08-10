@@ -26,11 +26,11 @@ function discoverCommandModules() {
 
 test('internal command paths are normalized consistently', () => {
     assert.equal(
-        normalizeCommandModulePath('management\\movementRevoke.js'),
-        'management/movementRevoke.js'
+        normalizeCommandModulePath('cases\\casecomponents.js'),
+        'cases/casecomponents.js'
     );
     assert.equal(
-        isInternalCommandModule('management\\movementRevoke.js'),
+        isInternalCommandModule('cases\\casecomponents.js'),
         true
     );
     assert.equal(

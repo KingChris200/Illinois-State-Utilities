@@ -8,8 +8,6 @@ const INTERNAL_COMMAND_MODULES = new Set([
     'cases/casesearch.js',
     'cases/caselist.js',
     'cases/caseexport.js',
-    'management/movementHandler.js',
-    'management/movementRevoke.js',
 ]);
 
 function normalizeCommandModulePath(value) {
