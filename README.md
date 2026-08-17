@@ -111,7 +111,8 @@ Reusable Illinois State Roleplay logos are stored in `assets/branding`, and
 the reusable community avatar references are stored in `assets/avatars`.
 The second-generation visual system uses
 matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
-Welcome, Staff Guide, About, Announcements, Information, and the Dashboard.
+Welcome, Staff Guide, About, Announcements, Information, Regulations, and
+the Dashboard.
 These headers share one gradient, type system, logo lockup, tagline, and
 spacing grid so public panels remain visually consistent.
 
@@ -149,6 +150,30 @@ Members with **Manage Server** can use:
 No Information panel `.env` settings are required. Deploy the slash command
 once with `npm run deploy-commands`, restart the bot, and run
 `/information setup`.
+
+## Permanent ISRP Regulations Panel
+
+The public Regulations panel keeps official policy navigation in one simple
+Components V2 card. It provides direct links to the Discord Guidelines,
+In-Game Guidelines, Assistance, and Proof channels, plus one private menu
+with Discord rules, in-game rules, roleplay standards, restricted items,
+and enforcement or appeal information.
+
+The panel intentionally treats the current guideline-channel posts as the
+authoritative source. Restricted vehicles, weapons, commands, or other
+items are not duplicated in code until leadership supplies an approved
+catalog.
+
+Members with **Manage Server** can use:
+
+- `/regulations preview` to review the complete panel privately
+- `/regulations setup channel:#regulations` to post and save it
+- `/regulations update` to refresh the saved message
+- `/regulations remove` to remove the saved message
+
+No Regulations panel `.env` settings are required. Deploy the slash command
+once with `npm run deploy-commands`, restart the bot, and run
+`/regulations setup`.
 
 ## Permanent ISRP Dashboard
 

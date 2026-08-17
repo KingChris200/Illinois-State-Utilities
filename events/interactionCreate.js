@@ -43,6 +43,9 @@ const {
     handleInformationInteraction,
 } = require('../utils/informationPanelManager');
 const {
+    handleRegulationsInteraction,
+} = require('../utils/regulationsPanelManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -114,6 +117,14 @@ module.exports = {
             interaction.customId?.startsWith('loa:')
         ) {
             await handleLoaInteraction(interaction);
+            return;
+        }
+
+        if (
+            interaction.isStringSelectMenu?.() &&
+            interaction.customId?.startsWith('regulations:')
+        ) {
+            await handleRegulationsInteraction(interaction);
             return;
         }
 

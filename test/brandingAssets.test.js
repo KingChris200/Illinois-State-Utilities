@@ -29,6 +29,7 @@ const expectedAssets = [
     'thumbnails/announcements-banner-v1.png',
     'thumbnails/about-banner-v1.png',
     'thumbnails/information-banner-v1.png',
+    'thumbnails/regulations-banner-v1.png',
     'thumbnails/dashboard-banner-v1.png',
 ];
 

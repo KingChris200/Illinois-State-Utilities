@@ -56,6 +56,9 @@ const assets = {
     informationBanner: assetUrl(
         'thumbnails/information-banner-v1.png'
     ),
+    regulationsBanner: assetUrl(
+        'thumbnails/regulations-banner-v1.png'
+    ),
     dashboardBanner: assetUrl(
         'thumbnails/dashboard-banner-v1.png'
     ),
