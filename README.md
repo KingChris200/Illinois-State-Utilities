@@ -107,10 +107,11 @@ minutes to appear.
 
 ## Brand assets
 
-Reusable Illinois State Roleplay logos and the supplied Roblox avatar are
-stored in `assets/branding`. The second-generation visual system uses
+Reusable Illinois State Roleplay logos are stored in `assets/branding`, and
+the reusable community avatar references are stored in `assets/avatars`.
+The second-generation visual system uses
 matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
-Welcome, Staff Guide, About, Announcements, and the Dashboard.
+Welcome, Staff Guide, About, Announcements, Information, and the Dashboard.
 These headers share one gradient, type system, logo lockup, tagline, and
 spacing grid so public panels remain visually consistent.
 
@@ -129,6 +130,25 @@ asset URLs instead of temporary Discord attachment links, while commands
 such as `/about`, `/embed`, the welcome system, and session announcements
 attach the wide artwork directly when appropriate. Keep the `assets`
 folder in the same commit as branding changes.
+
+## Permanent ISRP Information Panel
+
+The public Information panel introduces ISRP, provides direct links to the
+guidelines, Assistance, Sessions, and the Whitelisted Roblox group, and uses
+one menu for five private information sections. It uses the local
+`information-banner-v1.png` artwork and stores its permanent Discord message
+so it can be updated after a restart.
+
+Members with **Manage Server** can use:
+
+- `/information preview` to review the complete panel privately
+- `/information setup channel:#information` to post and save it
+- `/information update` to refresh the saved message
+- `/information remove` to remove the saved message
+
+No Information panel `.env` settings are required. Deploy the slash command
+once with `npm run deploy-commands`, restart the bot, and run
+`/information setup`.
 
 ## Permanent ISRP Dashboard
 

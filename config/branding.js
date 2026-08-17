@@ -53,6 +53,9 @@ const assets = {
         'thumbnails/announcements-banner-v1.png'
     ),
     aboutBanner: assetUrl('thumbnails/about-banner-v1.png'),
+    informationBanner: assetUrl(
+        'thumbnails/information-banner-v1.png'
+    ),
     dashboardBanner: assetUrl(
         'thumbnails/dashboard-banner-v1.png'
     ),

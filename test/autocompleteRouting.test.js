@@ -229,6 +229,35 @@ test('central interaction handler protects Dashboard staff resources', async () 
     assert.match(reply.content, /only to authorized ISRP staff/i);
 });
 
+test('central interaction handler routes Information panel menus', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => true,
+        isButton: () => false,
+        customId: 'information:explore',
+        values: ['about'],
+        guildId: MAIN_SERVER_ID,
+        guild: {
+            id: MAIN_SERVER_ID,
+            name: 'Illinois State Roleplay',
+        },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(
+        reply.flags,
+        MessageFlags.Ephemeral |
+            MessageFlags.IsComponentsV2
+    );
+    assert.ok(reply.components.length > 0);
+});
+
 test('infraction exposes a compact automatic workflow', () => {
     const command = infractionCommand.data.toJSON();
     const typeOption = command.options.find(
