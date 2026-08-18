@@ -151,29 +151,30 @@ No Information panel `.env` settings are required. Deploy the slash command
 once with `npm run deploy-commands`, restart the bot, and run
 `/information setup`.
 
-## Permanent ISRP Regulations Panel
+## Permanent ISRP Guidelines Panels
 
-The public Regulations panel keeps official policy navigation in one simple
-Components V2 card. It provides direct links to the Discord Guidelines,
-In-Game Guidelines, Assistance, and Proof channels, plus one private menu
-with Discord rules, in-game rules, roleplay standards, restricted items,
-and enforcement or appeal information.
+Discord Guidelines and In-Game Guidelines use two separate permanent
+Components V2 panels. Each panel has its own private menu, saved message,
+and configured destination channel, so updating or removing one never
+affects the other.
 
-The panel intentionally treats the current guideline-channel posts as the
-authoritative source. Restricted vehicles, weapons, commands, or other
-items are not duplicated in code until leadership supplies an approved
-catalog.
+The In-Game Guidelines menu displays the approved restricted-item summary
+directly: large or heavy weapons (except sniper rifles) and exotic or
+prestige vehicles are booster-only, while all Tesla vehicles and sniper
+rifles are banned.
 
 Members with **Manage Server** can use:
 
-- `/regulations preview` to review the complete panel privately
-- `/regulations setup channel:#regulations` to post and save it
-- `/regulations update` to refresh the saved message
-- `/regulations remove` to remove the saved message
+- `/regulations preview panel:Discord Guidelines` to preview Discord rules
+- `/regulations preview panel:In-Game Guidelines` to preview in-game rules
+- `/regulations setup panel:Discord Guidelines` to post in the configured Discord Guidelines channel
+- `/regulations setup panel:In-Game Guidelines` to post in the configured In-Game Guidelines channel
+- `/regulations update panel:<panel>` to refresh only the selected panel
+- `/regulations remove panel:<panel>` to remove only the selected panel
 
 No Regulations panel `.env` settings are required. Deploy the slash command
-once with `npm run deploy-commands`, restart the bot, and run
-`/regulations setup`.
+once with `npm run deploy-commands`, restart the bot, and run both setup
+commands. The optional `channel` setting can override a configured destination.
 
 ## Permanent ISRP Dashboard
 

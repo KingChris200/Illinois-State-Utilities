@@ -267,7 +267,7 @@ test('central interaction handler routes Regulations panel menus', async () => {
         isModalSubmit: () => false,
         isStringSelectMenu: () => true,
         isButton: () => false,
-        customId: 'regulations:explore',
+        customId: 'regulations:in_game:explore',
         values: ['restricted'],
         guildId: MAIN_SERVER_ID,
         guild: {

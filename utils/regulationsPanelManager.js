@@ -20,7 +20,6 @@ const { readDatabase, updateDatabase } = require('./database');
 
 const REGULATIONS_DATABASE = 'regulations-panels';
 const REGULATIONS_PREFIX = 'regulations:';
-const REGULATIONS_SELECT_ID = `${REGULATIONS_PREFIX}explore`;
 const REGULATIONS_BANNER_NAME = 'regulations-banner-v1.png';
 const REGULATIONS_BANNER_PATH = path.join(
     __dirname,
@@ -31,38 +30,99 @@ const REGULATIONS_BANNER_PATH = path.join(
 );
 const REGULATIONS_BANNER_URL = `attachment://${REGULATIONS_BANNER_NAME}`;
 
-const REGULATIONS_PAGES = [
+const REGULATIONS_PANEL_TYPES = [
     {
         label: 'Discord Guidelines',
-        description: 'Community conduct and platform expectations.',
         value: 'discord',
-        emoji: '📖',
+        description: 'Community conduct and Discord platform expectations.',
     },
     {
         label: 'In-Game Guidelines',
-        description: 'Official session and roleplay regulations.',
         value: 'in_game',
-        emoji: '🎮',
-    },
-    {
-        label: 'Roleplay Standards',
-        description: 'The conduct expected during every session.',
-        value: 'roleplay',
-        emoji: '🚓',
-    },
-    {
-        label: 'Banned & Restricted Items',
-        description: 'Where to find the current official restrictions.',
-        value: 'restricted',
-        emoji: '⛔',
-    },
-    {
-        label: 'Enforcement & Appeals',
-        description: 'Evidence, staff action, and appeal information.',
-        value: 'enforcement',
-        emoji: '⚖️',
+        description: 'ER:LC sessions, roleplay, and restricted items.',
     },
 ];
+
+const REGULATIONS_PAGES = {
+    discord: [
+        {
+            label: 'Community Conduct',
+            description: 'Member behavior and community expectations.',
+            value: 'conduct',
+            emoji: '🤝',
+        },
+        {
+            label: 'Channels & Content',
+            description: 'Safe and appropriate use of Discord channels.',
+            value: 'content',
+            emoji: '💬',
+        },
+        {
+            label: 'Moderation & Appeals',
+            description: 'Evidence, enforcement, and appeal information.',
+            value: 'appeals',
+            emoji: '⚖️',
+        },
+    ],
+    in_game: [
+        {
+            label: 'Session Conduct',
+            description: 'Expectations while an official session is active.',
+            value: 'session',
+            emoji: '📢',
+        },
+        {
+            label: 'Roleplay Standards',
+            description: 'The conduct expected during every scene.',
+            value: 'roleplay',
+            emoji: '🚓',
+        },
+        {
+            label: 'Banned & Restricted Items',
+            description: 'Booster-only perks and fully banned items.',
+            value: 'restricted',
+            emoji: '⛔',
+        },
+        {
+            label: 'Enforcement & Appeals',
+            description: 'Staff action, proof, and appeal information.',
+            value: 'enforcement',
+            emoji: '⚖️',
+        },
+    ],
+};
+
+function getPanelConfiguration(panelType) {
+    if (panelType === 'discord') {
+        return {
+            title: 'Illinois State Roleplay Discord Guidelines',
+            shortTitle: 'Discord Guidelines',
+            description:
+                'Review the official community rules before messaging, interacting, or participating in Illinois State Roleplay.',
+            policy:
+                'The latest post in the Discord Guidelines channel remains the final source for community conduct and platform rules.',
+            footer: 'Community conduct • Platform safety • Illinois State Roleplay',
+        };
+    }
+
+    if (panelType === 'in_game') {
+        return {
+            title: 'Illinois State Roleplay In-Game Guidelines',
+            shortTitle: 'In-Game Guidelines',
+            description:
+                'Review the official ER:LC rules before joining a session or participating in a roleplay scene.',
+            policy:
+                'The latest post in the In-Game Guidelines channel remains the final source for session rules and restricted items.',
+            footer: 'Realistic roleplay • Fair sessions • Illinois State Roleplay',
+        };
+    }
+
+    return null;
+}
+
+function getRegulationsSelectId(panelType) {
+    return `${REGULATIONS_PREFIX}${panelType}:explore`;
+}
 
 function createRegulationsAttachment() {
     return new AttachmentBuilder(REGULATIONS_BANNER_PATH, {
@@ -100,17 +160,37 @@ function createLinkRow(buttons) {
         : null;
 }
 
-function createRegulationsPanelPayload(guild, context) {
-    const quickLinks = createLinkRow([
-        createLinkButton(
-            'Discord Guidelines',
-            '📖',
-            channelUrl(guild.id, context.discordGuidelinesChannelId)
-        ),
+function getPanelQuickLinks(guild, panelType, context) {
+    if (panelType === 'discord') {
+        return [
+            createLinkButton(
+                'Discord Guidelines',
+                '📖',
+                channelUrl(guild.id, context.discordGuidelinesChannelId)
+            ),
+            createLinkButton(
+                'Assistance',
+                '🎫',
+                channelUrl(guild.id, context.assistanceChannelId)
+            ),
+            createLinkButton(
+                'Submit Proof',
+                '📸',
+                channelUrl(guild.id, context.proofChannelId)
+            ),
+        ];
+    }
+
+    return [
         createLinkButton(
             'In-Game Guidelines',
             '🎮',
             channelUrl(guild.id, context.inGameGuidelinesChannelId)
+        ),
+        createLinkButton(
+            'Sessions',
+            '📢',
+            channelUrl(guild.id, context.sessionChannelId)
         ),
         createLinkButton(
             'Assistance',
@@ -122,18 +202,31 @@ function createRegulationsPanelPayload(guild, context) {
             '📸',
             channelUrl(guild.id, context.proofChannelId)
         ),
-    ]);
+    ];
+}
+
+function createRegulationsPanelPayload(guild, panelType, context) {
+    const configuration = getPanelConfiguration(panelType);
+    const pages = REGULATIONS_PAGES[panelType];
+
+    if (!configuration || !pages) {
+        return null;
+    }
+
+    const quickLinks = createLinkRow(
+        getPanelQuickLinks(guild, panelType, context)
+    );
     const menu = new StringSelectMenuBuilder()
-        .setCustomId(REGULATIONS_SELECT_ID)
-        .setPlaceholder('Choose a regulations section…')
-        .addOptions(REGULATIONS_PAGES);
+        .setCustomId(getRegulationsSelectId(panelType))
+        .setPlaceholder(`Explore ${configuration.shortTitle}…`)
+        .addOptions(pages);
     const container = new ContainerBuilder()
         .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
                     .setURL(REGULATIONS_BANNER_URL)
-                    .setDescription('Illinois State Roleplay Regulations')
+                    .setDescription(configuration.title)
             )
         )
         .addSeparatorComponents(
@@ -144,11 +237,11 @@ function createRegulationsPanelPayload(guild, context) {
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 [
-                    '# Illinois State Roleplay Regulations',
-                    'Review the official Discord and in-game guidelines before participating in the community or joining a session.',
+                    `# ${configuration.title}`,
+                    configuration.description,
                     '',
                     '### Official Policy',
-                    'The latest posts in the guideline channels remain the final source for rules and restricted items. Private dropdown pages provide a simple overview and direct navigation.',
+                    configuration.policy,
                 ].join('\n')
             )
         );
@@ -165,14 +258,12 @@ function createRegulationsPanelPayload(guild, context) {
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Browse Regulations\nSelect one section below. Your selected page is visible only to you.'
+                `## Browse ${configuration.shortTitle}\nSelect one section below. Your selected page is visible only to you.`
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu))
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                '-# Read first • Ask when uncertain • Illinois State Roleplay'
-            )
+            new TextDisplayBuilder().setContent(`-# ${configuration.footer}`)
         );
 
     return {
@@ -183,31 +274,23 @@ function createRegulationsPanelPayload(guild, context) {
     };
 }
 
-function getRegulationsPage(pageId, guild, context) {
+function getDiscordPage(pageId, guild, context) {
     const discordGuidelines = channelMention(
         context.discordGuidelinesChannelId,
         'the Discord Guidelines channel'
-    );
-    const inGameGuidelines = channelMention(
-        context.inGameGuidelinesChannelId,
-        'the In-Game Guidelines channel'
     );
     const assistance = channelMention(
         context.assistanceChannelId,
         'the Assistance channel'
     );
-    const proof = channelMention(
-        context.proofChannelId,
-        'the Proof channel'
-    );
-
+    const proof = channelMention(context.proofChannelId, 'the Proof channel');
     const pages = {
-        discord: {
-            title: 'Discord Guidelines',
+        conduct: {
+            title: 'Community Conduct',
             body: [
                 `The complete community rules are maintained in ${discordGuidelines}.`,
                 '',
-                'They cover member conduct, appropriate content, channel use, moderation expectations, and account or platform safety. Read the current channel before participating; a summary elsewhere does not replace it.',
+                'Treat members respectfully, follow staff direction, and use community spaces for their intended purpose. The latest official rule post takes priority over summaries or older screenshots.',
             ].join('\n'),
             buttons: [
                 createLinkButton(
@@ -217,60 +300,30 @@ function getRegulationsPage(pageId, guild, context) {
                 ),
             ],
         },
-        in_game: {
-            title: 'In-Game Guidelines',
+        content: {
+            title: 'Channels & Content',
             body: [
-                `The official ER:LC and session regulations are maintained in ${inGameGuidelines}.`,
+                'Use each channel for its stated purpose and keep messages, media, profiles, and links appropriate for the community.',
                 '',
-                'They cover roleplay conduct, session procedures, vehicle and weapon restrictions, staff directions, and behavior that may result in moderation. Check the current version before every session.',
+                `Review ${discordGuidelines} before posting. When content may violate policy, preserve relevant evidence in ${proof} and contact staff instead of escalating publicly.`,
             ].join('\n'),
             buttons: [
                 createLinkButton(
-                    'Open In-Game Guidelines',
-                    '🎮',
-                    channelUrl(guild.id, context.inGameGuidelinesChannelId)
+                    'Review Discord Rules',
+                    '📖',
+                    channelUrl(guild.id, context.discordGuidelinesChannelId)
+                ),
+                createLinkButton(
+                    'Submit Proof',
+                    '📸',
+                    channelUrl(guild.id, context.proofChannelId)
                 ),
             ],
         },
-        roleplay: {
-            title: 'Roleplay Standards',
+        appeals: {
+            title: 'Moderation & Appeals',
             body: [
-                'Keep scenes believable, communicate respectfully, and follow reasonable staff directions. Do not use game mechanics, commands, or outside information to gain an unfair advantage.',
-                '',
-                `When a situation is unclear, pause the scene safely and review ${inGameGuidelines} or request staff assistance instead of escalating the disagreement in-game.`,
-            ].join('\n'),
-            buttons: [
-                createLinkButton(
-                    'Review In-Game Rules',
-                    '📋',
-                    channelUrl(guild.id, context.inGameGuidelinesChannelId)
-                ),
-                createLinkButton(
-                    'Get Assistance',
-                    '🎫',
-                    channelUrl(guild.id, context.assistanceChannelId)
-                ),
-            ],
-        },
-        restricted: {
-            title: 'Banned & Restricted Items',
-            body: [
-                `Restricted vehicles, weapons, commands, and special items can change as ER:LC and ISRP policy are updated. The current list in ${inGameGuidelines} is authoritative.`,
-                '',
-                'If an item is not clearly approved, ask staff before using it. Rules or screenshots from another roleplay server are not ISRP policy.',
-            ].join('\n'),
-            buttons: [
-                createLinkButton(
-                    'View Current Restrictions',
-                    '⛔',
-                    channelUrl(guild.id, context.inGameGuidelinesChannelId)
-                ),
-            ],
-        },
-        enforcement: {
-            title: 'Enforcement & Appeals',
-            body: [
-                'Staff actions are reviewed against the current guidelines and the available evidence. Cooperate during the scene and use the official support process afterward if you believe an action was incorrect.',
+                'Staff actions are reviewed against the current guidelines and available evidence. Do not argue about private moderation cases in public channels.',
                 '',
                 `Use ${proof} for requested evidence and open ${assistance} for an appeal. Select **Internal Affairs Support** for staff reports or moderation and infraction appeals.`,
             ].join('\n'),
@@ -292,10 +345,109 @@ function getRegulationsPage(pageId, guild, context) {
     return pages[pageId] || null;
 }
 
-function createRegulationsPagePayload(guild, pageId, context) {
-    const page = getRegulationsPage(pageId, guild, context);
+function getInGamePage(pageId, guild, context) {
+    const inGameGuidelines = channelMention(
+        context.inGameGuidelinesChannelId,
+        'the In-Game Guidelines channel'
+    );
+    const sessions = channelMention(
+        context.sessionChannelId,
+        'the Sessions channel'
+    );
+    const assistance = channelMention(
+        context.assistanceChannelId,
+        'the Assistance channel'
+    );
+    const proof = channelMention(context.proofChannelId, 'the Proof channel');
+    const pages = {
+        session: {
+            title: 'Session Conduct',
+            body: [
+                `Wait for an official announcement in ${sessions} before joining. Follow the current startup instructions, server status, and staff direction throughout the session.`,
+                '',
+                `The complete session regulations are maintained in ${inGameGuidelines}.`,
+            ].join('\n'),
+            buttons: [
+                createLinkButton(
+                    'Open Sessions',
+                    '📢',
+                    channelUrl(guild.id, context.sessionChannelId)
+                ),
+                createLinkButton(
+                    'Review In-Game Rules',
+                    '🎮',
+                    channelUrl(guild.id, context.inGameGuidelinesChannelId)
+                ),
+            ],
+        },
+        roleplay: {
+            title: 'Roleplay Standards',
+            body: [
+                'Keep scenes believable, communicate respectfully, and follow reasonable staff directions. Do not use game mechanics, commands, or outside information to gain an unfair advantage.',
+                '',
+                `When a situation is unclear, pause the scene safely and review ${inGameGuidelines} or request staff assistance instead of escalating in-game.`,
+            ].join('\n'),
+            buttons: [
+                createLinkButton(
+                    'Review In-Game Rules',
+                    '📋',
+                    channelUrl(guild.id, context.inGameGuidelinesChannelId)
+                ),
+                createLinkButton(
+                    'Get Assistance',
+                    '🎫',
+                    channelUrl(guild.id, context.assistanceChannelId)
+                ),
+            ],
+        },
+        restricted: {
+            title: 'Banned & Restricted Items',
+            body: [
+                '### Booster-Only Items',
+                '• Large and heavy weapons, except sniper rifles',
+                '• Exotic and prestige vehicles',
+                '',
+                '### Banned Items',
+                '• All Tesla vehicles',
+                '• All sniper rifles',
+                '',
+                'These restrictions are shown here for quick reference. If an item is not clearly covered, ask staff before using it.',
+            ].join('\n'),
+            buttons: [],
+        },
+        enforcement: {
+            title: 'Enforcement & Appeals',
+            body: [
+                'Cooperate during the scene and use the official support process afterward if you believe an action was incorrect.',
+                '',
+                `Use ${proof} for requested evidence and open ${assistance} for an appeal. Select **Internal Affairs Support** for staff reports or moderation and infraction appeals.`,
+            ].join('\n'),
+            buttons: [
+                createLinkButton(
+                    'Submit Proof',
+                    '📸',
+                    channelUrl(guild.id, context.proofChannelId)
+                ),
+                createLinkButton(
+                    'Open an Appeal',
+                    '⚖️',
+                    channelUrl(guild.id, context.assistanceChannelId)
+                ),
+            ],
+        },
+    };
 
-    if (!page) {
+    return pages[pageId] || null;
+}
+
+function createRegulationsPagePayload(guild, panelType, pageId, context) {
+    const configuration = getPanelConfiguration(panelType);
+    const page =
+        panelType === 'discord'
+            ? getDiscordPage(pageId, guild, context)
+            : getInGamePage(pageId, guild, context);
+
+    if (!configuration || !page) {
         return null;
     }
 
@@ -305,7 +457,7 @@ function createRegulationsPagePayload(guild, pageId, context) {
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
                     .setURL(REGULATIONS_BANNER_URL)
-                    .setDescription('Illinois State Roleplay Regulations')
+                    .setDescription(configuration.title)
             )
         )
         .addSeparatorComponents(
@@ -332,7 +484,7 @@ function createRegulationsPagePayload(guild, pageId, context) {
 
     container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-            '-# Official guideline channels remain the final source for policy.'
+            '-# Official guideline-channel posts remain the final source for policy.'
         )
     );
 
@@ -345,23 +497,29 @@ function createRegulationsPagePayload(guild, pageId, context) {
 }
 
 async function handleRegulationsInteraction(interaction) {
-    if (
-        !interaction.isStringSelectMenu?.() ||
-        interaction.customId !== REGULATIONS_SELECT_ID
-    ) {
+    if (!interaction.isStringSelectMenu?.()) {
         return;
     }
 
+    const match = interaction.customId?.match(
+        /^regulations:(discord|in_game):explore$/
+    );
+    if (!match) {
+        return;
+    }
+
+    const panelType = match[1];
     const context = await getDashboardContext(interaction.guildId);
     const payload = createRegulationsPagePayload(
         interaction.guild,
+        panelType,
         interaction.values[0],
         context
     );
 
     if (!payload) {
         await interaction.reply({
-            content: 'That regulations section is no longer available.',
+            content: 'That guidelines section is no longer available.',
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -373,16 +531,26 @@ async function handleRegulationsInteraction(interaction) {
     });
 }
 
-async function getStoredRegulationsPanel(guildId) {
-    const database = await readDatabase(REGULATIONS_DATABASE, {});
-    return database[guildId] || null;
+function normalizeGuildPanels(record) {
+    if (!record || record.channelId) {
+        return {};
+    }
+    return record;
 }
 
-async function saveRegulationsPanel(guildId, panel) {
+async function getStoredRegulationsPanel(guildId, panelType) {
+    const database = await readDatabase(REGULATIONS_DATABASE, {});
+    const panels = normalizeGuildPanels(database[guildId]);
+    return panels[panelType] || null;
+}
+
+async function saveRegulationsPanel(guildId, panelType, panel) {
     await updateDatabase(
         REGULATIONS_DATABASE,
         (database) => {
-            database[guildId] = { guildId, ...panel };
+            const panels = normalizeGuildPanels(database[guildId]);
+            panels[panelType] = { guildId, panelType, ...panel };
+            database[guildId] = panels;
             return database;
         },
         {}
@@ -390,14 +558,21 @@ async function saveRegulationsPanel(guildId, panel) {
     return panel;
 }
 
-async function removeStoredRegulationsPanel(guildId) {
+async function removeStoredRegulationsPanel(guildId, panelType) {
     let removed = null;
 
     await updateDatabase(
         REGULATIONS_DATABASE,
         (database) => {
-            removed = database[guildId] || null;
-            delete database[guildId];
+            const panels = normalizeGuildPanels(database[guildId]);
+            removed = panels[panelType] || null;
+            delete panels[panelType];
+
+            if (Object.keys(panels).length) {
+                database[guildId] = panels;
+            } else {
+                delete database[guildId];
+            }
             return database;
         },
         {}
@@ -424,11 +599,13 @@ async function fetchStoredRegulationsMessage(client, panel) {
 module.exports = {
     REGULATIONS_DATABASE,
     REGULATIONS_PAGES,
+    REGULATIONS_PANEL_TYPES,
     REGULATIONS_PREFIX,
-    REGULATIONS_SELECT_ID,
     createRegulationsPagePayload,
     createRegulationsPanelPayload,
     fetchStoredRegulationsMessage,
+    getPanelConfiguration,
+    getRegulationsSelectId,
     getStoredRegulationsPanel,
     handleRegulationsInteraction,
     removeStoredRegulationsPanel,
