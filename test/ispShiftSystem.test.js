@@ -15,6 +15,7 @@ const {
     createManagePayload,
     isIspMember,
     isShiftAdministrator,
+    updateShiftRoles,
 } = require('../utils/ispShiftManager');
 
 function createRoleCache(roleIds) {
@@ -28,6 +29,7 @@ test('ISP shift configuration uses the supplied guild, roles, and channels', () 
     assert.equal(shiftConfig.guildId, ISP_SERVER_ID);
     assert.equal(shiftConfig.managementRoleId, '1527518424060792872');
     assert.equal(shiftConfig.onDutyRoleId, '1539069939468738590');
+    assert.equal(shiftConfig.onBreakRoleId, '1539074734963294238');
     assert.equal(shiftConfig.shiftLogChannelId, '1527524431642104039');
     assert.equal(shiftConfig.shiftManageChannelId, '1527524104209567824');
     assert.equal(
@@ -153,4 +155,43 @@ test('private shift manager shows start, break, and stop controls', () => {
     assert.equal(buttons[0].disabled, false);
     assert.equal(buttons[1].disabled, true);
     assert.equal(buttons[2].disabled, true);
+});
+
+test('shift-role sync manages On-Duty and On-Break independently', async () => {
+    const assignedRoles = new Set();
+    const member = {
+        id: '123456789012345678',
+        roles: {
+            cache: { has: (roleId) => assignedRoles.has(roleId) },
+            add: async (roleId) => assignedRoles.add(roleId),
+            remove: async (roleId) => assignedRoles.delete(roleId),
+        },
+    };
+    const guild = {
+        members: {
+            cache: new Map([[member.id, member]]),
+            fetch: async () => member,
+        },
+    };
+
+    await updateShiftRoles(guild, member.id, {
+        onDuty: true,
+        onBreak: true,
+    });
+    assert.equal(assignedRoles.has(shiftConfig.onDutyRoleId), true);
+    assert.equal(assignedRoles.has(shiftConfig.onBreakRoleId), true);
+
+    await updateShiftRoles(guild, member.id, {
+        onDuty: true,
+        onBreak: false,
+    });
+    assert.equal(assignedRoles.has(shiftConfig.onDutyRoleId), true);
+    assert.equal(assignedRoles.has(shiftConfig.onBreakRoleId), false);
+
+    await updateShiftRoles(guild, member.id, {
+        onDuty: false,
+        onBreak: false,
+    });
+    assert.equal(assignedRoles.has(shiftConfig.onDutyRoleId), false);
+    assert.equal(assignedRoles.has(shiftConfig.onBreakRoleId), false);
 });

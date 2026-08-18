@@ -181,7 +181,8 @@ commands. The optional `channel` setting can override a configured destination.
 The ISP server has its own persistent weekly shift system. Officers open a
 private manager in <#1527524104209567824>, start or stop their shift, and
 pause or resume breaks from three simple buttons. Active time excludes breaks,
-survives bot restarts, and automatically synchronizes the On-Duty role.
+survives bot restarts, and automatically synchronizes the On-Duty and On-Break
+roles.
 
 Officer commands:
 
@@ -204,6 +205,7 @@ Configured resources:
 
 - Office of Director: `1527518424060792872`
 - On-Duty role: `1539069939468738590`
+- On-Break role: `1539074734963294238`
 - Shift logs: `1527524431642104039`
 - Shift manager: `1527524104209567824`
 - Shift administration: `1527524291829174365`

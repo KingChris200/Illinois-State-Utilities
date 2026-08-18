@@ -95,28 +95,56 @@ async function fetchGuildChannel(guild, channelId) {
     return channel?.isTextBased() ? channel : null;
 }
 
-async function updateOnDutyRole(guild, userId, enabled) {
+async function updateShiftRoles(
+    guild,
+    userId,
+    { onDuty, onBreak }
+) {
     const member = await fetchGuildMember(guild, userId);
-    if (!member) return 'The member could not be found for On-Duty role sync.';
+    if (!member) return 'The member could not be found for shift-role sync.';
 
-    try {
-        if (enabled && !member.roles.cache.has(shiftConfig.onDutyRoleId)) {
-            await member.roles.add(
-                shiftConfig.onDutyRoleId,
-                'ISP shift started'
+    const roleUpdates = [
+        {
+            roleId: shiftConfig.onDutyRoleId,
+            enabled: onDuty,
+            label: 'On-Duty',
+        },
+        {
+            roleId: shiftConfig.onBreakRoleId,
+            enabled: onBreak,
+            label: 'On-Break',
+        },
+    ];
+    const failures = [];
+
+    for (const role of roleUpdates) {
+        try {
+            if (role.enabled && !member.roles.cache.has(role.roleId)) {
+                await member.roles.add(
+                    role.roleId,
+                    `ISP shift status: ${role.label}`
+                );
+            }
+            if (!role.enabled && member.roles.cache.has(role.roleId)) {
+                await member.roles.remove(
+                    role.roleId,
+                    `ISP shift status cleared: ${role.label}`
+                );
+            }
+        } catch (error) {
+            console.error(
+                `[ISP SHIFT] ${role.label} role sync failed:`,
+                error
             );
+            failures.push(role.label);
         }
-        if (!enabled && member.roles.cache.has(shiftConfig.onDutyRoleId)) {
-            await member.roles.remove(
-                shiftConfig.onDutyRoleId,
-                'ISP shift ended'
-            );
-        }
-        return null;
-    } catch (error) {
-        console.error('[ISP SHIFT] On-Duty role sync failed:', error);
-        return 'The shift was saved, but I could not update the On-Duty role. Check the bot role hierarchy.';
     }
+
+    return failures.length
+        ? `The shift was saved, but I could not update the ${failures.join(
+              ' and '
+          )} role${failures.length === 1 ? '' : 's'}. Check the bot role hierarchy.`
+        : null;
 }
 
 async function sendShiftLog(
@@ -264,7 +292,10 @@ async function startMemberShift(interaction, member = interaction.member) {
     let roleWarning = null;
 
     if (result.status === 'started') {
-        roleWarning = await updateOnDutyRole(interaction.guild, identity.id, true);
+        roleWarning = await updateShiftRoles(interaction.guild, identity.id, {
+            onDuty: true,
+            onBreak: false,
+        });
         await sendShiftLog(interaction.guild, {
             title: 'Shift Started',
             description: 'The officer is now on duty.',
@@ -279,8 +310,13 @@ async function startMemberShift(interaction, member = interaction.member) {
 async function toggleMemberBreak(interaction, member = interaction.member) {
     const identity = getIdentity(member.user || interaction.user);
     const result = await toggleBreak(interaction.guildId, identity);
+    let roleWarning = null;
 
     if (['break_started', 'resumed'].includes(result.status)) {
+        roleWarning = await updateShiftRoles(interaction.guild, identity.id, {
+            onDuty: true,
+            onBreak: result.status === 'break_started',
+        });
         await sendShiftLog(interaction.guild, {
             title: result.status === 'resumed' ? 'Shift Resumed' : 'Break Started',
             description:
@@ -292,7 +328,7 @@ async function toggleMemberBreak(interaction, member = interaction.member) {
             color: result.status === 'resumed' ? 0x57f287 : 0xfee75c,
         });
     }
-    return result;
+    return { ...result, roleWarning };
 }
 
 async function stopMemberShift(
@@ -308,7 +344,10 @@ async function stopMemberShift(
     let roleWarning = null;
 
     if (result.status === 'stopped') {
-        roleWarning = await updateOnDutyRole(interaction.guild, identity.id, false);
+        roleWarning = await updateShiftRoles(interaction.guild, identity.id, {
+            onDuty: false,
+            onBreak: false,
+        });
         await sendShiftLog(interaction.guild, {
             title: options.reason ? 'Shift Ended by Management' : 'Shift Ended',
             description: 'The officer is now off duty.',
@@ -331,7 +370,10 @@ async function endEveryShift(interaction) {
 
     await Promise.all(
         ended.map(({ userId }) =>
-            updateOnDutyRole(interaction.guild, userId, false)
+            updateShiftRoles(interaction.guild, userId, {
+                onDuty: false,
+                onBreak: false,
+            })
         )
     );
     await sendShiftLog(interaction.guild, {
@@ -554,19 +596,36 @@ async function recoverIspShiftRoles(client) {
     let corrected = 0;
 
     for (const userId of activeIds) {
-        const warning = await updateOnDutyRole(guild, userId, true);
+        const activeEntry = activeUsers.find(
+            (entry) => entry.userId === userId
+        );
+        const warning = await updateShiftRoles(guild, userId, {
+            onDuty: true,
+            onBreak: Boolean(activeEntry?.active?.breakStartedAt),
+        });
         if (!warning) corrected += 1;
     }
 
-    const role =
-        guild.roles.cache.get(shiftConfig.onDutyRoleId) ||
-        (await guild.roles.fetch(shiftConfig.onDutyRoleId).catch(() => null));
-    if (role) {
-        for (const member of role.members.values()) {
-            if (activeIds.has(member.id)) continue;
-            const warning = await updateOnDutyRole(guild, member.id, false);
-            if (!warning) corrected += 1;
+    const trackedMembers = new Map();
+    for (const roleId of [
+        shiftConfig.onDutyRoleId,
+        shiftConfig.onBreakRoleId,
+    ]) {
+        const role =
+            guild.roles.cache.get(roleId) ||
+            (await guild.roles.fetch(roleId).catch(() => null));
+        for (const member of role?.members?.values?.() || []) {
+            trackedMembers.set(member.id, member);
         }
+    }
+
+    for (const member of trackedMembers.values()) {
+        if (activeIds.has(member.id)) continue;
+        const warning = await updateShiftRoles(guild, member.id, {
+            onDuty: false,
+            onBreak: false,
+        });
+        if (!warning) corrected += 1;
     }
 
     return { status: 'recovered', active: activeIds.size, corrected };
@@ -592,5 +651,5 @@ module.exports = {
     startMemberShift,
     stopMemberShift,
     toggleMemberBreak,
-    updateOnDutyRole,
+    updateShiftRoles,
 };

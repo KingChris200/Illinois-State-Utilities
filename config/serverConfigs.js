@@ -413,6 +413,9 @@ const SERVER_CONFIGS = {
             onDuty:
                 '1539069939468738590',
 
+            onBreak:
+                '1539074734963294238',
+
             officeOfColonels:
                 '1527517924066066513',
 
