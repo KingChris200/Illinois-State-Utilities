@@ -9,6 +9,7 @@ const interactionEvent = require('../events/interactionCreate');
 const infractionCommand = require('../commands/management/infraction');
 const {
     MAIN_SERVER_ID,
+    ISP_SERVER_ID,
 } = require('../config/serverConfigs');
 
 test('central interaction handler routes autocomplete events', async () => {
@@ -285,6 +286,27 @@ test('central interaction handler routes Regulations panel menus', async () => {
             MessageFlags.IsComponentsV2
     );
     assert.ok(reply.components.length > 0);
+});
+
+test('central interaction handler routes protected ISP shift controls', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => false,
+        isButton: () => true,
+        customId: 'isp_shift:start:111111111111111111',
+        guildId: ISP_SERVER_ID,
+        user: { id: '222222222222222222' },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /belongs to another user/i);
 });
 
 test('infraction exposes a compact automatic workflow', () => {

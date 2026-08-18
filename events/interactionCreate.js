@@ -46,6 +46,9 @@ const {
     handleRegulationsInteraction,
 } = require('../utils/regulationsPanelManager');
 const {
+    handleIspShiftInteraction,
+} = require('../utils/ispShiftManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -125,6 +128,14 @@ module.exports = {
             interaction.customId?.startsWith('regulations:')
         ) {
             await handleRegulationsInteraction(interaction);
+            return;
+        }
+
+        if (
+            interaction.isButton?.() &&
+            interaction.customId?.startsWith('isp_shift:')
+        ) {
+            await handleIspShiftInteraction(interaction);
             return;
         }
 

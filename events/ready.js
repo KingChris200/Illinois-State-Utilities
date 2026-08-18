@@ -12,6 +12,9 @@ const {
 const {
     startDataBackupService,
 } = require('../services/dataBackupService');
+const {
+    recoverIspShiftRoles,
+} = require('../utils/ispShiftManager');
 
 module.exports = {
     name: Events.ClientReady,
@@ -70,6 +73,19 @@ module.exports = {
         } catch (error) {
             console.error(
                 '[DATA BACKUP] Startup failed:',
+                error
+            );
+        }
+
+        try {
+            const shifts = await recoverIspShiftRoles(client);
+
+            console.log(
+                `[ISP SHIFT RECOVERY] ${shifts.status} (active=${shifts.active}, corrected=${shifts.corrected})`
+            );
+        } catch (error) {
+            console.error(
+                '[ISP SHIFT RECOVERY] Startup recovery failed:',
                 error
             );
         }

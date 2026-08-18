@@ -76,6 +76,15 @@ const ISP_CHANNELS = {
 
     movements:
         '1527521493087682590',
+
+    shiftLogs:
+        '1527524431642104039',
+
+    shiftManage:
+        '1527524104209567824',
+
+    shiftAdministration:
+        '1527524291829174365',
 };
 
 /*
@@ -400,6 +409,9 @@ const SERVER_CONFIGS = {
         roleGroups: {
             officeOfDirectors:
                 '1527518424060792872',
+
+            onDuty:
+                '1539069939468738590',
 
             officeOfColonels:
                 '1527517924066066513',

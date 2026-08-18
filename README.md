@@ -176,6 +176,42 @@ No Regulations panel `.env` settings are required. Deploy the slash command
 once with `npm run deploy-commands`, restart the bot, and run both setup
 commands. The optional `channel` setting can override a configured destination.
 
+## Illinois State Police Shift Management
+
+The ISP server has its own persistent weekly shift system. Officers open a
+private manager in <#1527524104209567824>, start or stop their shift, and
+pause or resume breaks from three simple buttons. Active time excludes breaks,
+survives bot restarts, and automatically synchronizes the On-Duty role.
+
+Officer commands:
+
+- `/shift manage` opens the private Start, Break, and Stop panel
+- `/shift leaderboard` shows the current weekly standings
+- `/shift online` shows officers who are currently on shift
+
+Office of Director commands:
+
+- `/shift admin global` shows system status, controls logging, or safely ends all shifts
+- `/shift admin user` reviews a member, ends a shift, adjusts time, manages infractions, or manages promotion cooldowns
+- `/shift cooldowns` lists active promotion cooldowns
+- `/shift excuse` and `/shift excuse-revoke` manage weekly quota excuses
+- `/shift lists` lists active shift infractions
+- `/shift logging` enables or disables new shift recording
+- `/shift promotions` posts an advisory promotion-review list
+- `/shift quota-reminder` privately reminds officers below quota
+
+Configured resources:
+
+- Office of Director: `1527518424060792872`
+- On-Duty role: `1539069939468738590`
+- Shift logs: `1527524431642104039`
+- Shift manager: `1527524104209567824`
+- Shift administration: `1527524291829174365`
+
+The weekly quota defaults to two hours in `config/ispShift.js`. Promotion
+reviews never change Discord roles automatically; the Office of Director must
+review every candidate. No new `.env` values are required.
+
 ## Permanent ISRP Dashboard
 
 The public Dashboard is one minimal Components V2 card with the official
