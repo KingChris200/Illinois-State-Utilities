@@ -1,9 +1,7 @@
 const {
-    SectionBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
     TextDisplayBuilder,
-    ThumbnailBuilder,
 } = require('discord.js');
 
 const brands = require('../config/branding');
@@ -51,23 +49,14 @@ function addBrandSignature(
     {
         label = 'Illinois State Roleplay',
         detail = 'Built for Realism. Driven by Community.',
-        logoUrl = brands.assets.logo,
     } = {}
 ) {
     container
         .addSeparatorComponents(createPanelSeparator())
-        .addSectionComponents(
-            new SectionBuilder()
-                .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(
-                        `### ${label}\n-# ${detail}`
-                    )
-                )
-                .setThumbnailAccessory(
-                    new ThumbnailBuilder()
-                        .setURL(logoUrl)
-                        .setDescription(`${label} emblem`)
-                )
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                `### ${label}\n-# ${detail}`
+            )
         );
 
     return container;
