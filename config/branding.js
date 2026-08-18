@@ -9,30 +9,36 @@ function assetUrl(relativePath) {
 }
 
 const assets = {
-    logo: assetUrl('branding/v2/isrp-bot-icon-v2.png'),
-    logoDark: assetUrl('branding/v2/isrp-logo-dark-v2.png'),
-    logoLight: assetUrl('branding/v2/isrp-logo-light-v2.png'),
-    logoSilver: assetUrl('branding/v2/isrp-mark-white-v2.png'),
+    logo: assetUrl('branding/v3/isrp-emblem-silver-v3.jpg'),
+    logoDark: assetUrl('branding/v3/isrp-emblem-muted-v3.jpg'),
+    logoLight: assetUrl('branding/v3/isrp-wordmark-light-v3.jpg'),
+    logoSilver: assetUrl('branding/v3/isrp-emblem-modern-v3.jpg'),
     logoPrimary: assetUrl(
-        'branding/v2/isrp-logo-primary-v2.png'
+        'branding/v3/isrp-emblem-silver-v3.jpg'
     ),
     circularBadge: assetUrl(
-        'branding/v2/isrp-circular-badge-v2.png'
+        'branding/v3/isrp-emblem-modern-v3.jpg'
     ),
     markWhite: assetUrl(
-        'branding/v2/isrp-mark-white-v2.png'
+        'branding/v3/isrp-emblem-modern-v3.jpg'
     ),
     markNavy: assetUrl(
-        'branding/v2/isrp-mark-navy-v2.png'
+        'branding/v3/isrp-wordmark-light-v3.jpg'
     ),
     wordmark: assetUrl(
-        'branding/v2/isrp-wordmark-white-v2.png'
+        'branding/v3/isrp-wordmark-dark-v3.jpg'
     ),
     wordmarkNavy: assetUrl(
-        'branding/v2/isrp-wordmark-navy-v2.png'
+        'branding/v3/isrp-wordmark-light-v3.jpg'
     ),
     watermark: assetUrl(
-        'branding/v2/isrp-watermark-white-v2.png'
+        'branding/v3/isrp-emblem-muted-v3.jpg'
+    ),
+    panelSignature: assetUrl(
+        'branding/v3/isrp-wordmark-dark-v3.jpg'
+    ),
+    panelSignatureLight: assetUrl(
+        'branding/v3/isrp-wordmark-light-v3.jpg'
     ),
     robloxAvatar: assetUrl(
         'branding/isrp-roblox-avatar.jpg'
@@ -60,17 +66,26 @@ const assets = {
         'thumbnails/regulations-banner-v1.png'
     ),
     dashboardBanner: assetUrl(
-        'thumbnails/dashboard-banner-v1.png'
+        'thumbnails/dashboard-banner-v2.png'
     ),
+    avatar01: assetUrl('avatars/isrp-avatar-01.jpg'),
+    avatar02: assetUrl('avatars/isrp-avatar-02.jpg'),
+    avatar03: assetUrl('avatars/isrp-avatar-03.jpg'),
+    avatar04: assetUrl('avatars/isrp-avatar-04.jpg'),
+    avatar05: assetUrl('avatars/isrp-avatar-05.jpg'),
+    avatar06: assetUrl('avatars/isrp-avatar-06.jpg'),
+    avatar07: assetUrl('avatars/isrp-avatar-07.jpg'),
 };
 
 const palette = {
     white: '#FFFFFF',
-    ice: '#F4F9FF',
-    lightBlue: '#8FC7FF',
-    skyBlue: '#6FAFEF',
-    softNavy: '#284B7A',
-    slate: '#667085',
+    paper: '#FCFEFF',
+    ice: '#F7FBFF',
+    mist: '#EAF4FF',
+    lightBlue: '#B9DCFF',
+    skyBlue: '#86BEF2',
+    softNavy: '#173E71',
+    slate: '#617085',
 };
 
 module.exports = {

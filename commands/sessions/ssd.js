@@ -21,6 +21,7 @@ const {
     createSessionRecapEmbed,
     saveCompletedSessionAnalytics,
 } = require('../../services/sessionAnalyticsService');
+const brands = require('../../config/branding');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const SERVER_CODE = 'ILLINOISrp';
@@ -131,11 +132,7 @@ module.exports = {
             endedAt / 1000
         );
 
-        const guildIcon =
-            interaction.guild.iconURL({
-                extension: 'png',
-                size: 256,
-            }) ?? null;
+        const guildIcon = brands.assets.logo;
 
         /*
          * The original session host is shown separately

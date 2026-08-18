@@ -10,6 +10,7 @@ const {
     updateDatabase,
     createRecordId,
 } = require('../../utils/database');
+const brands = require('../../config/branding');
 
 const AWARD_TYPES = {
     staff_of_the_week: {
@@ -906,21 +907,13 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL:
-                                interaction.guild.iconURL(
-                                    {
-                                        dynamic:
-                                            true,
-                                    }
-                                ) ||
-                                undefined,
+                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Awards & Recognition System',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -986,8 +979,7 @@ module.exports = {
                                 text:
                                     'Illinois State Utilities • Management Logs',
 
-                                iconURL:
-                                    interaction.client.user.displayAvatarURL(),
+                                iconURL: brands.assets.logo,
                             })
                             .setTimestamp();
 
@@ -1278,8 +1270,7 @@ module.exports = {
                             text:
                                 'Illinois State Utilities • Management Logs',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -1464,21 +1455,13 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL:
-                                interaction.guild.iconURL(
-                                    {
-                                        dynamic:
-                                            true,
-                                    }
-                                ) ||
-                                undefined,
+                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Awards & Recognition System',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -1611,21 +1594,13 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL:
-                                interaction.guild.iconURL(
-                                    {
-                                        dynamic:
-                                            true,
-                                    }
-                                ) ||
-                                undefined,
+                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Awards & Recognition System',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 

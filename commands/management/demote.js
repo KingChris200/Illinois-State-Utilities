@@ -28,6 +28,7 @@ const {
     findRecentDemotionDuplicate,
     analyzeDemotionContext,
 } = require('../../utils/demotionIntelligence');
+const brands = require('../../config/branding');
 
 const DEMOTION_COLOR = 0xc0392b;
 const FOOTER_TEXT =
@@ -234,15 +235,12 @@ async function requestDemotionConfirmation({
         )
         .setAuthor({
             name: serverConfig.serverName,
-            iconURL:
-                interaction.guild.iconURL({ size: 256 }) ||
-                undefined,
+            iconURL: brands.assets.logo,
         })
         .setFooter({
             text:
                 'Illinois State Utilities • Smart Demotion Review',
-            iconURL:
-                interaction.client.user.displayAvatarURL({ size: 128 }),
+            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 
@@ -369,14 +367,11 @@ function buildDemotionEmbed({
         )
         .setAuthor({
             name: serverConfig.serverName,
-            iconURL:
-                interaction.guild.iconURL({ size: 256 }) ||
-                undefined,
+            iconURL: brands.assets.logo,
         })
         .setFooter({
             text: FOOTER_TEXT,
-            iconURL:
-                interaction.client.user.displayAvatarURL({ size: 128 }),
+            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 }
@@ -1003,10 +998,7 @@ module.exports = {
                     .setFooter({
                         text:
                             'Illinois State Utilities • Management Logs',
-                        iconURL:
-                            interaction.client.user.displayAvatarURL({
-                                size: 128,
-                            }),
+                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 

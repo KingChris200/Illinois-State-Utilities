@@ -11,13 +11,18 @@ const {
     MediaGalleryItemBuilder,
     MessageFlags,
     PermissionFlagsBits,
-    SeparatorBuilder,
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
     TextDisplayBuilder,
 } = require('discord.js');
 
 const brands = require('../config/branding');
+const {
+    addBrandSignature,
+    colorToDecimal,
+    createPanelHeader,
+    createPanelSeparator,
+} = require('./componentTheme');
 const {
     CHAIN_OF_COMMAND,
     GUIDE_SECTIONS,
@@ -169,34 +174,20 @@ function getTeamRanks(team) {
     );
 }
 
-function getGuildIcon(guild) {
-    return (
-        guild?.iconURL?.({
-            extension: 'png',
-            size: 256,
-        }) || brands.isrp.logo
-    );
-}
-
 function createBaseEmbed(guild, color = brands.isrp.color) {
-    const guildIcon = getGuildIcon(guild);
-
     return new EmbedBuilder()
         .setColor(color)
         .setAuthor({
             name:
                 guild?.name ||
                 'Illinois State Roleplay',
-            ...(guildIcon
-                ? { iconURL: guildIcon }
-                : {}),
+            iconURL: brands.assets.logo,
         })
+        .setThumbnail(brands.assets.logo)
         .setFooter({
             text:
                 'ISRP Staff Guide • Official staff resource',
-            ...(guildIcon
-                ? { iconURL: guildIcon }
-                : {}),
+            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 }
@@ -228,21 +219,14 @@ function createStaffGuidePagePayload({
                     )
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(
-                    SeparatorSpacingSize.Large
-                )
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                [
-                    `## ${title}`,
-                    intro,
-                    `-# Official Staff Guide • Version ${version} • Private staff resource`,
-                ].join('\n\n')
-            )
+            createPanelHeader({
+                eyebrow: 'ILLINOIS STATE ROLEPLAY • STAFF RESOURCE',
+                title,
+                description: intro,
+                note: `Official Staff Guide • Version ${version} • Private staff resource`,
+            })
         );
 
     for (const section of sections) {
@@ -255,16 +239,16 @@ function createStaffGuidePagePayload({
 
     if (actionRows.length > 0) {
         container.addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(
-                    SeparatorSpacingSize.Small
-                )
+            createPanelSeparator(SeparatorSpacingSize.Small)
         );
         container.addActionRowComponents(
             ...actionRows
         );
     }
+
+    addBrandSignature(container, {
+        detail: `Official Staff Guide • Version ${version}`,
+    });
 
     return {
         components: [container],
@@ -316,11 +300,7 @@ function createGuidePanelPayload(
             }))
         );
     const container = new ContainerBuilder()
-        .setAccentColor(
-            resolveGuideAccentColor(
-                brands.palette.lightBlue
-            )
-        )
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -330,20 +310,15 @@ function createGuidePanelPayload(
                     )
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                [
-                    '# Illinois State Roleplay Staff Guide',
+            createPanelHeader({
+                eyebrow: 'ILLINOIS STATE ROLEPLAY • OFFICIAL STAFF RESOURCE',
+                title: 'Illinois State Roleplay Staff Guide',
+                description:
                     'The official handbook for staff policy, conduct, commands, moderation, and leadership expectations.',
-                    '',
-                    `-# Current version: ${guideVersion} • Selected pages open privately`,
-                ].join('\n')
-            )
+                note: `Current version: ${guideVersion} • Selected pages open privately`,
+            })
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
@@ -362,11 +337,7 @@ function createGuidePanelPayload(
                     .setURL(STAFF_GUIDE_DOCUMENT_URL)
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 '## Server Staff Team Guide\nSelect a staff team below to view its ranks, responsibilities, and expectations.'
@@ -375,6 +346,10 @@ function createGuidePanelPayload(
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(rankMenu)
         );
+
+    addBrandSignature(container, {
+        detail: `Official Staff Guide • Version ${guideVersion}`,
+    });
 
     return {
         files: [createStaffGuideBannerAttachment()],

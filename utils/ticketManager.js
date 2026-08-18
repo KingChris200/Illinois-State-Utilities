@@ -10,10 +10,11 @@ const {
     MediaGalleryBuilder,
     MediaGalleryItemBuilder,
     MessageFlags,
+    ModalBuilder,
     PermissionFlagsBits,
-    SeparatorBuilder,
-    SeparatorSpacingSize,
     StringSelectMenuBuilder,
+    TextInputBuilder,
+    TextInputStyle,
     TextDisplayBuilder,
 } = require('discord.js');
 
@@ -30,12 +31,19 @@ const {
     readDatabase,
     updateDatabase,
 } = require('./database');
+const {
+    addBrandSignature,
+    colorToDecimal,
+    createPanelHeader,
+    createPanelSeparator,
+} = require('./componentTheme');
 const { detectMemberRank } = require('./rankManager');
 
 const TICKET_DATABASE = 'tickets';
 const TICKET_PANEL_DATABASE = 'ticket-panels';
 const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
+const IN_GAME_REPORT_MODAL_ID = `${TICKET_PREFIX}report:intake`;
 const TRANSCRIPT_MESSAGE_LIMIT = 1000;
 const PANEL_IMAGE_NAME = 'assistance-banner-v2.png';
 const PANEL_IMAGE_PATH = path.join(
@@ -142,10 +150,7 @@ function createTicketPanelPayload(guild) {
         )
         .join('\n\n');
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(
-            brands.palette.lightBlue.slice(1),
-            16
-        ))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -155,26 +160,22 @@ function createTicketPanelPayload(guild) {
                     )
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
+            createPanelHeader({
+                title: 'Illinois State Roleplay Assistance',
+                description:
+                    'Private support routed directly to the team best suited to help.',
+            }),
             new TextDisplayBuilder().setContent(
                 [
-                    '# Illinois State Roleplay Assistance',
-                    'Choose the team that best matches your request. A private channel will be created for you and that support team.',
+                    'Choose the category that best matches your concern. A private channel will be created for you and the selected support team.',
                     '',
                     categorySummary,
                 ].join('\n')
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 '## Open a Ticket\nSelect one assistance category below.'
@@ -182,12 +183,11 @@ function createTicketPanelPayload(guild) {
         )
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(menu)
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                '-# Private support • One ticket per concern • Illinois State Roleplay'
-            )
         );
+
+    addBrandSignature(container, {
+        detail: 'Private support • One ticket per concern',
+    });
 
     return {
         files: [createPanelAttachment()],
@@ -214,8 +214,48 @@ function createTicketControlRow(ticket, disabled = false) {
     );
 }
 
+function createInGameReportModal() {
+    return new ModalBuilder()
+        .setCustomId(IN_GAME_REPORT_MODAL_ID)
+        .setTitle('In-Game Report Ticket')
+        .addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('assisted_by')
+                    .setLabel('Are you being assisted? If so, who?')
+                    .setPlaceholder('No, or Yes — Staff username')
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true)
+                    .setMaxLength(100)
+            ),
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('reported_username')
+                    .setLabel('Username of the player being reported')
+                    .setPlaceholder('Enter their exact Roblox username')
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true)
+                    .setMaxLength(100)
+            ),
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('report_reason')
+                    .setLabel('Why are you reporting them?')
+                    .setPlaceholder('Explain what happened and mention any proof you have.')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true)
+                    .setMinLength(10)
+                    .setMaxLength(1000)
+            )
+        );
+}
+
+function formatInlineCode(value) {
+    return `\`${String(value).replace(/`/g, 'ˋ')}\``;
+}
+
 function createTicketWelcomeEmbed(ticket, category, guild) {
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
         .setTitle(`${category.emoji} ${category.label}`)
         .setDescription(
@@ -250,11 +290,36 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
                 inline: true,
             }
         )
-        .setThumbnail(guild.iconURL({ size: 256 }) || null)
+        .setThumbnail(brands.assets.logo)
         .setFooter({
             text: 'Illinois State Utilities • Assistance Center',
+            iconURL: brands.assets.logo,
         })
         .setTimestamp();
+
+    if (ticket.intake) {
+        embed.addFields(
+            {
+                name: 'In-Game Assistance',
+                value: ticket.intake.assistedBy,
+                inline: false,
+            },
+            {
+                name: 'Reported Player',
+                value: formatInlineCode(
+                    ticket.intake.reportedUsername
+                ),
+                inline: false,
+            },
+            {
+                name: 'Report Summary',
+                value: ticket.intake.reason,
+                inline: false,
+            }
+        );
+    }
+
+    return embed;
 }
 
 function sanitizeChannelName(value) {
@@ -469,9 +534,10 @@ async function archiveTicketTranscript(
                         inline: true,
                     }
                 )
-                .setThumbnail(guild.iconURL({ size: 256 }) || null)
+                .setThumbnail(brands.assets.logo)
                 .setFooter({
                     text: 'Illinois State Utilities • Private ticket archive',
+                    iconURL: brands.assets.logo,
                 })
                 .setTimestamp(),
         ],
@@ -628,11 +694,11 @@ function buildPermissionOverwrites(guild, openerId, category) {
     return overwrites;
 }
 
-async function createTicket(interaction) {
+async function createTicket(interaction, categoryId, intake = null) {
     const config = getTicketConfig(interaction.guildId);
     const category = getTicketCategory(
         interaction.guildId,
-        interaction.values[0]
+        categoryId || interaction.values?.[0]
     );
 
     if (!config || !category) {
@@ -688,6 +754,7 @@ async function createTicket(interaction) {
         channelId: null,
         status: 'open',
         claimedById: null,
+        intake,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
@@ -995,6 +1062,36 @@ function createPartnershipRequirementsPayload(guild) {
 
 async function handleTicketInteraction(interaction) {
     if (interaction.isModalSubmit?.()) {
+        if (interaction.customId === IN_GAME_REPORT_MODAL_ID) {
+            const intake = {
+                assistedBy: interaction.fields
+                    .getTextInputValue('assisted_by')
+                    .trim(),
+                reportedUsername: interaction.fields
+                    .getTextInputValue('reported_username')
+                    .trim(),
+                reason: interaction.fields
+                    .getTextInputValue('report_reason')
+                    .trim(),
+            };
+
+            if (Object.values(intake).some((value) => !value)) {
+                await interaction.reply({
+                    content:
+                        'Please provide a complete answer for all three report questions.',
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
+
+            await createTicket(
+                interaction,
+                'in_game_report',
+                intake
+            );
+            return;
+        }
+
         await interaction.reply({
             content:
                 'This form has been retired. Ask the ticket handler to run `!appeal` for the in-ticket questionnaire.',
@@ -1005,6 +1102,18 @@ async function handleTicketInteraction(interaction) {
 
     if (interaction.isStringSelectMenu?.()) {
         if (interaction.customId === CREATE_MENU_ID) {
+            const category = getTicketCategory(
+                interaction.guildId,
+                interaction.values[0]
+            );
+
+            if (category?.requiresIntake) {
+                await interaction.showModal(
+                    createInGameReportModal()
+                );
+                return;
+            }
+
             await createTicket(interaction);
             return;
         }
@@ -1158,12 +1267,14 @@ async function countOpenTickets(guildId) {
 
 module.exports = {
     CREATE_MENU_ID,
+    IN_GAME_REPORT_MODAL_ID,
     TICKET_DATABASE,
     TICKET_PANEL_DATABASE,
     TICKET_PREFIX,
     archiveTicketTranscript,
     countOpenTickets,
     createAppealQuestionnaire,
+    createInGameReportModal,
     createPartnershipRequirementsPayload,
     createTicketTranscript,
     createTicketOpeningMentions,

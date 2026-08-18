@@ -16,6 +16,7 @@ const {
 const {
     analyzeStaffProfile,
 } = require('../../utils/staffProfileIntelligence');
+const brands = require('../../config/branding');
 
 function convertHexToDecimal(hexColor) {
     if (typeof hexColor !== 'string') {
@@ -360,7 +361,7 @@ module.exports = {
                             )
                         )
                         .setTitle(
-                            'ISRP | Staff Profile'
+                            'Illinois State Roleplay — Staff Profile'
                         )
                         .setDescription(
                             [
@@ -378,18 +379,12 @@ module.exports = {
                             name:
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
-
-                            iconURL:
-                                interaction.guild.iconURL({
-                                    dynamic: true,
-                                }) || undefined,
+                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Staff Management System',
-
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -551,8 +546,8 @@ module.exports = {
                     .setColor(statusColor)
                     .setTitle(
                         isPrivate
-                            ? 'ISRP | Staff Management Profile'
-                            : 'ISRP | Public Staff Profile'
+                            ? 'Illinois State Roleplay — Staff Management Profile'
+                            : 'Illinois State Roleplay — Public Staff Profile'
                     )
                     .setDescription(
                         profileDescription.join('\n')
@@ -566,11 +561,7 @@ module.exports = {
                         name:
                             guildConfiguration.serverName ||
                             interaction.guild.name,
-
-                        iconURL:
-                            interaction.guild.iconURL({
-                                dynamic: true,
-                            }) || undefined,
+                        iconURL: brands.assets.logo,
                     })
                     .setFooter({
                         text:
@@ -578,8 +569,7 @@ module.exports = {
                                 ? 'Illinois State Utilities • Private Management Review'
                                 : 'Illinois State Utilities • Public Staff Résumé',
 
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
+                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
@@ -591,7 +581,7 @@ module.exports = {
                                   .standing.color
                           )
                           .setTitle(
-                              '🧠 Private Management Intelligence'
+                              'Private Management Intelligence'
                           )
                           .setDescription(
                               'Rule-based decision support generated from saved staff records. This does not replace leadership judgment or authorize an automatic promotion.'
@@ -661,8 +651,7 @@ module.exports = {
                           .setFooter({
                               text:
                                   'Illinois State Utilities • Authorized Management Only',
-                              iconURL:
-                                  interaction.client.user.displayAvatarURL(),
+                              iconURL: brands.assets.logo,
                           })
                           .setTimestamp()
                     : null;

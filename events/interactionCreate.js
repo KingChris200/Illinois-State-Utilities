@@ -22,6 +22,7 @@ const {
 const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
+const brands = require('../config/branding');
 const {
     startSessionPlayerCountMonitor,
     createSessionDashboardEmbed,
@@ -1149,10 +1150,5 @@ function createSessionBannerAttachment() {
  */
 
 function getGuildIcon(interaction) {
-    return (
-        interaction.guild.iconURL({
-            extension: 'png',
-            size: 256,
-        }) ?? null
-    );
+    return brands.assets.logo;
 }

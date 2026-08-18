@@ -6,7 +6,7 @@ const EMBED_TONES = Object.freeze({
     warning: '#F1C40F',
     danger: '#E74C3C',
     moderation: '#C0392B',
-    neutral: '#2B2D31',
+    neutral: '#D7E6F5',
 });
 
 function safeImageUrl(factory) {
@@ -67,7 +67,7 @@ function applyEmbedTheme(
 
     const resolvedAuthorName =
         authorName || guild?.name || brand.name;
-    const authorIcon = guildIcon || brand.logo || clientAvatar;
+    const authorIcon = brand.logo || guildIcon || clientAvatar;
 
     if (resolvedAuthorName) {
         embed.setAuthor({
@@ -79,7 +79,7 @@ function applyEmbedTheme(
     let thumbnailUrl = null;
 
     if (thumbnail === 'auto') {
-        thumbnailUrl = subjectAvatar || guildIcon || brand.logo;
+        thumbnailUrl = subjectAvatar || brand.logo || guildIcon;
     } else if (thumbnail === 'subject') {
         thumbnailUrl = subjectAvatar;
     } else if (thumbnail === 'server') {

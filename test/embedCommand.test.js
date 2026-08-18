@@ -8,6 +8,7 @@ const {
 const embedCommand = require(
     '../commands/management/embed'
 );
+const brands = require('../config/branding');
 
 function createInteraction({
     message = 'Please review the latest server update.',
@@ -104,7 +105,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     );
     assert.equal(
         embed.thumbnail.url,
-        'https://cdn.discordapp.com/icons/123/server.png'
+        brands.assets.logo
     );
     assert.equal(
         embed.image.url,
@@ -112,7 +113,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     );
     assert.equal(
         embed.footer.icon_url,
-        'https://cdn.discordapp.com/icons/123/server.png'
+        brands.assets.logo
     );
     assert.ok(embed.timestamp);
     assert.equal(payload.files.length, 1);

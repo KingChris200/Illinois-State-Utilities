@@ -15,7 +15,9 @@ const {
 } = require('../config/serverConfigs');
 const {
     CREATE_MENU_ID,
+    IN_GAME_REPORT_MODAL_ID,
     createAppealQuestionnaire,
+    createInGameReportModal,
     createPartnershipRequirementsPayload,
     createTicketOpeningMentions,
     createTicketPanelPayload,
@@ -45,7 +47,7 @@ function collectComponents(component) {
     return collected;
 }
 
-test('three ticket categories use the supplied destinations and team roles', () => {
+test('five ticket categories use the supplied destinations and team roles', () => {
     const config = getTicketConfig(MAIN_SERVER_ID);
     const categoryParents = Object.fromEntries(
         config.categories.map((category) => [
@@ -69,7 +71,7 @@ test('three ticket categories use the supplied destinations and team roles', () 
         ])
     );
 
-    assert.equal(config.categories.length, 3);
+    assert.equal(config.categories.length, 5);
     assert.equal(
         categoryParents.general,
         '1490870667795763412'
@@ -82,14 +84,24 @@ test('three ticket categories use the supplied destinations and team roles', () 
         categoryParents.internal_affairs,
         categoryParents.management
     );
+    assert.equal(
+        categoryParents.partnership,
+        '1490870767632646365'
+    );
+    assert.equal(
+        categoryParents.in_game_report,
+        categoryParents.general
+    );
     assert.deepEqual(categoryRoles, {
-        general: '1490523797629960392',
-        internal_affairs: '1526344302618218656',
         management: '1490523581187231795',
+        internal_affairs: '1526344302618218656',
+        partnership: '1490523581187231795',
+        general: '1490523797629960392',
+        in_game_report: '1490523797629960392',
     });
 });
 
-test('Assistance panel exposes exactly three branded ticket choices', () => {
+test('Assistance panel exposes exactly five branded ticket choices', () => {
     const payload = createTicketPanelPayload(mockGuild);
     const components = collectComponents(
         payload.components[0].toJSON()
@@ -106,14 +118,20 @@ test('Assistance panel exposes exactly three branded ticket choices', () => {
     assert.equal(payload.embeds, undefined);
     assert.equal(payload.components.length, 1);
     assert.equal(menu.custom_id, CREATE_MENU_ID);
-    assert.equal(menu.options.length, 3);
+    assert.equal(menu.options.length, 5);
     assert.equal(
         new Set(menu.options.map((option) => option.value)).size,
-        3
+        5
     );
     assert.deepEqual(
         menu.options.map((option) => option.value),
-        ['general', 'internal_affairs', 'management']
+        [
+            'management',
+            'internal_affairs',
+            'partnership',
+            'general',
+            'in_game_report',
+        ]
     );
     assert.equal(payload.files.length, 1);
     assert.equal(
@@ -125,6 +143,25 @@ test('Assistance panel exposes exactly three branded ticket choices', () => {
             (component) =>
                 component.media?.url ===
                 'attachment://assistance-banner-v2.png'
+        )
+    );
+});
+
+test('In-Game Report opens a focused three-question intake form', () => {
+    const modal = createInGameReportModal().toJSON();
+
+    assert.equal(modal.custom_id, IN_GAME_REPORT_MODAL_ID);
+    assert.equal(modal.title, 'In-Game Report Ticket');
+    assert.equal(modal.components.length, 3);
+    assert.deepEqual(
+        modal.components.map(
+            (row) => row.components[0].custom_id
+        ),
+        ['assisted_by', 'reported_username', 'report_reason']
+    );
+    assert.ok(
+        modal.components.every(
+            (row) => row.components[0].required
         )
     );
 });

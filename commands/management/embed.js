@@ -189,7 +189,7 @@ function getServerLogo(interaction, brand) {
         size: 256,
     });
 
-    return guildIcon || brand.logo || null;
+    return brand.logo || guildIcon || null;
 }
 
 /**

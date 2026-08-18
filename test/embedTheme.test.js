@@ -18,7 +18,7 @@ function createGuild() {
     };
 }
 
-test('server-wide embeds use the Discord server identity', () => {
+test('server-wide embeds use the community name and official brand mark', () => {
     const embed = createEmbed('Server Overview', 'isrp', {
         guild: createGuild(),
     }).toJSON();
@@ -26,11 +26,11 @@ test('server-wide embeds use the Discord server identity', () => {
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
     assert.equal(
         embed.author.icon_url,
-        'https://cdn.discordapp.com/icons/123/server.png'
+        brands.isrp.logo
     );
     assert.equal(
         embed.thumbnail.url,
-        'https://cdn.discordapp.com/icons/123/server.png'
+        brands.isrp.logo
     );
     assert.equal(embed.footer.icon_url, brands.isrp.logo);
 });
@@ -51,7 +51,7 @@ test('member-focused embeds prefer the member avatar as their thumbnail', () => 
     );
     assert.equal(
         embed.author.icon_url,
-        'https://cdn.discordapp.com/icons/123/server.png'
+        brands.isrp.logo
     );
 });
 

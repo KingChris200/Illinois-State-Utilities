@@ -8,15 +8,18 @@ const {
     MediaGalleryBuilder,
     MediaGalleryItemBuilder,
     MessageFlags,
-    SeparatorBuilder,
-    SeparatorSpacingSize,
     StringSelectMenuBuilder,
     TextDisplayBuilder,
 } = require('discord.js');
 
-const brands = require('../config/branding');
 const { getDashboardContext } = require('./dashboardManager');
 const { readDatabase, updateDatabase } = require('./database');
+const {
+    addBrandSignature,
+    colorToDecimal,
+    createPanelHeader,
+    createPanelSeparator,
+} = require('./componentTheme');
 
 const REGULATIONS_DATABASE = 'regulations-panels';
 const REGULATIONS_PREFIX = 'regulations:';
@@ -221,7 +224,7 @@ function createRegulationsPanelPayload(guild, panelType, context) {
         .setPlaceholder(`Explore ${configuration.shortTitle}…`)
         .addOptions(pages);
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -229,19 +232,16 @@ function createRegulationsPanelPayload(guild, panelType, context) {
                     .setDescription(configuration.title)
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
+            createPanelHeader({
+                title: configuration.title,
+                description: configuration.description,
+            }),
             new TextDisplayBuilder().setContent(
                 [
-                    `# ${configuration.title}`,
-                    configuration.description,
-                    '',
-                    '### Official Policy',
-                    configuration.policy,
+                    '## Official Policy',
+                    `**${configuration.policy}**`,
                 ].join('\n')
             )
         );
@@ -251,20 +251,17 @@ function createRegulationsPanelPayload(guild, panelType, context) {
     }
 
     container
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 `## Browse ${configuration.shortTitle}\nSelect one section below. Your selected page is visible only to you.`
             )
         )
-        .addActionRowComponents(new ActionRowBuilder().addComponents(menu))
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`-# ${configuration.footer}`)
-        );
+        .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
+
+    addBrandSignature(container, {
+        detail: configuration.footer,
+    });
 
     return {
         files: [createRegulationsAttachment()],
@@ -452,7 +449,7 @@ function createRegulationsPagePayload(guild, panelType, pageId, context) {
     }
 
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -460,33 +457,26 @@ function createRegulationsPagePayload(guild, panelType, pageId, context) {
                     .setDescription(configuration.title)
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `# ${page.title}\n${page.body}`
-            )
+            createPanelHeader({
+                title: page.title,
+                description: configuration.shortTitle,
+            }),
+            new TextDisplayBuilder().setContent(page.body)
         );
     const linkRow = createLinkRow(page.buttons || []);
 
     if (linkRow) {
         container
-            .addSeparatorComponents(
-                new SeparatorBuilder()
-                    .setDivider(true)
-                    .setSpacing(SeparatorSpacingSize.Large)
-            )
+            .addSeparatorComponents(createPanelSeparator())
             .addActionRowComponents(linkRow);
     }
 
-    container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-            '-# Official guideline-channel posts remain the final source for policy.'
-        )
-    );
+    addBrandSignature(container, {
+        detail:
+            'Official guideline-channel posts remain the final source for policy.',
+    });
 
     return {
         files: [createRegulationsAttachment()],

@@ -22,6 +22,11 @@ const expectedAssets = [
     'branding/v2/isrp-wordmark-white-v2.png',
     'branding/v2/isrp-wordmark-navy-v2.png',
     'branding/v2/isrp-watermark-white-v2.png',
+    'branding/v3/isrp-emblem-silver-v3.jpg',
+    'branding/v3/isrp-emblem-muted-v3.jpg',
+    'branding/v3/isrp-wordmark-light-v3.jpg',
+    'branding/v3/isrp-emblem-modern-v3.jpg',
+    'branding/v3/isrp-wordmark-dark-v3.jpg',
     'thumbnails/sessions-banner-v2.png',
     'thumbnails/welcome-banner-v2.png',
     'thumbnails/staff-guide-banner-v3.png',
@@ -30,7 +35,7 @@ const expectedAssets = [
     'thumbnails/about-banner-v1.png',
     'thumbnails/information-banner-v1.png',
     'thumbnails/regulations-banner-v1.png',
-    'thumbnails/dashboard-banner-v1.png',
+    'thumbnails/dashboard-banner-v2.png',
 ];
 
 test('brand URLs are durable and every branded asset exists locally', () => {
@@ -50,12 +55,12 @@ test('brand URLs are durable and every branded asset exists locally', () => {
 
 test('brand palette uses the minimal white and light-blue system', () => {
     assert.equal(brands.palette.white, '#FFFFFF');
-    assert.equal(brands.palette.ice, '#F4F9FF');
-    assert.equal(brands.palette.lightBlue, '#8FC7FF');
+    assert.equal(brands.palette.ice, '#F7FBFF');
+    assert.equal(brands.palette.lightBlue, '#B9DCFF');
     assert.equal(brands.isrp.color, brands.palette.lightBlue);
     assert.match(
         brands.assets.logo,
-        /branding\/v2\/isrp-bot-icon-v2\.png$/
+        /branding\/v3\/isrp-emblem-silver-v3\.jpg$/
     );
 });
 
@@ -84,6 +89,6 @@ test('/about presents the minimal about banner and guild identity', async () => 
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
     assert.equal(
         embed.thumbnail.url,
-        'https://cdn.discordapp.com/icons/123/icon.png'
+        brands.assets.logo
     );
 });

@@ -17,7 +17,11 @@ module.exports = {
         .setDescription('Displays information about Illinois State Utilities.'),
 
     async execute(interaction) {
-        const embed = createEmbed('Illinois State Utilities')
+        const embed = createEmbed(
+            'Illinois State Utilities',
+            'utilities',
+            { guild: interaction.guild }
+        )
             .setDescription(
                 [
                     'The official utility and management platform for Illinois State Roleplay.',
@@ -64,20 +68,6 @@ module.exports = {
                 }
             )
             .setImage(`attachment://${ABOUT_BANNER_NAME}`);
-
-        const guildIcon = interaction.guild?.iconURL?.({
-            extension: 'png',
-            size: 256,
-        });
-
-        if (guildIcon) {
-            embed
-                .setAuthor({
-                    name: interaction.guild.name,
-                    iconURL: guildIcon,
-                })
-                .setThumbnail(guildIcon);
-        }
 
         await interaction.reply({
             embeds: [embed],

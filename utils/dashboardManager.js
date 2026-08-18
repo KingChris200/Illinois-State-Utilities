@@ -9,22 +9,25 @@ const {
     MediaGalleryItemBuilder,
     MessageFlags,
     PermissionFlagsBits,
-    SeparatorBuilder,
-    SeparatorSpacingSize,
     StringSelectMenuBuilder,
     TextDisplayBuilder,
 } = require('discord.js');
 
-const brands = require('../config/branding');
 const { STAFF_GUIDE_DOCUMENT_URL } = require('../config/staffGuideContent');
 const { getServerConfig } = require('../config/serverConfigs');
 const { getTicketConfig } = require('../config/tickets');
 const { readDatabase, updateDatabase } = require('./database');
+const {
+    addBrandSignature,
+    colorToDecimal,
+    createPanelHeader,
+    createPanelSeparator,
+} = require('./componentTheme');
 
 const DASHBOARD_DATABASE = 'dashboard-panels';
 const DASHBOARD_PREFIX = 'dashboard:';
 const DASHBOARD_SELECT_ID = `${DASHBOARD_PREFIX}explore`;
-const DASHBOARD_BANNER_NAME = 'dashboard-banner-v1.png';
+const DASHBOARD_BANNER_NAME = 'dashboard-banner-v2.png';
 const DASHBOARD_BANNER_PATH = path.join(
     __dirname,
     '..',
@@ -176,7 +179,7 @@ function createDashboardPanelPayload(guild, context) {
         .setPlaceholder('Explore Illinois State Roleplay…')
         .addOptions(DASHBOARD_PAGES);
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -184,19 +187,21 @@ function createDashboardPanelPayload(guild, context) {
                     .setDescription('Illinois State Roleplay Dashboard')
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
+            createPanelHeader({
+                title: 'Illinois State Roleplay Dashboard',
+                description:
+                    'Everything important is kept in one clear, official place.',
+                note: 'Community information • Official links • Private resource pages',
+            }),
             new TextDisplayBuilder().setContent(
                 [
-                    '# Illinois State Roleplay Dashboard',
-                    'Everything important is kept in one simple place. Use the quick links below or privately explore a dashboard section.',
+                    '## Community Standard',
+                    'Illinois State Roleplay is built around **organized sessions**, **consistent moderation**, and **realistic roleplay**. Review the official resources below before participating.',
                     '',
-                    '### Essential Channels',
-                    'Review the guidelines, get assistance, follow sessions, or visit the official Whitelisted Roblox group.',
+                    '## Essential Channels',
+                    'Open the guidelines, request assistance, follow active sessions, or visit the Whitelisted Roblox group.',
                 ].join('\n')
             )
         );
@@ -214,22 +219,18 @@ function createDashboardPanelPayload(guild, context) {
     }
 
     container
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Explore ISRP\nSelect one section. Your chosen page is visible only to you.'
+                '## Explore Illinois State Roleplay\nChoose one section below. The detailed page opens privately for you.'
             )
         )
-        .addActionRowComponents(new ActionRowBuilder().addComponents(menu))
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                '-# Built for Realism. Driven by Community. • Illinois State Roleplay'
-            )
-        );
+        .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
+
+    addBrandSignature(container, {
+        detail:
+            'Illinois’ Premier Roleplay • Built for Realism. Driven by Community.',
+    });
 
     return {
         files: [createDashboardAttachment()],
@@ -397,7 +398,7 @@ function createDashboardPagePayload(guild, pageId, context) {
 
     const linkRow = createLinkRow(buttons);
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -405,31 +406,23 @@ function createDashboardPagePayload(guild, pageId, context) {
                     .setDescription('Illinois State Roleplay Dashboard')
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `# ${page.title}\n${page.body}`
-            )
+            createPanelHeader({
+                title: page.title,
+                description: 'Official Illinois State Roleplay resource',
+            }),
+            new TextDisplayBuilder().setContent(page.body)
         );
 
     if (linkRow) {
-        container.addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        );
+        container.addSeparatorComponents(createPanelSeparator());
         container.addActionRowComponents(linkRow);
     }
 
-    container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-            '-# Illinois State Roleplay • Dashboard resource'
-        )
-    );
+    addBrandSignature(container, {
+        detail: 'Dashboard resource • Official community information',
+    });
 
     return {
         files: [createDashboardAttachment()],

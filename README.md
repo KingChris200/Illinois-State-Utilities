@@ -127,18 +127,17 @@ minutes to appear.
 
 Reusable Illinois State Roleplay logos are stored in `assets/branding`, and
 the reusable community avatar references are stored in `assets/avatars`.
-The second-generation visual system uses
+The current white-first visual system uses
 matching minimal headers in `assets/thumbnails` for Assistance, Sessions,
 Welcome, Staff Guide, About, Announcements, Information, Regulations, and
 the Dashboard.
 These headers share one gradient, type system, logo lockup, tagline, and
 spacing grid so public panels remain visually consistent.
 
-The official `assets/branding/v2` logo kit includes light and dark
-lockups, transparent white and navy marks, a circular badge, bot icon,
-horizontal wordmarks, and a subtle watermark. Its palette is deliberately
-limited to white, ice, light blue, soft navy, and neutral slate. Run
-`scripts/generate-logo-kit.ps1` to regenerate the complete versioned kit.
+The approved `assets/branding/v3` collection contains the current silver
+emblems and light/dark wordmarks used throughout the bot. Its palette is
+deliberately limited to white, ice, light blue, soft navy, and neutral
+slate. The earlier v2 kit remains archived for reference.
 
 Run `scripts/generate-brand-banners.ps1` after changing the shared banner
 template. It deterministically regenerates the complete header family;
@@ -459,22 +458,28 @@ The permanent Assistance panel is configured for channel
 `/tickets setup` to post or refresh it. `/tickets status` reports the
 saved panel and current open-ticket count.
 
-The panel is one spacious Components V2 card containing the existing
+The panel is one spacious Components V2 card containing the official
 Assistance banner, readable category descriptions, and one full-width
-three-option dropdown. Ticket channels are routed and assigned
+five-option dropdown. Ticket channels are routed and assigned
 automatically:
 
-- General Support → category `1490870667795763412`, team role
-  `1490523797629960392`
-- Internal Affairs Support → category `1490870524245577899`, team role
-  `1526344302618218656`
 - Management Support → category `1490870524245577899`, team role
   `1490523581187231795`
+- Internal Affairs Support → category `1490870524245577899`, team role
+  `1526344302618218656`
+- Partnership Support → category `1490870767632646365`, Management role
+  `1490523581187231795`
+- General Support → category `1490870667795763412`, team role
+  `1490523797629960392`
+- In-Game Report Support → category `1490870667795763412`, General Support
+  role `1490523797629960392`
 
 Each new ticket pings the ticket creator and only the team selected in the
 panel. Its private channel is visible to that creator, the selected team,
-the bot, and server administrators. Management Support also covers
-partnership requests and serious leadership concerns.
+the bot, and server administrators. In-Game Report Support first opens a
+three-question form for the assisting staff member, reported Roblox
+username, and report reason. The submitted answers are saved with the
+ticket and shown inside its private welcome embed.
 
 Inside an open ticket, authorized staff can use `!hello` to claim the
 ticket and send a rank-aware introduction to its creator. The command

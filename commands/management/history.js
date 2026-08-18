@@ -7,6 +7,7 @@ const {
 const {
     readDatabase,
 } = require('../../utils/database');
+const brands = require('../../config/branding');
 
 function convertHexToDecimal(hexColor) {
     if (typeof hexColor !== 'string') {
@@ -734,17 +735,13 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL:
-                                interaction.guild.iconURL({
-                                    dynamic: true,
-                                }) || undefined,
+                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Staff Management System',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -875,17 +872,13 @@ module.exports = {
                             guildConfiguration.serverName ||
                             interaction.guild.name,
 
-                        iconURL:
-                            interaction.guild.iconURL({
-                                dynamic: true,
-                            }) || undefined,
+                        iconURL: brands.assets.logo,
                     })
                     .setFooter({
                         text:
                             'Illinois State Utilities • Unified Staff History',
 
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
+                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 

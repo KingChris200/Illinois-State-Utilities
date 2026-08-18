@@ -244,9 +244,12 @@ function createRequestEmbed(record, guild, avatarUrl = null) {
         )
         .setAuthor({
             name: guild.name,
-            iconURL: guild.iconURL?.({ size: 128 }) || undefined,
+            iconURL: brands.assets.logo,
         })
-        .setFooter({ text: 'Illinois State Utilities • Leave Management' })
+        .setFooter({
+            text: 'Illinois State Utilities • Leave Management',
+            iconURL: brands.assets.logo,
+        })
         .setTimestamp(new Date(record.requestedAt));
 
     if (avatarUrl) {
@@ -286,9 +289,12 @@ function createDecisionEmbed(record, guild) {
         )
         .setAuthor({
             name: guild.name,
-            iconURL: guild.iconURL?.({ size: 128 }) || undefined,
+            iconURL: brands.assets.logo,
         })
-        .setFooter({ text: 'Illinois State Utilities • Leave Management' })
+        .setFooter({
+            text: 'Illinois State Utilities • Leave Management',
+            iconURL: brands.assets.logo,
+        })
         .setTimestamp(new Date(record.reviewedAt));
 }
 
@@ -311,7 +317,10 @@ function createManagePayload(records, user, guild) {
             name: user.username,
             iconURL: user.displayAvatarURL?.({ size: 128 }),
         })
-        .setFooter({ text: 'Illinois State Utilities • Your LOA records' });
+        .setFooter({
+            text: 'Illinois State Utilities • Your LOA records',
+            iconURL: brands.assets.logo,
+        });
 
     if (!active) {
         embed.setDescription(
@@ -339,9 +348,7 @@ function createManagePayload(records, user, guild) {
             );
     }
 
-    if (guild.iconURL?.({ size: 256 })) {
-        embed.setThumbnail(guild.iconURL({ size: 256 }));
-    }
+    embed.setThumbnail(brands.assets.logo);
 
     const controls = new ActionRowBuilder();
 

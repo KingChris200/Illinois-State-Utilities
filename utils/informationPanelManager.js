@@ -8,15 +8,18 @@ const {
     MediaGalleryBuilder,
     MediaGalleryItemBuilder,
     MessageFlags,
-    SeparatorBuilder,
-    SeparatorSpacingSize,
     StringSelectMenuBuilder,
     TextDisplayBuilder,
 } = require('discord.js');
 
-const brands = require('../config/branding');
 const { getDashboardContext } = require('./dashboardManager');
 const { readDatabase, updateDatabase } = require('./database');
+const {
+    addBrandSignature,
+    colorToDecimal,
+    createPanelHeader,
+    createPanelSeparator,
+} = require('./componentTheme');
 
 const INFORMATION_DATABASE = 'information-panels';
 const INFORMATION_PREFIX = 'information:';
@@ -134,7 +137,7 @@ function createInformationPanelPayload(guild, context) {
         .setPlaceholder('Choose an information section…')
         .addOptions(INFORMATION_PAGES);
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -142,19 +145,20 @@ function createInformationPanelPayload(guild, context) {
                     .setDescription('Illinois State Roleplay Information')
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
+            createPanelHeader({
+                title: 'Illinois State Roleplay Information',
+                description:
+                    'A clear introduction to the community, its standards, and its official resources.',
+            }),
             new TextDisplayBuilder().setContent(
                 [
-                    '# Illinois State Roleplay',
-                    'Illinois State Roleplay is a strict ER:LC community built around organized sessions, realistic roleplay, fair moderation, and a welcoming member experience.',
+                    '## About the Community',
+                    'Illinois State Roleplay is a strict ER:LC community built around **organized sessions**, **believable scenes**, **fair moderation**, and a welcoming member experience.',
                     '',
-                    '### Start Here',
-                    'Review both guideline channels before participating. Assistance, session information, and the official Whitelisted Roblox group are available below.',
+                    '## Start Here',
+                    'Review both guideline channels before participating. Assistance, session information, and the official Whitelisted Roblox group are available through the links below.',
                 ].join('\n')
             )
         );
@@ -164,22 +168,18 @@ function createInformationPanelPayload(guild, context) {
     }
 
     container
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 '## Community Information\nChoose one section below. The selected page is shown only to you.'
             )
         )
-        .addActionRowComponents(new ActionRowBuilder().addComponents(menu))
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                '-# Built for Realism. Driven by Community. • Illinois State Roleplay'
-            )
-        );
+        .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
+
+    addBrandSignature(container, {
+        detail:
+            'Official community information • Built for Realism. Driven by Community.',
+    });
 
     return {
         files: [createInformationAttachment()],
@@ -349,7 +349,7 @@ function createInformationPagePayload(guild, pageId, context) {
     }
 
     const container = new ContainerBuilder()
-        .setAccentColor(Number.parseInt(brands.palette.lightBlue.slice(1), 16))
+        .setAccentColor(colorToDecimal())
         .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(
                 new MediaGalleryItemBuilder()
@@ -357,34 +357,26 @@ function createInformationPagePayload(guild, pageId, context) {
                     .setDescription('Illinois State Roleplay Information')
             )
         )
-        .addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        )
+        .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `# ${page.title}\n${page.body}`
-            )
+            createPanelHeader({
+                title: page.title,
+                description: 'Official community information',
+            }),
+            new TextDisplayBuilder().setContent(page.body)
         );
 
     const linkRows = createLinkRows(page.buttons || []);
     if (linkRows.length) {
-        container.addSeparatorComponents(
-            new SeparatorBuilder()
-                .setDivider(true)
-                .setSpacing(SeparatorSpacingSize.Large)
-        );
+        container.addSeparatorComponents(createPanelSeparator());
         for (const row of linkRows) {
             container.addActionRowComponents(row);
         }
     }
 
-    container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-            '-# Illinois State Roleplay • Official community information'
-        )
-    );
+    addBrandSignature(container, {
+        detail: 'Official community information • Illinois State Roleplay',
+    });
 
     return {
         files: [createInformationAttachment()],

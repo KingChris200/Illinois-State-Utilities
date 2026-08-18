@@ -143,17 +143,13 @@ module.exports = {
                 .setDescription(descriptionLines.join('\n'))
                 .setAuthor({
                     name: interaction.guild.name,
-                    iconURL:
-                        interaction.guild.iconURL({
-                            extension: 'png',
-                            size: 256,
-                        }) || undefined,
+                    iconURL: brands.assets.logo,
                 })
-                .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+                .setThumbnail(brands.assets.logo)
                 .setImage(brands.assets.sessionBanner)
                 .setFooter({
                     text: 'Illinois State Utilities • Supporting Illinois State Roleplay',
-                    iconURL: interaction.client.user.displayAvatarURL(),
+                    iconURL: brands.assets.logo,
                 })
                 .setTimestamp();
 

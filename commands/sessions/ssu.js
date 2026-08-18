@@ -22,6 +22,7 @@ const sessionAutomationConfig = require(
 const {
     saveSessionState,
 } = require('../../services/sessionStateStore');
+const brands = require('../../config/branding');
 
 /*
  * ==========================================
@@ -257,11 +258,7 @@ module.exports = {
          * ==========================================
          */
 
-        const guildIcon =
-            interaction.guild.iconURL({
-                extension: 'png',
-                size: 256,
-            }) ?? null;
+        const guildIcon = brands.assets.logo;
 
         /*
          * ==========================================

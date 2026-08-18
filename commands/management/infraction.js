@@ -32,6 +32,7 @@ const {
     findRecentDuplicate,
     analyzeInfractionHistory,
 } = require('../../utils/infractionIntelligence');
+const brands = require('../../config/branding');
 
 const INFRACTION_TYPES = {
     notice: {
@@ -556,8 +557,7 @@ module.exports = {
                     .setFooter({
                         text:
                             'Illinois State Utilities • Smart Discipline Review',
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
+                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
@@ -1191,17 +1191,13 @@ module.exports = {
                             guildConfiguration.serverName ||
                             interaction.guild.name,
 
-                        iconURL:
-                            interaction.guild.iconURL({
-                                dynamic: true,
-                            }) || undefined,
+                        iconURL: brands.assets.logo,
                     })
                     .setFooter({
                         text:
                             'Illinois State Utilities • Staff Discipline System',
 
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
+                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
@@ -1305,8 +1301,7 @@ module.exports = {
                             text:
                                 'Illinois State Utilities • Management Logs',
 
-                            iconURL:
-                                interaction.client.user.displayAvatarURL(),
+                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 

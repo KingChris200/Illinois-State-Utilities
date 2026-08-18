@@ -78,10 +78,6 @@ module.exports = {
 function createWelcomePayload(member) {
     const brand = brands.isrp;
     const guildName = member.guild.name || brand.name;
-    const guildIcon = member.guild.iconURL?.({
-        extension: 'png',
-        size: 256,
-    });
     const memberCount = Math.max(
         Number(member.guild.memberCount) || 1,
         1
@@ -102,11 +98,10 @@ function createWelcomePayload(member) {
         .setImage(
             `attachment://${WELCOME_BANNER_NAME}`
         )
+        .setThumbnail(brand.logo)
         .setFooter({
             text: `${guildName} • Welcome aboard`,
-            ...(guildIcon
-                ? { iconURL: guildIcon }
-                : {}),
+            iconURL: brand.logo,
         })
         .setTimestamp();
 

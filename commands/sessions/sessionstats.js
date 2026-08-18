@@ -14,6 +14,7 @@ const {
     summarizeSessionHistory,
     findSessionRecords,
 } = require('../../utils/sessionAnalytics');
+const brands = require('../../config/branding');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const EMBED_COLOR = '#24589B';
@@ -444,10 +445,7 @@ module.exports = {
                 });
             }
 
-            const guildIcon = interaction.guild.iconURL({
-                extension: 'png',
-                size: 256,
-            }) || null;
+            const guildIcon = brands.assets.logo;
 
             let embed;
 
