@@ -36,9 +36,17 @@ const {
     sendShiftLog,
     stopMemberShift,
 } = require('../../utils/ispShiftManager');
+const {
+    createIspShiftDashboardPayload,
+    fetchStoredIspShiftDashboardMessage,
+    getStoredIspShiftDashboard,
+    removeStoredIspShiftDashboard,
+    saveIspShiftDashboard,
+} = require('../../utils/ispShiftDashboardManager');
 
 const ADMIN_SUBCOMMANDS = new Set([
     'cooldowns',
+    'dashboard',
     'excuse',
     'excuse-revoke',
     'lists',
@@ -79,6 +87,89 @@ async function replyWithError(interaction, content) {
     } else {
         await interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }
+}
+
+async function fetchShiftManageChannel(guild) {
+    return (
+        guild.channels?.cache?.get(shiftConfig.shiftManageChannelId) ||
+        (guild.channels?.fetch
+            ? await guild.channels
+                  .fetch(shiftConfig.shiftManageChannelId)
+                  .catch(() => null)
+            : null)
+    );
+}
+
+async function handleShiftDashboard(interaction) {
+    const action = interaction.options.getString('action', true);
+    const stored = await getStoredIspShiftDashboard(interaction.guildId);
+    const existingMessage = await fetchStoredIspShiftDashboardMessage(
+        interaction.client,
+        stored
+    );
+
+    if (action === 'remove') {
+        if (!stored) {
+            await interaction.editReply(
+                'No permanent ISP shift dashboard is currently configured.'
+            );
+            return;
+        }
+
+        await existingMessage?.delete().catch(() => null);
+        await removeStoredIspShiftDashboard(interaction.guildId);
+        await interaction.editReply('✅ The permanent ISP shift dashboard was removed.');
+        return;
+    }
+
+    const payload = await createIspShiftDashboardPayload(interaction.guild);
+
+    if (action === 'update') {
+        if (!existingMessage) {
+            await interaction.editReply(
+                'The saved dashboard message could not be found. Run `/shift dashboard` with **Setup Dashboard** to recreate it.'
+            );
+            return;
+        }
+
+        await existingMessage.edit(payload);
+        await saveIspShiftDashboard(interaction.guildId, {
+            ...stored,
+            updatedAt: new Date().toISOString(),
+            updatedBy: interaction.user.id,
+        });
+        await interaction.editReply(
+            `✅ The ISP shift dashboard was updated: ${existingMessage.url}`
+        );
+        return;
+    }
+
+    const channel = await fetchShiftManageChannel(interaction.guild);
+    if (!channel?.isTextBased?.() || !channel.send) {
+        await interaction.editReply(
+            `I could not access the configured shift-management channel <#${shiftConfig.shiftManageChannelId}>.`
+        );
+        return;
+    }
+
+    let dashboardMessage = existingMessage;
+    if (dashboardMessage?.channelId === channel.id) {
+        await dashboardMessage.edit(payload);
+    } else {
+        dashboardMessage = await channel.send(payload);
+        await existingMessage?.delete().catch(() => null);
+    }
+
+    await saveIspShiftDashboard(interaction.guildId, {
+        channelId: channel.id,
+        messageId: dashboardMessage.id,
+        postedBy: interaction.user.id,
+        updatedBy: interaction.user.id,
+        updatedAt: new Date().toISOString(),
+    });
+    await interaction.editReply(
+        `✅ The permanent ISP shift dashboard is ready: ${dashboardMessage.url}`
+    );
 }
 
 async function handleGlobalAdmin(interaction) {
@@ -547,6 +638,26 @@ module.exports = {
         )
         .addSubcommand((subcommand) =>
             subcommand
+                .setName('dashboard')
+                .setDescription(
+                    'Set up or maintain the permanent ISP shift dashboard.'
+                )
+                .addStringOption((option) =>
+                    option
+                        .setName('action')
+                        .setDescription(
+                            'Choose what to do with the permanent dashboard.'
+                        )
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'Setup Dashboard', value: 'setup' },
+                            { name: 'Update Dashboard', value: 'update' },
+                            { name: 'Remove Dashboard', value: 'remove' }
+                        )
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
                 .setName('cooldowns')
                 .setDescription('List active promotion cooldowns.')
         )
@@ -688,6 +799,10 @@ module.exports = {
             }
             if (group === 'admin' && subcommand === 'user') {
                 await handleUserAdmin(interaction);
+                return;
+            }
+            if (subcommand === 'dashboard') {
+                await handleShiftDashboard(interaction);
                 return;
             }
             if (subcommand === 'cooldowns') {

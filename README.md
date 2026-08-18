@@ -194,6 +194,7 @@ Office of Director commands:
 
 - `/shift admin global` shows system status, controls logging, or safely ends all shifts
 - `/shift admin user` reviews a member, ends a shift, adjusts time, manages infractions, or manages promotion cooldowns
+- `/shift dashboard` sets up, updates, or removes the permanent shift dashboard
 - `/shift cooldowns` lists active promotion cooldowns
 - `/shift excuse` and `/shift excuse-revoke` manage weekly quota excuses
 - `/shift lists` lists active shift infractions
@@ -209,6 +210,13 @@ Configured resources:
 - Shift logs: `1527524431642104039`
 - Shift manager: `1527524104209567824`
 - Shift administration: `1527524291829174365`
+
+Run `/shift dashboard` with **Setup Dashboard** once to post the permanent
+panel in the configured Shift manager channel. It displays current On-Duty and
+On-Break totals, the weekly quota, logging status, and the top three officers.
+Its three buttons privately open the officer's shift manager, online list, or
+leaderboard. The saved message is recovered after restarts and refreshes every
+minute.
 
 The weekly quota defaults to two hours in `config/ispShift.js`. Promotion
 reviews never change Discord roles automatically; the Office of Director must

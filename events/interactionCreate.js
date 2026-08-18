@@ -49,6 +49,9 @@ const {
     handleIspShiftInteraction,
 } = require('../utils/ispShiftManager');
 const {
+    handleIspShiftDashboardInteraction,
+} = require('../utils/ispShiftDashboardManager');
+const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
 const {
@@ -128,6 +131,14 @@ module.exports = {
             interaction.customId?.startsWith('regulations:')
         ) {
             await handleRegulationsInteraction(interaction);
+            return;
+        }
+
+        if (
+            interaction.isButton?.() &&
+            interaction.customId?.startsWith('isp_shift_dashboard:')
+        ) {
+            await handleIspShiftDashboardInteraction(interaction);
             return;
         }
 

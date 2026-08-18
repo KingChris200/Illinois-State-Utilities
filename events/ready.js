@@ -15,6 +15,9 @@ const {
 const {
     recoverIspShiftRoles,
 } = require('../utils/ispShiftManager');
+const {
+    startIspShiftDashboardMonitor,
+} = require('../services/ispShiftDashboardMonitor');
 
 module.exports = {
     name: Events.ClientReady,
@@ -86,6 +89,19 @@ module.exports = {
         } catch (error) {
             console.error(
                 '[ISP SHIFT RECOVERY] Startup recovery failed:',
+                error
+            );
+        }
+
+        try {
+            const dashboard = await startIspShiftDashboardMonitor(client);
+
+            console.log(
+                `[ISP SHIFT DASHBOARD] ${dashboard.state} (initial=${dashboard.initialStatus || 'unchanged'})`
+            );
+        } catch (error) {
+            console.error(
+                '[ISP SHIFT DASHBOARD] Startup failed:',
                 error
             );
         }

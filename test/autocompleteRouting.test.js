@@ -309,6 +309,29 @@ test('central interaction handler routes protected ISP shift controls', async ()
     assert.match(reply.content, /belongs to another user/i);
 });
 
+test('central interaction handler routes permanent ISP dashboard buttons', async () => {
+    let reply;
+
+    await interactionEvent.execute({
+        isAutocomplete: () => false,
+        isChatInputCommand: () => false,
+        isModalSubmit: () => false,
+        isStringSelectMenu: () => false,
+        isButton: () => true,
+        customId: 'isp_shift_dashboard:manage',
+        guildId: ISP_SERVER_ID,
+        member: {
+            roles: { cache: { has: () => false } },
+        },
+        reply: async (payload) => {
+            reply = payload;
+        },
+    });
+
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
+    assert.match(reply.content, /Illinois State Police member/i);
+});
+
 test('infraction exposes a compact automatic workflow', () => {
     const command = infractionCommand.data.toJSON();
     const typeOption = command.options.find(

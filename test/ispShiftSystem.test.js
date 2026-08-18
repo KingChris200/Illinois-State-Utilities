@@ -17,6 +17,10 @@ const {
     isShiftAdministrator,
     updateShiftRoles,
 } = require('../utils/ispShiftManager');
+const {
+    createIspShiftDashboardPayload,
+    ISP_SHIFT_DASHBOARD_PREFIX,
+} = require('../utils/ispShiftDashboardManager');
 
 function createRoleCache(roleIds) {
     const roles = new Set(roleIds);
@@ -48,6 +52,7 @@ test('/shift exposes the requested compact command family', () => {
             'manage',
             'leaderboard',
             'admin',
+            'dashboard',
             'cooldowns',
             'excuse',
             'excuse-revoke',
@@ -62,6 +67,29 @@ test('/shift exposes the requested compact command family', () => {
     assert.deepEqual(
         admin.options.map((option) => option.name),
         ['global', 'user']
+    );
+});
+
+test('permanent ISP dashboard exposes simple private shift controls', async () => {
+    const payload = await createIspShiftDashboardPayload({
+        id: ISP_SERVER_ID,
+        name: 'Illinois State Police',
+        iconURL: () => null,
+    });
+    const embed = payload.embeds[0].toJSON();
+    const buttons = payload.components[0].toJSON().components;
+
+    assert.equal(embed.title, 'Illinois State Police Shift Dashboard');
+    assert.ok(embed.fields.some((field) => field.name.includes('On Duty')));
+    assert.ok(embed.fields.some((field) => field.name.includes('Weekly Quota')));
+    assert.deepEqual(
+        buttons.map((button) => button.label),
+        ['Manage My Shift', 'View Online', 'Leaderboard']
+    );
+    assert.ok(
+        buttons.every((button) =>
+            button.custom_id.startsWith(ISP_SHIFT_DASHBOARD_PREFIX)
+        )
     );
 });
 
