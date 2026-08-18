@@ -23,6 +23,7 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('guide')
+        .setDMPermission(false)
         .setDescription(
             'Manages the permanent ISRP Staff Guide panel.'
         )

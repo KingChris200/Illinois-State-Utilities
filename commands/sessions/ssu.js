@@ -6,6 +6,7 @@ const {
     ButtonStyle,
     PermissionFlagsBits,
     AttachmentBuilder,
+    MessageFlags,
 } = require('discord.js');
 
 const path = require('path');
@@ -136,7 +137,8 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageGuild
-        ),
+        )
+        .setDMPermission(false),
 
     async execute(interaction) {
         /*
@@ -149,7 +151,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ This command can only be used inside a server.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -160,7 +162,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     `❌ The official session workflow must be started in <#${sessionAutomationConfig.channelId}>.`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -174,7 +176,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ A server vote is already active. Please allow it to finish before beginning another.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -188,7 +190,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ A session is already active. Run `/ssd` before beginning another startup.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -209,7 +211,7 @@ module.exports = {
                     '❌ The Sessions banner could not be found.\n\n' +
                     'Make sure the real image is located here:\n' +
                     '`assets/thumbnails/sessions-banner-v2.png`',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -449,7 +451,7 @@ module.exports = {
          */
 
         await interaction.deferReply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
 
         try {

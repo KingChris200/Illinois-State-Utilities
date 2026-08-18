@@ -1,5 +1,18 @@
 # Illinois State Utilities
 
+## First-time setup
+
+1. Install Node.js 20 or newer.
+2. Run `npm install` in the project folder.
+3. Copy `.env.example` to `.env`.
+4. Add the bot token to `DISCORD_TOKEN` and the Discord application ID to
+   `CLIENT_ID`. Keep `.env` private and never commit it.
+5. Run `npm run deploy-commands` once, then start the bot with `npm start`.
+
+For safe testing without live ER:LC access, leave `ERLC_DRY_RUN=true` and
+`ERLC_MOCK_MODE=true`. Set both to `false` only when the live server key and
+Discord permissions have been verified.
+
 ## Remote ER:LC commands
 
 Remote calls are isolated in `services/erlcService.js`. Run `?help`
@@ -31,9 +44,8 @@ ERLC_SENIOR_MOD_ROLE_IDS=567890123456789012
 # Optional Discord channel for command audit messages
 ERLC_COMMAND_LOG_CHANNEL_ID=456789012345678901
 
-# Optional Staff Guide source and private permission-log shortcut
+# Optional Staff Guide source and displayed version
 STAFF_GUIDE_DOCUMENT_URL=https://docs.google.com/document/d/1-HhMjftqUdLhgdmoLhNSrNcpvkcwlo_p2JZ_4ri1C3o/edit?tab=t.3qivgdyxzvm9
-STAFF_PERMISSION_LOGS_CHANNEL_ID=
 STAFF_GUIDE_VERSION=1.0
 
 # Automatic private JSON snapshots (defaults shown)
@@ -343,9 +355,8 @@ The public panel intentionally has no acknowledgment or onboarding
 controls. Existing historical compliance records remain preserved, but
 rank pages end cleanly after their official handbook link.
 
-Set `STAFF_PERMISSION_LOGS_CHANNEL_ID` only if private guide pages should
-hand staff off to a permission-log channel. The bot needs **View Channel**,
-**Send Messages**, and **Embed Links** in the selected guide channel.
+The bot needs **View Channel**, **Send Messages**, and **Embed Links** in
+the selected guide channel.
 
 Run `npm run deploy-commands` once after installing this feature, then
 restart the bot and begin with `/guide preview`.

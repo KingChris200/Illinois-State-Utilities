@@ -214,6 +214,7 @@ async function addStaffHistoryRecord(
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('award')
+        .setDMPermission(false)
         .setDescription(
             'Manage Illinois State Roleplay staff awards.'
         )

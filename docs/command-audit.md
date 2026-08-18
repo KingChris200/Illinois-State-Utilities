@@ -1,6 +1,20 @@
 # Command Audit
 
-Reviewed on August 9, 2026.
+Reviewed on August 17, 2026.
+
+## Reliability cleanup
+
+- Restricted `/sessionfull` and `/sessionlow` to members with **Manage
+  Server**, added runtime permission checks, and blocked cross-server
+  destinations.
+- Added a global event failure boundary so unexpected interaction errors are
+  logged and receive a private user-safe response.
+- Moved `/setup` and `/config` onto the queued, atomic JSON database layer.
+- Removed retired Staff Guide acknowledgement/onboarding code while preserving
+  its historical records.
+- Removed obsolete movement channel settings and four unused legacy banners.
+- Made every server workflow unavailable in direct messages and migrated
+  private replies to Discord's current message-flags API.
 
 ## Removed
 
@@ -33,6 +47,6 @@ ticket data was deleted.
 
 Keep rare administrative commands out of public-facing help where
 appropriate instead of deleting working tools. Review actual usage logs
-before the next cleanup so future removals are evidence-based. A future
-ISRP Dashboard can surface the common workflows while leaving advanced
-commands available to authorized staff.
+before the next cleanup so future removals are evidence-based. The current
+ISRP Dashboard surfaces common workflows while advanced commands remain
+available only to authorized staff.

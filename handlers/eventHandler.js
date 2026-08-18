@@ -1,5 +1,42 @@
 const fs = require('fs');
 const path = require('path');
+const {
+    Events,
+    MessageFlags,
+} = require('discord.js');
+
+async function executeEvent(event, file, args, client) {
+    try {
+        await event.execute(...args, client);
+    } catch (error) {
+        console.error(
+            `[EVENT ERROR] ${file} (${event.name}):`,
+            error
+        );
+
+        if (event.name !== Events.InteractionCreate) {
+            return;
+        }
+
+        const interaction = args[0];
+
+        if (!interaction) {
+            return;
+        }
+
+        const response = {
+            content:
+                '❌ An unexpected error occurred while processing that interaction. Please try again.',
+            flags: MessageFlags.Ephemeral,
+        };
+
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(response).catch(() => {});
+        } else {
+            await interaction.reply(response).catch(() => {});
+        }
+    }
+}
 
 module.exports = function loadEvents(client) {
     const eventsPath = path.join(__dirname, '..', 'events');
@@ -27,13 +64,13 @@ module.exports = function loadEvents(client) {
         }
 
         if (event.once) {
-            client.once(event.name, (...args) =>
-                event.execute(...args, client)
-            );
+            client.once(event.name, (...args) => {
+                void executeEvent(event, file, args, client);
+            });
         } else {
-            client.on(event.name, (...args) =>
-                event.execute(...args, client)
-            );
+            client.on(event.name, (...args) => {
+                void executeEvent(event, file, args, client);
+            });
         }
 
         loadedEventCount++;
@@ -43,3 +80,5 @@ module.exports = function loadEvents(client) {
 
     return loadedEventCount;
 };
+
+module.exports.executeEvent = executeEvent;

@@ -2,6 +2,7 @@ const {
     SlashCommandBuilder,
     EmbedBuilder,
     PermissionFlagsBits,
+    MessageFlags,
 } = require('discord.js');
 
 const sessionManager = require('../../utils/sessionManager');
@@ -28,13 +29,14 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssd')
         .setDescription('End the active Illinois State Roleplay session.')
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+        .setDMPermission(false),
 
     async execute(interaction) {
         if (!interaction.inGuild()) {
             return interaction.reply({
                 content: '❌ This command can only be used inside a server.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -46,7 +48,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ A server vote is currently running, but the session has not started yet.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -58,12 +60,12 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ There is no active session to shut down.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         await interaction.deferReply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
 
         /*

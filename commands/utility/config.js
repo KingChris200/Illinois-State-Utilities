@@ -5,27 +5,9 @@ const {
     MessageFlags,
 } = require('discord.js');
 
-const fs = require('node:fs/promises');
-const path = require('node:path');
-
-const CONFIG_FILE = path.join(
-    process.cwd(),
-    'data',
-    'guild-configs.json'
-);
-
-async function readConfigurations() {
-    try {
-        const fileContents = await fs.readFile(CONFIG_FILE, 'utf8');
-        return JSON.parse(fileContents);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            return {};
-        }
-
-        throw error;
-    }
-}
+const {
+    readDatabase,
+} = require('../../utils/database');
 
 function convertHexToDecimal(hexColor) {
     const cleanedColor = hexColor
@@ -46,7 +28,9 @@ module.exports = {
         .setName('config')
         .setDescription(
             'View the saved Illinois State Utilities configuration.'
-        ),
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+        .setDMPermission(false),
 
     async execute(interaction) {
         try {
@@ -78,7 +62,10 @@ module.exports = {
                 flags: MessageFlags.Ephemeral,
             });
 
-            const configurations = await readConfigurations();
+            const configurations = await readDatabase(
+                'guild-configs',
+                {}
+            );
             const guildConfiguration =
                 configurations[interaction.guildId];
 

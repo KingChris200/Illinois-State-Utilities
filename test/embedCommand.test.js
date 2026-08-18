@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+    MessageFlags,
     PermissionFlagsBits,
 } = require('discord.js');
 
@@ -83,7 +84,10 @@ test('/embed posts a branded announcement in the current channel', async () => {
 
     assert.equal(sent.length, 1);
     assert.equal(replies.length, 1);
-    assert.equal(replies[0].ephemeral, true);
+    assert.equal(
+        replies[0].flags,
+        MessageFlags.Ephemeral
+    );
     assert.match(replies[0].content, /posted/i);
 
     const payload = sent[0];
@@ -160,6 +164,9 @@ test('/embed rejects an unusable destination safely', async () => {
 
     assert.equal(sent.length, 0);
     assert.equal(replies.length, 1);
-    assert.equal(replies[0].ephemeral, true);
+    assert.equal(
+        replies[0].flags,
+        MessageFlags.Ephemeral
+    );
     assert.match(replies[0].content, /cannot post embeds/i);
 });

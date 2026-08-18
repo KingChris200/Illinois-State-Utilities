@@ -3,6 +3,7 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    MessageFlags,
 } = require('discord.js');
 
 const createEmbed = require('./createEmbed');
@@ -94,7 +95,7 @@ async function handleOperationsButton(interaction) {
         await interaction.reply({
             content:
                 'This operations dashboard has expired. Run `?operations` to open a new one.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -103,7 +104,7 @@ async function handleOperationsButton(interaction) {
         await interaction.reply({
             content:
                 'Only the staff member who opened this operations dashboard can use its controls.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -112,7 +113,7 @@ async function handleOperationsButton(interaction) {
         await interaction.reply({
             content:
                 'This dashboard is already refreshing. Please wait a moment.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }

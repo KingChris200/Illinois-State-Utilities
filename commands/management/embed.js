@@ -4,6 +4,7 @@ const {
     EmbedBuilder,
     AttachmentBuilder,
     ChannelType,
+    MessageFlags,
 } = require('discord.js');
 
 const path = require('path');
@@ -26,6 +27,7 @@ module.exports = {
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageMessages
         )
+        .setDMPermission(false)
         .addStringOption((option) =>
             option
                 .setName('message')
@@ -70,7 +72,7 @@ module.exports = {
             await interaction.reply({
                 content:
                     '❌ Please include some text for the announcement.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -79,7 +81,7 @@ module.exports = {
             await interaction.reply({
                 content:
                     '❌ I cannot post embeds in that channel. Please choose a channel where I can view messages, send messages, and embed links.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -111,7 +113,7 @@ module.exports = {
             await interaction.reply({
                 content:
                     `✅ Your announcement was posted in ${channel}.`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         } catch (error) {
             console.error('Error while running /embed:', error);
@@ -122,12 +124,12 @@ module.exports = {
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
                     content: errorMessage,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
             } else {
                 await interaction.reply({
                     content: errorMessage,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
             }
         }

@@ -100,10 +100,24 @@ module.exports = {
             return;
         }
 
+        const cooldownExpiresAt =
+            Date.now() + cooldownSeconds * 1000;
+
         cooldowns.set(
             cooldownKey,
-            Date.now() + cooldownSeconds * 1000
+            cooldownExpiresAt
         );
+
+        const cleanupTimer = setTimeout(() => {
+            if (
+                cooldowns.get(cooldownKey) ===
+                cooldownExpiresAt
+            ) {
+                cooldowns.delete(cooldownKey);
+            }
+        }, Math.max(cooldownSeconds * 1000, 0));
+
+        cleanupTimer.unref?.();
 
         try {
             await command.execute({

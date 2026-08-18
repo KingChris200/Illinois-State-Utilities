@@ -367,6 +367,7 @@ function createRecordsEmbed(history, guildIcon) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('sessionstats')
+        .setDMPermission(false)
         .setDescription(
             'Privately view completed Illinois State Roleplay session statistics.'
         )

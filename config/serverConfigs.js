@@ -60,8 +60,6 @@ const ISRP_CHANNELS = {
     infractions:
         '1490759095500800190',
 
-    movements:
-        '1490759095500800190',
 };
 
 const ISP_CHANNELS = {
@@ -74,8 +72,6 @@ const ISP_CHANNELS = {
     infractions:
         '1527521493087682590',
 
-    movements:
-        '1527521493087682590',
 
     shiftLogs:
         '1527524431642104039',
@@ -954,7 +950,6 @@ function memberCanReviewMovements(
  * promotions
  * demotions
  * infractions
- * movements
  *
  * @param {string} guildId
  * @param {string} channelType

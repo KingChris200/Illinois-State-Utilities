@@ -3,6 +3,7 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    MessageFlags,
 } = require('discord.js');
 
 const createEmbed = require('./createEmbed');
@@ -79,7 +80,7 @@ async function handleModerationButton(interaction) {
         await interaction.reply({
             content:
                 'This moderation confirmation has expired or was already completed.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -88,7 +89,7 @@ async function handleModerationButton(interaction) {
         await interaction.reply({
             content:
                 'Only the staff member who requested this action can confirm or cancel it.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -97,7 +98,7 @@ async function handleModerationButton(interaction) {
         await interaction.reply({
             content:
                 'This moderation action is already being processed.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }

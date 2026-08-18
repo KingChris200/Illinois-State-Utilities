@@ -3,6 +3,7 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    MessageFlags,
 } = require('discord.js');
 
 const erlcService = require('../services/erlcService');
@@ -114,7 +115,7 @@ async function handlePlayerIntelligenceButton(interaction) {
         await interaction.reply({
             content:
                 'This player-intelligence profile has expired. Run `?player <username>` to open a new one.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -123,7 +124,7 @@ async function handlePlayerIntelligenceButton(interaction) {
         await interaction.reply({
             content:
                 'Only the staff member who opened this player profile can use its controls.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -132,7 +133,7 @@ async function handlePlayerIntelligenceButton(interaction) {
         await interaction.reply({
             content:
                 'This player profile is already refreshing. Please wait a moment.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }

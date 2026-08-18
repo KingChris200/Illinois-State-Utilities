@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { MessageFlags } = require('discord.js');
 
 const {
     DASHBOARD_TTL_MS,
@@ -69,7 +70,10 @@ test('operations controls reject everyone except the requester', async () => {
             },
         });
 
-        assert.equal(reply.ephemeral, true);
+        assert.equal(
+            reply.flags,
+            MessageFlags.Ephemeral
+        );
         assert.match(reply.content, /Only the staff member/);
         removeOperationsDashboard(dashboard.id);
     });

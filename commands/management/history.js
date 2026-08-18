@@ -411,6 +411,7 @@ function createHistorySection(
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('history')
+        .setDMPermission(false)
         .setDescription(
             'View the complete saved history of an ISRP staff member.'
         )

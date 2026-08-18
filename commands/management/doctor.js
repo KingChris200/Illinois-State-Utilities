@@ -31,6 +31,7 @@ const STATUS_DETAILS = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('doctor')
+        .setDMPermission(false)
         .setDescription(
             'Privately checks the bot configuration and permissions.'
         )

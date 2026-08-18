@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { MessageFlags } = require('discord.js');
 
 const kickCommand = require('../prefixCommands/kick');
 const respawnCommand = require('../prefixCommands/respawn');
@@ -102,7 +103,10 @@ test('confirmation buttons reject other users', async () => {
         },
     });
 
-    assert.equal(response.ephemeral, true);
+    assert.equal(
+        response.flags,
+        MessageFlags.Ephemeral
+    );
     assert.match(response.content, /only the staff member/i);
 
     removeConfirmation(buttonData.id);

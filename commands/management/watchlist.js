@@ -54,6 +54,7 @@ const SEVERITY_PRESENTATION = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('watchlist')
+        .setDMPermission(false)
         .setDescription(
             'Privately manage internal Roblox-user watchlist records.'
         )

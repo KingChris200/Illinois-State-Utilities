@@ -175,6 +175,7 @@ function hasRequiredChannelPermissions(channel, botMember) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('infraction')
+        .setDMPermission(false)
         .setDescription(
             'Issue and permanently record an ISRP staff disciplinary action.'
         )

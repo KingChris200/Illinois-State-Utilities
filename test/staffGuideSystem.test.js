@@ -17,10 +17,8 @@ const {
     MAIN_SERVER_ID,
 } = require('../config/serverConfigs');
 const {
-    ACKNOWLEDGE_BUTTON_ID,
     CHAIN_BUTTON_ID,
     MELONLY_INVITE_URL,
-    ONBOARDING_BUTTON_ID,
     RANK_SELECT_ID,
     RANK_SELECT_VALUE_PREFIX,
     SECTION_SELECT_ID,
@@ -32,14 +30,12 @@ const {
     createGuidePanelPayload,
     createGuideSectionPayload,
     createIndividualRankPayload,
-    createOnboardingPayload,
     createRankGuidePayload,
     createTeamGuidePayload,
     getTeamRanks,
     handleStaffGuideInteraction,
 } = require('../utils/staffGuideManager');
 const {
-    createDefaultComplianceState,
     getCurrentAcknowledgements,
     getCurrentOnboardingCompletions,
     normalizeComplianceState,
@@ -186,7 +182,7 @@ test('public guide panel is one large minimal card with one team menu', () => {
         components.some(
             (component) =>
                 component.custom_id ===
-                ACKNOWLEDGE_BUTTON_ID
+                'staff_guide:acknowledge'
         ),
         false
     );
@@ -194,7 +190,7 @@ test('public guide panel is one large minimal card with one team menu', () => {
         components.some(
             (component) =>
                 component.custom_id ===
-                ONBOARDING_BUTTON_ID
+                'staff_guide:onboarding'
         ),
         false
     );
@@ -258,7 +254,7 @@ test('team cards follow the matching Discord team role color', () => {
         components.some(
             (component) =>
                 component.custom_id ===
-                ACKNOWLEDGE_BUTTON_ID
+                'staff_guide:acknowledge'
         ),
         false
     );
@@ -274,48 +270,6 @@ test('the four team guides cover every official rank exactly once', () => {
                 CHAIN_OF_COMMAND.indexOf(right)
         ),
         CHAIN_OF_COMMAND
-    );
-});
-
-test('onboarding checklist includes all required resources and safe completion controls', () => {
-    const state = createDefaultComplianceState(
-        MAIN_SERVER_ID
-    );
-    const payload = createOnboardingPayload(
-        mockGuild,
-        state,
-        'staff-user'
-    );
-    const components = collectComponents(
-        payload.components[0].toJSON()
-    );
-
-    assert.equal(
-        payload.flags,
-        MessageFlags.IsComponentsV2
-    );
-    assert.equal(payload.components.length, 1);
-    assert.ok(
-        components.some(
-            (component) =>
-                component.url ===
-                WHITELISTED_GROUP_URL
-        )
-    );
-    assert.ok(
-        components.some(
-            (component) =>
-                component.url ===
-                MELONLY_INVITE_URL
-        )
-    );
-    assert.equal(
-        components.some(
-            (component) =>
-                component.custom_id ===
-                ACKNOWLEDGE_BUTTON_ID
-        ),
-        true
     );
 });
 

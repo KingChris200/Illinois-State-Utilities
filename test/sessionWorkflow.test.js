@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { MessageFlags } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -42,7 +43,10 @@ test('ssu refuses to start outside the sessions channel', async () => {
         },
     });
 
-    assert.equal(reply.ephemeral, true);
+    assert.equal(
+        reply.flags,
+        MessageFlags.Ephemeral
+    );
     assert.match(
         reply.content,
         new RegExp(sessionConfig.channelId)

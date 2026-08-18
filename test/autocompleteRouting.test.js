@@ -49,7 +49,7 @@ test('central interaction handler routes operations buttons', async () => {
         },
     });
 
-    assert.equal(reply.ephemeral, true);
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
     assert.match(reply.content, /expired/);
 });
 
@@ -67,7 +67,7 @@ test('central interaction handler routes player profile buttons', async () => {
         },
     });
 
-    assert.equal(reply.ephemeral, true);
+    assert.equal(reply.flags, MessageFlags.Ephemeral);
     assert.match(reply.content, /expired/);
 });
 

@@ -6,36 +6,9 @@ const {
     MessageFlags,
 } = require('discord.js');
 
-const fs = require('node:fs/promises');
-const path = require('node:path');
-
-const CONFIG_DIRECTORY = path.join(process.cwd(), 'data');
-const CONFIG_FILE = path.join(CONFIG_DIRECTORY, 'guild-configs.json');
-
-async function readConfigurations() {
-    try {
-        const fileContents = await fs.readFile(CONFIG_FILE, 'utf8');
-        return JSON.parse(fileContents);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            return {};
-        }
-
-        throw error;
-    }
-}
-
-async function saveConfigurations(configurations) {
-    await fs.mkdir(CONFIG_DIRECTORY, {
-        recursive: true,
-    });
-
-    await fs.writeFile(
-        CONFIG_FILE,
-        JSON.stringify(configurations, null, 4),
-        'utf8'
-    );
-}
+const {
+    updateDatabase,
+} = require('../../utils/database');
 
 function normalizeHexColor(colorInput) {
     const cleanedColor = colorInput
@@ -57,6 +30,8 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup')
         .setDescription('Configure Illinois State Utilities for this server.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+        .setDMPermission(false)
 
         // Required options must always come first.
         .addStringOption((option) =>
@@ -201,9 +176,7 @@ module.exports = {
                 });
             }
 
-            const configurations = await readConfigurations();
-
-            configurations[interaction.guildId] = {
+            const guildConfiguration = {
                 guildId: interaction.guildId,
                 guildName: interaction.guild.name,
 
@@ -229,7 +202,16 @@ module.exports = {
                 updatedAt: new Date().toISOString(),
             };
 
-            await saveConfigurations(configurations);
+            await updateDatabase(
+                'guild-configs',
+                (configurations) => {
+                    configurations[interaction.guildId] =
+                        guildConfiguration;
+
+                    return configurations;
+                },
+                {}
+            );
 
             const ownerDisplay = secondaryOwner
                 ? `${primaryOwner}\n${secondaryOwner}`

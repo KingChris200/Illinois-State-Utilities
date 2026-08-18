@@ -37,8 +37,6 @@ const {
 } = require('./database');
 const {
     DEFAULT_STAFF_GUIDE_VERSION,
-    acknowledgeCurrentGuide,
-    completeStaffOnboarding,
     getComplianceState,
 } = require('./staffGuideCompliance');
 
@@ -52,12 +50,6 @@ const RANK_SELECT_VALUE_PREFIX = 'rank_';
 const TEAM_SELECT_VALUE_PREFIX = 'team_';
 const CHAIN_BUTTON_ID = `${STAFF_GUIDE_PREFIX}chain`;
 const HELP_BUTTON_ID = `${STAFF_GUIDE_PREFIX}help`;
-const ACKNOWLEDGE_BUTTON_ID =
-    `${STAFF_GUIDE_PREFIX}acknowledge`;
-const ONBOARDING_BUTTON_ID =
-    `${STAFF_GUIDE_PREFIX}onboarding`;
-const ONBOARDING_COMPLETE_BUTTON_ID =
-    `${STAFF_GUIDE_PREFIX}onboarding_complete`;
 const WHITELISTED_GROUP_URL =
     'https://www.roblox.com/communities/623707637/Illinois-State-Roleplay-Strict-Whitelisted#!/about';
 const MELONLY_INVITE_URL =
@@ -792,109 +784,6 @@ function createHelpPayload(
     });
 }
 
-function createOnboardingPayload(
-    guild,
-    complianceState,
-    userId
-) {
-    const version =
-        complianceState?.currentVersion ||
-        DEFAULT_STAFF_GUIDE_VERSION;
-    const acknowledged = Boolean(
-        complianceState?.acknowledgements?.[
-            version
-        ]?.[userId]
-    );
-    const completed =
-        complianceState
-            ?.onboardingCompletions?.[userId]
-            ?.completedVersion === version;
-    return createStaffGuidePagePayload({
-        guild,
-        color: 0x2ecc71,
-        title: '🎓 Staff Onboarding Checklist',
-        intro:
-            'Complete each step honestly before marking onboarding complete. This checklist records completion but never changes roles or applies discipline automatically.',
-        sections: [
-            {
-                name: '1 — Read the Staff Handbook',
-                value:
-                    'Review the rules, punishment guide, commands, moderation workflow, evidence standards, emergencies, and expectations for your division.',
-            },
-            {
-                name: '2 — Join the Whitelisted Group',
-                value:
-                    'Open the official Roblox group and confirm that you have completed any membership requirements assigned by leadership.',
-            },
-            {
-                name: '3 — Open Melonly',
-                value:
-                    'Confirm you can access the staff panel and understand the server’s approved shift workflow.',
-            },
-            {
-                name: '4 — Complete Training',
-                value:
-                    'Finish required training or certification and ask a supervisor about anything that remains unclear.',
-            },
-            {
-                name: '5 — Confirm the Current Guide',
-                value:
-                    `Version **${version}** acknowledgment: ${acknowledged ? '✅ Complete' : '⚠️ Still required'}\nOnboarding status: ${completed ? '✅ Complete' : '⏳ Incomplete'}`,
-            },
-        ],
-        actionRows: [
-            new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setLabel('Staff Handbook')
-                    .setEmoji('📖')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(
-                        STAFF_GUIDE_DOCUMENT_URL
-                    ),
-                new ButtonBuilder()
-                    .setLabel('Whitelisted Group')
-                    .setEmoji('🎮')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(
-                        WHITELISTED_GROUP_URL
-                    ),
-                new ButtonBuilder()
-                    .setLabel('Melonly Invite')
-                    .setEmoji('🕒')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(MELONLY_INVITE_URL)
-            ),
-            new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(
-                        ACKNOWLEDGE_BUTTON_ID
-                    )
-                    .setLabel(
-                        acknowledged
-                            ? 'Guide Acknowledged'
-                            : 'Acknowledge Guide'
-                    )
-                    .setEmoji('✅')
-                    .setStyle(ButtonStyle.Success)
-                    .setDisabled(acknowledged),
-                new ButtonBuilder()
-                    .setCustomId(
-                        ONBOARDING_COMPLETE_BUTTON_ID
-                    )
-                    .setLabel(
-                        completed
-                            ? 'Onboarding Complete'
-                            : 'Mark Onboarding Complete'
-                    )
-                    .setEmoji('🎓')
-                    .setStyle(ButtonStyle.Primary)
-                    .setDisabled(completed)
-            ),
-        ],
-        complianceState,
-    });
-}
-
 function memberHasRole(member, roleId) {
     if (!member || !roleId) {
         return false;
@@ -986,92 +875,6 @@ async function handleStaffGuideInteraction(interaction) {
 
     let payload = null;
     let complianceState = null;
-
-    if (
-        interaction.customId ===
-        ACKNOWLEDGE_BUTTON_ID
-    ) {
-        const result =
-            await acknowledgeCurrentGuide({
-                guildId: interaction.guildId,
-                userId: interaction.user.id,
-                username:
-                    interaction.user.username,
-                displayName:
-                    interaction.member?.displayName,
-            });
-        const timestamp = Math.floor(
-            new Date(
-                result.record.acknowledgedAt
-            ).getTime() / 1000
-        );
-
-        await interaction.reply({
-            content: result.created
-                ? `✅ You acknowledged Staff Guide version **${result.record.version}**. Your confirmation was recorded.`
-                : `ℹ️ You already acknowledged version **${result.record.version}** <t:${timestamp}:R>.`,
-            flags: MessageFlags.Ephemeral,
-            allowedMentions: { parse: [] },
-        });
-        return;
-    }
-
-    if (
-        interaction.customId ===
-        ONBOARDING_BUTTON_ID
-    ) {
-        const state = await getComplianceState(
-            interaction.guildId
-        );
-        complianceState = state;
-
-        payload = createOnboardingPayload(
-            interaction.guild,
-            state,
-            interaction.user.id
-        );
-    } else if (
-        interaction.customId ===
-        ONBOARDING_COMPLETE_BUTTON_ID
-    ) {
-        const state = await getComplianceState(
-            interaction.guildId
-        );
-        const acknowledged = Boolean(
-            state.acknowledgements?.[
-                state.currentVersion
-            ]?.[interaction.user.id]
-        );
-
-        if (!acknowledged) {
-            await interaction.reply({
-                content:
-                    '⚠️ Please acknowledge the current Staff Guide before marking onboarding complete.',
-                flags: MessageFlags.Ephemeral,
-                allowedMentions: { parse: [] },
-            });
-            return;
-        }
-
-        const result =
-            await completeStaffOnboarding({
-                guildId: interaction.guildId,
-                userId: interaction.user.id,
-                username:
-                    interaction.user.username,
-                displayName:
-                    interaction.member?.displayName,
-            });
-
-        await interaction.reply({
-            content: result.created
-                ? `✅ Your staff onboarding checklist for guide version **${result.record.completedVersion}** is complete and recorded.`
-                : `ℹ️ Your onboarding for version **${result.record.completedVersion}** was already completed.`,
-            flags: MessageFlags.Ephemeral,
-            allowedMentions: { parse: [] },
-        });
-        return;
-    }
 
     if (!complianceState) {
         complianceState =
@@ -1225,15 +1028,12 @@ async function fetchStoredGuideMessage(client, panel) {
 }
 
 module.exports = {
-    ACKNOWLEDGE_BUTTON_ID,
     CHAIN_SELECT_VALUE,
     CHAIN_BUTTON_ID,
     CHAIN_GROUPS,
     HELP_BUTTON_ID,
     HELP_SELECT_VALUE,
     MELONLY_INVITE_URL,
-    ONBOARDING_BUTTON_ID,
-    ONBOARDING_COMPLETE_BUTTON_ID,
     RANK_SELECT_ID,
     RANK_SELECT_VALUE_PREFIX,
     SECTION_SELECT_ID,
@@ -1248,7 +1048,6 @@ module.exports = {
     createGuideSectionPayload,
     createHelpPayload,
     createIndividualRankPayload,
-    createOnboardingPayload,
     createRankGuidePayload,
     createTeamGuidePayload,
     fetchStoredGuideMessage,

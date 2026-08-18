@@ -193,6 +193,7 @@ async function sendRouterError(
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('case')
+        .setDMPermission(false)
         .setDescription(
             'View and manage Illinois State Utilities case records.'
         )

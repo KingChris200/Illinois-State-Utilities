@@ -17,6 +17,7 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('backup')
+        .setDMPermission(false)
         .setDescription(
             'Reviews or creates private local data backups.'
         )

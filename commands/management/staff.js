@@ -233,6 +233,7 @@ function formatTimeline(records, emptyMessage) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staff')
+        .setDMPermission(false)
         .setDescription(
             'View an Illinois State Roleplay staff profile.'
         )

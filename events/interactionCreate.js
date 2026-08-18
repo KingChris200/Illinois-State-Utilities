@@ -5,6 +5,7 @@ const {
     ButtonBuilder,
     ButtonStyle,
     AttachmentBuilder,
+    MessageFlags,
 } = require('discord.js');
 
 const path = require('path');
@@ -283,7 +284,7 @@ module.exports = {
                 await interaction.reply({
                     content:
                         '❌ This server vote is no longer accepting responses.',
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
 
@@ -350,7 +351,7 @@ async function handleSlashCommand(interaction) {
         const errorMessage = {
             content:
                 '❌ An unexpected error occurred while running this command.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         };
 
         if (
@@ -404,7 +405,7 @@ async function handleAttendanceVote(
         await interaction.reply({
             content:
                 '❌ This server vote has expired.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -463,7 +464,7 @@ async function handleAttendanceVote(
         await interaction.reply({
             content:
                 '❌ Your vote was recorded, but I could not update the vote message.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -481,7 +482,7 @@ async function handleAttendanceVote(
 
     await interaction.reply({
         content: confirmationMessage,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 
     /*
@@ -589,7 +590,7 @@ async function handleViewVotes(interaction) {
 
     await interaction.reply({
         embeds: [votesEmbed],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 }
 
@@ -608,7 +609,7 @@ function validateActiveVote(interaction) {
             .reply({
                 content:
                     '❌ This server vote is no longer active.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             })
             .catch(() => null);
 
@@ -628,7 +629,7 @@ function validateActiveVote(interaction) {
             .reply({
                 content:
                     '❌ This button does not belong to the currently active server vote.',
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             })
             .catch(() => null);
 

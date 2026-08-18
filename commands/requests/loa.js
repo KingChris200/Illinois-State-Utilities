@@ -11,6 +11,7 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('loa')
+        .setDMPermission(false)
         .setDescription('Request or manage your leave of absence.')
         .addSubcommand((subcommand) =>
             subcommand

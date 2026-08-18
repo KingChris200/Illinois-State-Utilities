@@ -69,124 +69,6 @@ async function getComplianceState(guildId) {
     );
 }
 
-async function acknowledgeCurrentGuide({
-    guildId,
-    userId,
-    username,
-    displayName,
-}) {
-    let result;
-
-    await updateDatabase(
-        STAFF_GUIDE_COMPLIANCE_DATABASE,
-        (database) => {
-            const state = normalizeComplianceState(
-                guildId,
-                database[guildId]
-            );
-            const version = state.currentVersion;
-            const versionRecords =
-                state.acknowledgements[version] || {};
-            const existing = versionRecords[userId];
-
-            if (existing) {
-                result = {
-                    created: false,
-                    record: existing,
-                    state,
-                };
-                database[guildId] = state;
-                return database;
-            }
-
-            const record = {
-                userId,
-                username:
-                    String(username || '').slice(0, 100),
-                displayName:
-                    String(displayName || '').slice(0, 100),
-                version,
-                acknowledgedAt:
-                    new Date().toISOString(),
-            };
-
-            versionRecords[userId] = record;
-            state.acknowledgements[version] =
-                versionRecords;
-            database[guildId] = state;
-            result = {
-                created: true,
-                record,
-                state,
-            };
-
-            return database;
-        },
-        {}
-    );
-
-    return result;
-}
-
-async function completeStaffOnboarding({
-    guildId,
-    userId,
-    username,
-    displayName,
-}) {
-    let result;
-
-    await updateDatabase(
-        STAFF_GUIDE_COMPLIANCE_DATABASE,
-        (database) => {
-            const state = normalizeComplianceState(
-                guildId,
-                database[guildId]
-            );
-            const existing =
-                state.onboardingCompletions[userId];
-
-            if (
-                existing?.completedVersion ===
-                state.currentVersion
-            ) {
-                result = {
-                    created: false,
-                    record: existing,
-                    state,
-                };
-                database[guildId] = state;
-                return database;
-            }
-
-            const record = {
-                userId,
-                username:
-                    String(username || '').slice(0, 100),
-                displayName:
-                    String(displayName || '').slice(0, 100),
-                completedVersion:
-                    state.currentVersion,
-                completedAt: new Date().toISOString(),
-            };
-
-            state.onboardingCompletions[userId] =
-                record;
-            database[guildId] = state;
-            result = {
-                created: true,
-                record,
-                state,
-            };
-
-            return database;
-        },
-        {}
-    );
-
-    return result;
-}
-
 async function publishGuideVersion({
     guildId,
     version,
@@ -270,8 +152,6 @@ function getCurrentOnboardingCompletions(state) {
 module.exports = {
     DEFAULT_STAFF_GUIDE_VERSION,
     STAFF_GUIDE_COMPLIANCE_DATABASE,
-    acknowledgeCurrentGuide,
-    completeStaffOnboarding,
     createDefaultComplianceState,
     getComplianceState,
     getCurrentAcknowledgements,

@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { MessageFlags } = require('discord.js');
 
 const {
     PLAYER_PANEL_TTL_MS,
@@ -162,7 +163,10 @@ test('player controls reject users other than the requester', async () => {
             },
         });
 
-        assert.equal(reply.ephemeral, true);
+        assert.equal(
+            reply.flags,
+            MessageFlags.Ephemeral
+        );
         assert.match(reply.content, /Only the staff member/);
         removePlayerPanel(panel.id);
     });
