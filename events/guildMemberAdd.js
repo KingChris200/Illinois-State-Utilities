@@ -11,10 +11,10 @@ const {
     getWelcomeConfig,
 } = require('../config/welcome');
 
-const WELCOME_BANNER_NAME = 'welcome-banner-v2.png';
+const WELCOME_BANNER_NAME = 'welcome-banner-v3.png';
 const WELCOME_BANNER_PATH = path.join(
     __dirname,
-    '../assets/thumbnails/welcome-banner-v2.png'
+    '../assets/thumbnails/welcome-banner-v3.png'
 );
 const WELCOME_DEDUPLICATION_MS = 30_000;
 const recentWelcomes = new Map();

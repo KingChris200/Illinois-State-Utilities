@@ -24,7 +24,7 @@ const {
 const INFORMATION_DATABASE = 'information-panels';
 const INFORMATION_PREFIX = 'information:';
 const INFORMATION_SELECT_ID = `${INFORMATION_PREFIX}explore`;
-const INFORMATION_BANNER_NAME = 'information-banner-v1.png';
+const INFORMATION_BANNER_NAME = 'information-banner-v2.png';
 const INFORMATION_BANNER_PATH = path.join(
     __dirname,
     '..',

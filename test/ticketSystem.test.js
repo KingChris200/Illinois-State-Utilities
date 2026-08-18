@@ -136,13 +136,13 @@ test('Assistance panel exposes exactly five branded ticket choices', () => {
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'assistance-banner-v2.png'
+        'assistance-banner-v3.png'
     );
     assert.ok(
         components.some(
             (component) =>
                 component.media?.url ===
-                'attachment://assistance-banner-v2.png'
+                'attachment://assistance-banner-v3.png'
         )
     );
 });

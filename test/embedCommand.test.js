@@ -109,7 +109,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     );
     assert.equal(
         embed.image.url,
-        'attachment://announcements-banner-v1.png'
+        'attachment://announcements-banner-v2.png'
     );
     assert.equal(
         embed.footer.icon_url,
@@ -119,7 +119,7 @@ test('/embed posts a branded announcement in the current channel', async () => {
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'announcements-banner-v1.png'
+        'announcements-banner-v2.png'
     );
     assert.deepEqual(payload.allowedMentions, {
         parse: [],

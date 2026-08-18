@@ -40,11 +40,11 @@ const {
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const JOIN_CODE = 'ILLINOISrp';
 
-const SESSION_BANNER_NAME = 'sessions-banner-v2.png';
+const SESSION_BANNER_NAME = 'sessions-banner-v3.png';
 
 const SESSION_BANNER_PATH = path.join(
     __dirname,
-    '../assets/thumbnails/sessions-banner-v2.png'
+    '../assets/thumbnails/sessions-banner-v3.png'
 );
 
 /*

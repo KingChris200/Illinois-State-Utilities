@@ -45,7 +45,7 @@ const TICKET_PREFIX = 'ticket:';
 const CREATE_MENU_ID = `${TICKET_PREFIX}create`;
 const IN_GAME_REPORT_MODAL_ID = `${TICKET_PREFIX}report:intake`;
 const TRANSCRIPT_MESSAGE_LIMIT = 1000;
-const PANEL_IMAGE_NAME = 'assistance-banner-v2.png';
+const PANEL_IMAGE_NAME = 'assistance-banner-v3.png';
 const PANEL_IMAGE_PATH = path.join(
     __dirname,
     '..',

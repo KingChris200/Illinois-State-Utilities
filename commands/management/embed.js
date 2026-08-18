@@ -12,10 +12,10 @@ const path = require('path');
 const brands = require('../../config/branding');
 
 const DEFAULT_TITLE = 'Community Announcement';
-const ANNOUNCEMENT_BANNER_NAME = 'announcements-banner-v1.png';
+const ANNOUNCEMENT_BANNER_NAME = 'announcements-banner-v2.png';
 const ANNOUNCEMENT_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/thumbnails/announcements-banner-v1.png'
+    '../../assets/thumbnails/announcements-banner-v2.png'
 );
 
 module.exports = {

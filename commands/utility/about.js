@@ -5,10 +5,10 @@ const {
 } = require('discord.js');
 const createEmbed = require('../../utils/createEmbed');
 
-const ABOUT_BANNER_NAME = 'about-banner-v1.png';
+const ABOUT_BANNER_NAME = 'about-banner-v2.png';
 const ABOUT_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/thumbnails/about-banner-v1.png'
+    '../../assets/thumbnails/about-banner-v2.png'
 );
 
 module.exports = {

@@ -143,13 +143,13 @@ test('public guide panel is one large minimal card with one team menu', () => {
     assert.equal(payload.files.length, 1);
     assert.equal(
         payload.files[0].name,
-        'staff-guide-banner-v3.png'
+        'staff-guide-banner-v4.png'
     );
     assert.ok(
         components.some(
             (component) =>
                 component.media?.url ===
-                'attachment://staff-guide-banner-v3.png'
+                'attachment://staff-guide-banner-v4.png'
         )
     );
     assert.ok(text.includes(STAFF_GUIDE_DOCUMENT_URL));
@@ -327,7 +327,7 @@ test('every handbook and rank selection builds a valid private page', () => {
         assert.equal(payload.files.length, 1);
         assert.equal(
             payload.files[0].name,
-            'staff-guide-banner-v3.png'
+            'staff-guide-banner-v4.png'
         );
         assert.ok(
             components.some(
@@ -341,7 +341,7 @@ test('every handbook and rank selection builds a valid private page', () => {
             components.some(
                 (component) =>
                     component.media?.url?.endsWith(
-                        'staff-guide-banner-v3.png'
+                        'staff-guide-banner-v4.png'
                     )
             )
         );

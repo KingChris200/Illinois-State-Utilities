@@ -55,7 +55,7 @@ for (const panel of REGULATIONS_PANEL_TYPES) {
 
         assert.equal(payload.flags, MessageFlags.IsComponentsV2);
         assert.equal(payload.components.length, 1);
-        assert.equal(payload.files[0].name, 'regulations-banner-v1.png');
+        assert.equal(payload.files[0].name, 'regulations-banner-v2.png');
         assert.deepEqual(
             menu.options.map((option) => option.value),
             REGULATIONS_PAGES[panel.value].map((page) => page.value)
@@ -78,7 +78,7 @@ test('every guidelines selection creates a private Components V2 page', () => {
             assert.ok(payload, `${panel.value}:${page.value}`);
             assert.equal(payload.flags, MessageFlags.IsComponentsV2);
             assert.equal(payload.components.length, 1);
-            assert.equal(payload.files[0].name, 'regulations-banner-v1.png');
+            assert.equal(payload.files[0].name, 'regulations-banner-v2.png');
             assert.deepEqual(payload.allowedMentions, { parse: [] });
         }
     }

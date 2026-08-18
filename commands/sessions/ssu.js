@@ -57,15 +57,15 @@ const SESSION_PING_ROLE_ID =
  *
  * assets/
  * └── thumbnails/
- *     └── sessions-banner-v2.png
+ *     └── sessions-banner-v3.png
  */
 
 const SESSION_BANNER_NAME =
-    'sessions-banner-v2.png';
+    'sessions-banner-v3.png';
 
 const SESSION_BANNER_PATH = path.join(
     __dirname,
-    '../../assets/thumbnails/sessions-banner-v2.png'
+    '../../assets/thumbnails/sessions-banner-v3.png'
 );
 
 /*
@@ -211,7 +211,7 @@ module.exports = {
                 content:
                     '❌ The Sessions banner could not be found.\n\n' +
                     'Make sure the real image is located here:\n' +
-                    '`assets/thumbnails/sessions-banner-v2.png`',
+                    '`assets/thumbnails/sessions-banner-v3.png`',
                 flags: MessageFlags.Ephemeral,
             });
         }

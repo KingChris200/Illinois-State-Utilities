@@ -52,7 +52,7 @@ test('Information panel is one branded card with one menu', () => {
 
     assert.equal(payload.flags, MessageFlags.IsComponentsV2);
     assert.equal(payload.components.length, 1);
-    assert.equal(payload.files[0].name, 'information-banner-v1.png');
+    assert.equal(payload.files[0].name, 'information-banner-v2.png');
     assert.equal(menu.options.length, 5);
     assert.deepEqual(
         menu.options.map((option) => option.value),
@@ -73,7 +73,7 @@ test('every Information selection creates a private Components V2 page', () => {
         assert.ok(payload, page.value);
         assert.equal(payload.flags, MessageFlags.IsComponentsV2);
         assert.equal(payload.components.length, 1);
-        assert.equal(payload.files[0].name, 'information-banner-v1.png');
+        assert.equal(payload.files[0].name, 'information-banner-v2.png');
         assert.deepEqual(payload.allowedMentions, { parse: [] });
     }
 });

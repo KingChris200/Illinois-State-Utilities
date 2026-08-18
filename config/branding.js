@@ -44,26 +44,26 @@ const assets = {
         'branding/isrp-roblox-avatar.jpg'
     ),
     sessionBanner: assetUrl(
-        'thumbnails/sessions-banner-v2.png'
+        'thumbnails/sessions-banner-v3.png'
     ),
     welcomeBanner: assetUrl(
-        'thumbnails/welcome-banner-v2.png'
+        'thumbnails/welcome-banner-v3.png'
     ),
     staffGuideBanner: assetUrl(
-        'thumbnails/staff-guide-banner-v3.png'
+        'thumbnails/staff-guide-banner-v4.png'
     ),
     assistanceBanner: assetUrl(
-        'thumbnails/assistance-banner-v2.png'
+        'thumbnails/assistance-banner-v3.png'
     ),
     announcementBanner: assetUrl(
-        'thumbnails/announcements-banner-v1.png'
+        'thumbnails/announcements-banner-v2.png'
     ),
-    aboutBanner: assetUrl('thumbnails/about-banner-v1.png'),
+    aboutBanner: assetUrl('thumbnails/about-banner-v2.png'),
     informationBanner: assetUrl(
-        'thumbnails/information-banner-v1.png'
+        'thumbnails/information-banner-v2.png'
     ),
     regulationsBanner: assetUrl(
-        'thumbnails/regulations-banner-v1.png'
+        'thumbnails/regulations-banner-v2.png'
     ),
     dashboardBanner: assetUrl(
         'thumbnails/dashboard-banner-v2.png'

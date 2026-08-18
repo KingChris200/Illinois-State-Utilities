@@ -27,14 +27,14 @@ const expectedAssets = [
     'branding/v3/isrp-wordmark-light-v3.jpg',
     'branding/v3/isrp-emblem-modern-v3.jpg',
     'branding/v3/isrp-wordmark-dark-v3.jpg',
-    'thumbnails/sessions-banner-v2.png',
-    'thumbnails/welcome-banner-v2.png',
-    'thumbnails/staff-guide-banner-v3.png',
-    'thumbnails/assistance-banner-v2.png',
-    'thumbnails/announcements-banner-v1.png',
-    'thumbnails/about-banner-v1.png',
-    'thumbnails/information-banner-v1.png',
-    'thumbnails/regulations-banner-v1.png',
+    'thumbnails/sessions-banner-v3.png',
+    'thumbnails/welcome-banner-v3.png',
+    'thumbnails/staff-guide-banner-v4.png',
+    'thumbnails/assistance-banner-v3.png',
+    'thumbnails/announcements-banner-v2.png',
+    'thumbnails/about-banner-v2.png',
+    'thumbnails/information-banner-v2.png',
+    'thumbnails/regulations-banner-v2.png',
     'thumbnails/dashboard-banner-v2.png',
 ];
 
@@ -82,10 +82,10 @@ test('/about presents the minimal about banner and guild identity', async () => 
 
     assert.equal(replies.length, 1);
     assert.equal(replies[0].files.length, 1);
-    assert.equal(replies[0].files[0].name, 'about-banner-v1.png');
+    assert.equal(replies[0].files[0].name, 'about-banner-v2.png');
 
     const embed = replies[0].embeds[0].toJSON();
-    assert.equal(embed.image.url, 'attachment://about-banner-v1.png');
+    assert.equal(embed.image.url, 'attachment://about-banner-v2.png');
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
     assert.equal(
         embed.thumbnail.url,

@@ -74,11 +74,11 @@ test('guild member event posts a safe branded welcome', async () => {
     assert.equal(sent[0].files.length, 1);
     assert.equal(
         sent[0].files[0].name,
-        'welcome-banner-v2.png'
+        'welcome-banner-v3.png'
     );
     assert.equal(
         sent[0].embeds[0].toJSON().image.url,
-        'attachment://welcome-banner-v2.png'
+        'attachment://welcome-banner-v3.png'
     );
 
     const details = sent[0].embeds[0].toJSON();

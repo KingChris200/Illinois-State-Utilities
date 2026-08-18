@@ -154,7 +154,7 @@ folder in the same commit as branding changes.
 The public Information panel introduces ISRP, provides direct links to the
 guidelines, Assistance, Sessions, and the Whitelisted Roblox group, and uses
 one menu for five private information sections. It uses the local
-`information-banner-v1.png` artwork and stores its permanent Discord message
+`information-banner-v2.png` artwork and stores its permanent Discord message
 so it can be updated after a restart.
 
 Members with **Manage Server** can use:

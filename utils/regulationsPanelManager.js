@@ -23,7 +23,7 @@ const {
 
 const REGULATIONS_DATABASE = 'regulations-panels';
 const REGULATIONS_PREFIX = 'regulations:';
-const REGULATIONS_BANNER_NAME = 'regulations-banner-v1.png';
+const REGULATIONS_BANNER_NAME = 'regulations-banner-v2.png';
 const REGULATIONS_BANNER_PATH = path.join(
     __dirname,
     '..',

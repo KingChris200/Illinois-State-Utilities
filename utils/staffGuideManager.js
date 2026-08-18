@@ -60,7 +60,7 @@ const WHITELISTED_GROUP_URL =
 const MELONLY_INVITE_URL =
     'https://melon.ly/join/FHMKHP';
 const STAFF_GUIDE_BANNER_NAME =
-    'staff-guide-banner-v3.png';
+    'staff-guide-banner-v4.png';
 const STAFF_GUIDE_BANNER_PATH = path.join(
     __dirname,
     '..',
