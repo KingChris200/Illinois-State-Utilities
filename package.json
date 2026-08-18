@@ -7,7 +7,9 @@
     "start": "node index.js",
     "deploy-commands": "node deploy-commands.js",
     "dev": "nodemon index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "check": "node scripts/check-source.js && node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "repository": {
     "type": "git",

@@ -13,45 +13,12 @@ const fs = require('fs');
 
 const sessionManager = require('../utils/sessionManager');
 const {
-    handleModerationButton,
-} = require('../utils/moderationConfirmationManager');
+    handleAutocomplete,
+    handleSlashCommand,
+} = require('../handlers/commandInteractionHandler');
 const {
-    handleOperationsButton,
-} = require('../utils/operationsDashboardManager');
-const {
-    handlePlayerIntelligenceButton,
-} = require('../utils/playerIntelligenceManager');
-const {
-    handleWatchlistAlertButton,
-    handleWatchlistAlertModal,
-} = require('../utils/watchlistAlertInteractionManager');
-const {
-    handleWatchlistDashboardButton,
-} = require('../utils/watchlistDashboardManager');
-const {
-    handleStaffGuideInteraction,
-} = require('../utils/staffGuideManager');
-const {
-    handleTicketInteraction,
-} = require('../utils/ticketManager');
-const {
-    handleLoaInteraction,
-} = require('../utils/loaManager');
-const {
-    handleDashboardInteraction,
-} = require('../utils/dashboardManager');
-const {
-    handleInformationInteraction,
-} = require('../utils/informationPanelManager');
-const {
-    handleRegulationsInteraction,
-} = require('../utils/regulationsPanelManager');
-const {
-    handleIspShiftInteraction,
-} = require('../utils/ispShiftManager');
-const {
-    handleIspShiftDashboardInteraction,
-} = require('../utils/ispShiftDashboardManager');
+    routeComponentInteraction,
+} = require('../handlers/componentInteractionHandler');
 const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
@@ -106,150 +73,12 @@ module.exports = {
         }
 
         if (
-            (
-                interaction.isModalSubmit?.() ||
-                interaction.isStringSelectMenu?.() ||
-                interaction.isButton?.()
-            ) &&
-            interaction.customId?.startsWith(
-                'ticket:'
-            )
+            await routeComponentInteraction(interaction)
         ) {
-            await handleTicketInteraction(interaction);
             return;
         }
-
-        if (
-            interaction.isButton?.() &&
-            interaction.customId?.startsWith('loa:')
-        ) {
-            await handleLoaInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isStringSelectMenu?.() &&
-            interaction.customId?.startsWith('regulations:')
-        ) {
-            await handleRegulationsInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isButton?.() &&
-            interaction.customId?.startsWith('isp_shift_dashboard:')
-        ) {
-            await handleIspShiftDashboardInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isButton?.() &&
-            interaction.customId?.startsWith('isp_shift:')
-        ) {
-            await handleIspShiftInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isStringSelectMenu?.() &&
-            interaction.customId?.startsWith('information:')
-        ) {
-            await handleInformationInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isStringSelectMenu?.() &&
-            interaction.customId?.startsWith('dashboard:')
-        ) {
-            await handleDashboardInteraction(interaction);
-            return;
-        }
-
-        if (
-            interaction.isModalSubmit?.() &&
-            interaction.customId.startsWith(
-                'watchlist_alert_modal:'
-            )
-        ) {
-            await handleWatchlistAlertModal(interaction);
-            return;
-        }
-
-        if (
-            (
-                interaction.isStringSelectMenu?.() ||
-                interaction.isButton?.()
-            ) &&
-            interaction.customId?.startsWith(
-                'staff_guide:'
-            )
-        ) {
-            await handleStaffGuideInteraction(
-                interaction
-            );
-            return;
-        }
-
-        /*
-         * Ignore interactions that are not buttons.
-         */
 
         if (!interaction.isButton()) {
-            return;
-        }
-
-        if (
-            interaction.customId.startsWith(
-                'erlc_mod:'
-            )
-        ) {
-            await handleModerationButton(
-                interaction
-            );
-            return;
-        }
-
-        if (
-            interaction.customId.startsWith(
-                'erlc_ops:'
-            )
-        ) {
-            await handleOperationsButton(
-                interaction
-            );
-            return;
-        }
-
-        if (
-            interaction.customId.startsWith(
-                'erlc_player:'
-            )
-        ) {
-            await handlePlayerIntelligenceButton(
-                interaction
-            );
-            return;
-        }
-
-        if (
-            interaction.customId.startsWith(
-                'watchlist_alert:'
-            )
-        ) {
-            await handleWatchlistAlertButton(interaction);
-            return;
-        }
-
-        if (
-            interaction.customId.startsWith(
-                'watchlist_dashboard:'
-            )
-        ) {
-            await handleWatchlistDashboardButton(
-                interaction
-            );
             return;
         }
 
@@ -293,81 +122,6 @@ module.exports = {
         }
     },
 };
-
-async function handleAutocomplete(interaction) {
-    const command =
-        interaction.client.commands.get(
-            interaction.commandName
-        );
-
-    if (
-        !command ||
-        typeof command.autocomplete !== 'function'
-    ) {
-        await interaction.respond([]).catch(() => {});
-        return;
-    }
-
-    try {
-        await command.autocomplete(interaction);
-    } catch (error) {
-        console.error(
-            `Error while autocompleting /${interaction.commandName}:`,
-            error
-        );
-
-        await interaction.respond([]).catch(() => {});
-    }
-}
-
-/*
- * ==========================================
- * SLASH COMMAND HANDLER
- * ==========================================
- */
-
-async function handleSlashCommand(interaction) {
-    const command =
-        interaction.client.commands.get(
-            interaction.commandName
-        );
-
-    if (!command) {
-        console.error(
-            `No command matching /${interaction.commandName} was found.`
-        );
-
-        return;
-    }
-
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(
-            `Error while executing /${interaction.commandName}:`,
-            error
-        );
-
-        const errorMessage = {
-            content:
-                '❌ An unexpected error occurred while running this command.',
-            flags: MessageFlags.Ephemeral,
-        };
-
-        if (
-            interaction.replied ||
-            interaction.deferred
-        ) {
-            await interaction
-                .followUp(errorMessage)
-                .catch(() => null);
-        } else {
-            await interaction
-                .reply(errorMessage)
-                .catch(() => null);
-        }
-    }
-}
 
 /*
  * ==========================================

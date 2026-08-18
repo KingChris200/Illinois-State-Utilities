@@ -1,28 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-
 const {
     isInternalCommandModule,
     normalizeCommandModulePath,
 } = require('../config/internalCommandModules');
-
-const commandsDirectory = path.join(__dirname, '..', 'commands');
-
-function discoverCommandModules() {
-    return fs
-        .readdirSync(commandsDirectory, {
-            withFileTypes: true,
-        })
-        .filter((entry) => entry.isDirectory())
-        .flatMap((folder) =>
-            fs
-                .readdirSync(path.join(commandsDirectory, folder.name))
-                .filter((file) => file.endsWith('.js'))
-                .map((file) => `${folder.name}/${file}`)
-        );
-}
+const {
+    discoverCommandFiles,
+    isValidCommandModule,
+    loadCommandModule,
+} = require('../utils/commandDiscovery');
 
 test('internal command paths are normalized consistently', () => {
     assert.equal(
@@ -41,27 +27,28 @@ test('internal command paths are normalized consistently', () => {
 
 test('every deployable command has valid command data and an executor', () => {
     const commandNames = new Set();
+    const discovery = discoverCommandFiles();
 
-    for (const relativePath of discoverCommandModules()) {
-        if (isInternalCommandModule(relativePath)) {
-            continue;
-        }
+    assert.equal(discovery.exists, true);
+    assert.ok(discovery.internalFiles.length > 0);
 
-        const command = require(path.join(commandsDirectory, relativePath));
-
-        assert.equal(
-            typeof command.data?.toJSON,
-            'function',
-            `${relativePath} is missing slash-command data.`
+    for (const record of discovery.commandFiles) {
+        const command = loadCommandModule(
+            record.filePath,
+            { clearCache: false }
         );
+
         assert.equal(
-            typeof command.execute,
-            'function',
-            `${relativePath} is missing an execute function.`
+            isValidCommandModule(command),
+            true,
+            `${record.relativeFilePath} is not a valid slash command.`
         );
 
         const commandName = command.data.toJSON().name;
-        assert.ok(commandName, `${relativePath} has no command name.`);
+        assert.ok(
+            commandName,
+            `${record.relativeFilePath} has no command name.`
+        );
         assert.equal(
             commandNames.has(commandName),
             false,

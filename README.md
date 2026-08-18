@@ -1,5 +1,8 @@
 # Illinois State Utilities
 
+Project structure, interaction ownership, and data-safety conventions are
+documented in [`docs/architecture.md`](docs/architecture.md).
+
 ## First-time setup
 
 1. Install Node.js 20 or newer.
@@ -8,6 +11,9 @@
 4. Add the bot token to `DISCORD_TOKEN` and the Discord application ID to
    `CLIENT_ID`. Keep `.env` private and never commit it.
 5. Run `npm run deploy-commands` once, then start the bot with `npm start`.
+
+Run `npm run check` before committing a change. It checks every source file
+for syntax errors and then runs the complete automated test suite.
 
 For safe testing without live ER:LC access, leave `ERLC_DRY_RUN=true` and
 `ERLC_MOCK_MODE=true`. Set both to `false` only when the live server key and

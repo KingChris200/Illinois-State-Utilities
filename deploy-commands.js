@@ -5,11 +5,11 @@ const {
     Routes,
 } = require('discord.js');
 
-const fs = require('fs');
-const path = require('path');
 const {
-    isInternalCommandModule,
-} = require('./config/internalCommandModules');
+    discoverCommandFiles,
+    isValidCommandModule,
+    loadCommandModule,
+} = require('./utils/commandDiscovery');
 
 /*
  * ============================================================
@@ -54,13 +54,9 @@ const commands = [];
 const registeredCommandNames =
     new Set();
 
-const commandsPath =
-    path.join(
-        __dirname,
-        'commands'
-    );
+const discovery = discoverCommandFiles();
 
-if (!fs.existsSync(commandsPath)) {
+if (!discovery.exists) {
     console.error(
         '❌ Commands folder was not found.'
     );
@@ -68,139 +64,56 @@ if (!fs.existsSync(commandsPath)) {
     process.exit(1);
 }
 
-const commandFolders =
-    fs.readdirSync(commandsPath)
-        .filter((folder) => {
-            const folderPath =
-                path.join(
-                    commandsPath,
-                    folder
-                );
+for (const record of discovery.internalFiles) {
+    console.log(
+        `⏭️ Ignored internal module: ${record.relativeFilePath}`
+    );
+}
 
-            return fs
-                .statSync(folderPath)
-                .isDirectory();
-        });
-
-for (
-    const folder of
-    commandFolders
-) {
-    const folderPath =
-        path.join(
-            commandsPath,
-            folder
+for (const record of discovery.commandFiles) {
+    try {
+        const command = loadCommandModule(
+            record.filePath
         );
 
-    const commandFiles =
-        fs.readdirSync(folderPath)
-            .filter(
-                (file) =>
-                    file.endsWith('.js')
+        if (!isValidCommandModule(command)) {
+            console.warn(
+                `⚠️ Skipped ${record.relativeFilePath}: missing valid command data or execute function.`
             );
-
-    for (
-        const file of
-        commandFiles
-    ) {
-        const relativeFilePath =
-            `${folder}/${file}`;
-
-        /*
-         * Skip internal modules.
-         */
-
-        if (
-            isInternalCommandModule(
-                relativeFilePath
-            )
-        ) {
-            console.log(
-                `⏭️ Ignored internal module: ${relativeFilePath}`
-            );
-
             continue;
         }
 
-        const filePath =
-            path.join(
-                folderPath,
-                file
-            );
+        const commandName = command.data.name;
 
-        try {
-            /*
-             * Clear the require cache so the newest version of
-             * every command is used during deployment.
-             */
-
-            delete require.cache[
-                require.resolve(filePath)
-            ];
-
-            const command =
-                require(filePath);
-
-            if (
-                !command.data ||
-                typeof command.data.toJSON !==
-                    'function' ||
-                typeof command.execute !==
-                    'function'
-            ) {
-                console.warn(
-                    `⚠️ Skipped ${relativeFilePath}: missing valid command data or execute function.`
-                );
-
-                continue;
-            }
-
-            const commandName =
-                command.data.name;
-
-            /*
-             * Prevent Discord's duplicate-command-name error.
-             */
-
-            if (
-                registeredCommandNames.has(
-                    commandName
-                )
-            ) {
-                console.error(
-                    `❌ Duplicate command detected: /${commandName}`
-                );
-
-                console.error(
-                    `   Duplicate file: ${relativeFilePath}`
-                );
-
-                console.error(
-                    '   Deployment stopped so Discord does not reject the command list.'
-                );
-
-                process.exit(1);
-            }
-
-            registeredCommandNames.add(
+        if (
+            registeredCommandNames.has(
                 commandName
-            );
-
-            commands.push(
-                command.data.toJSON()
-            );
-
-            console.log(
-                `✅ Prepared command: /${commandName}`
-            );
-        } catch (error) {
+            )
+        ) {
             console.error(
-                `❌ Failed to prepare ${relativeFilePath}:`,
-                error
+                `❌ Duplicate command detected: /${commandName}`
             );
-
+            console.error(
+                `   Duplicate file: ${record.relativeFilePath}`
+            );
+            console.error(
+                '   Deployment stopped so Discord does not reject the command list.'
+            );
             process.exit(1);
         }
+
+        registeredCommandNames.add(commandName);
+        commands.push(command.data.toJSON());
+
+        console.log(
+            `✅ Prepared command: /${commandName}`
+        );
+    } catch (error) {
+        console.error(
+            `❌ Failed to prepare ${record.relativeFilePath}:`,
+            error
+        );
+        process.exit(1);
     }
 }
 
