@@ -63,7 +63,7 @@ function getMemberCallsignSection(member) {
 
 function stripManagedCallsign(value) {
     return String(value || '')
-        .replace(/^ISP-\d{3}\s*\|\s*/i, '')
+        .replace(/^(?:SP|ISP)-\d{3}\s*\|\s*/i, '')
         .trim();
 }
 
@@ -219,6 +219,11 @@ function createPanelButtons(ownerId, assignment, administrator = false) {
 
 async function createCallsignPanelPayload(interaction, member = interaction.member) {
     const assignment = await getCallsignForUser(interaction.guildId, member.id);
+    if (assignment) {
+        // Opening the panel upgrades a legacy ISP-XXX nickname to SP-XXX
+        // without changing the member's assigned number.
+        await syncCallsignNickname(member, assignment);
+    }
     const section = getMemberCallsignSection(member);
     const freeNumbers = section
         ? await getFreeNumbers(interaction.guildId, section.id)

@@ -62,7 +62,8 @@ test.after(async () => {
 test('ISP callsign configuration uses the Deputy-Command channel and protected ranges', () => {
     assert.equal(callsignConfig.guildId, ISP_SERVER_ID);
     assert.equal(callsignConfig.commandChannelId, '1527523195408613406');
-    assert.equal(callsignConfig.callsignPrefix, 'ISP');
+    assert.equal(callsignConfig.logChannelId, '1527516566818652332');
+    assert.equal(callsignConfig.callsignPrefix, 'SP');
     assert.deepEqual(
         callsignConfig.sections.map((section) => [
             section.id,
@@ -129,17 +130,18 @@ test('callsign formatting and nickname cleanup remain predictable', () => {
     assert.equal(normalizeCallsignNumber('0'), null);
     assert.equal(normalizeCallsignNumber('251'), null);
     assert.equal(normalizeCallsignNumber('72A'), null);
-    assert.equal(formatCallsign(7), 'ISP-007');
+    assert.equal(formatCallsign(7), 'SP-007');
     assert.equal(stripManagedCallsign('ISP-062 | LF_V12'), 'LF_V12');
+    assert.equal(stripManagedCallsign('SP-062 | LF_V12'), 'LF_V12');
     assert.equal(
         buildManagedNickname(
             {
-                callsign: 'ISP-062',
+                callsign: 'SP-062',
                 baseNickname: 'LF_V12',
             },
             { displayName: 'ISP-041 | LF_V12', user: { username: 'LF_V12' } }
         ),
-        'ISP-062 | LF_V12'
+        'SP-062 | LF_V12'
     );
 });
 

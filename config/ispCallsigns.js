@@ -68,9 +68,9 @@ const sections = [
 
 module.exports = {
     guildId: ISP_SERVER_ID,
-    callsignPrefix: 'ISP',
+    callsignPrefix: 'SP',
     managementRoleId: shiftConfig.managementRoleId,
     commandChannelId: ISP_CHANNELS.deputyCommand,
-    logChannelId: shiftConfig.shiftLogChannelId,
+    logChannelId: ISP_CHANNELS.callsignLogs,
     sections,
 };

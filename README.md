@@ -245,17 +245,17 @@ ISP personnel use `/callsign` in the Deputy-Command channel
 <#1527523195408613406> to open a private callsign panel. Officers can view
 their callsign, request the lowest free number or choose an available number,
 browse the paginated directory, and find a member by callsign. Assignments are
-saved across restarts, protected against duplicate claims, written to the ISP
-shift-log channel, and reflected in the member nickname as
-`ISP-062 | Display Name`.
+saved across restarts, protected against duplicate claims, written to the
+dedicated callsign-log channel <#1527516566818652332>, and reflected in the member nickname as
+`SP-062 | Display Name`.
 
 Callsign ranges follow the member's highest configured ISP rank:
 
-- Directorate: `ISP-001`–`ISP-010`
-- Command: `ISP-011`–`ISP-019`
-- High Rank: `ISP-020`–`ISP-035`
-- Sergeants: `ISP-036`–`ISP-060`
-- Patrol: `ISP-061`–`ISP-250`
+- Directorate: `SP-001`–`SP-010`
+- Command: `SP-011`–`SP-019`
+- High Rank: `SP-020`–`SP-035`
+- Sergeants: `SP-036`–`SP-060`
+- Patrol: `SP-061`–`SP-250`
 
 Office of Director members receive two additional private controls to assign,
 change, or release another member's callsign. Releasing a callsign restores the

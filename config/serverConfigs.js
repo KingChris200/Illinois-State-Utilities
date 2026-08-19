@@ -66,6 +66,9 @@ const ISP_CHANNELS = {
     deputyCommand:
         '1527523195408613406',
 
+    callsignLogs:
+        '1527516566818652332',
+
     promotions:
         '1527521493087682590',
 

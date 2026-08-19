@@ -32,6 +32,15 @@ function normalizeGuildState(database, guildId) {
         ? guildState.history
         : [];
 
+    // The number is permanent; the visible label follows current branding.
+    // This safely migrates existing ISP-XXX records to SP-XXX on read.
+    for (const assignment of Object.values(guildState.assignments)) {
+        const normalizedNumber = normalizeCallsignNumber(assignment?.number);
+        if (normalizedNumber === null) continue;
+        assignment.number = normalizedNumber;
+        assignment.callsign = formatCallsign(normalizedNumber);
+    }
+
     return guildState;
 }
 
