@@ -239,6 +239,30 @@ The weekly quota defaults to two hours in `config/ispShift.js`. Promotion
 reviews never change Discord roles automatically; the Office of Director must
 review every candidate. No new `.env` values are required.
 
+## Illinois State Police Callsigns
+
+ISP personnel use `/callsign` in the Deputy-Command channel
+<#1527523195408613406> to open a private callsign panel. Officers can view
+their callsign, request the lowest free number or choose an available number,
+browse the paginated directory, and find a member by callsign. Assignments are
+saved across restarts, protected against duplicate claims, written to the ISP
+shift-log channel, and reflected in the member nickname as
+`ISP-062 | Display Name`.
+
+Callsign ranges follow the member's highest configured ISP rank:
+
+- Directorate: `ISP-001`–`ISP-010`
+- Command: `ISP-011`–`ISP-019`
+- High Rank: `ISP-020`–`ISP-035`
+- Sergeants: `ISP-036`–`ISP-060`
+- Patrol: `ISP-061`–`ISP-250`
+
+Office of Director members receive two additional private controls to assign,
+change, or release another member's callsign. Releasing a callsign restores the
+member nickname where Discord permissions allow it. The prefix, ranges,
+eligible roles, command channel, and log channel are centralized in
+`config/ispCallsigns.js`; no new `.env` values are required.
+
 ## Permanent ISRP Dashboard
 
 The public Dashboard is one minimal Components V2 card with the official

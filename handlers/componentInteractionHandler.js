@@ -38,8 +38,17 @@ const {
 const {
     handleIspShiftDashboardInteraction,
 } = require('../utils/ispShiftDashboardManager');
+const {
+    handleIspCallsignInteraction,
+} = require('../utils/ispCallsignManager');
 
 const componentRoutes = [
+    {
+        matches: (interaction) =>
+            isAnyComponent(interaction) &&
+            hasPrefix(interaction, 'isp_callsign:'),
+        handle: handleIspCallsignInteraction,
+    },
     {
         matches: (interaction) =>
             isAnyComponent(interaction) &&

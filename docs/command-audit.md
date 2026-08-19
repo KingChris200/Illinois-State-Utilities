@@ -31,6 +31,10 @@ ticket data was deleted.
 
 ## Kept
 
+- `/callsign` — one compact private ISP callsign panel with protected ranges,
+  duplicate prevention, directory lookup, automatic nicknames, and hidden
+  Office-of-Director repair controls.
+
 - `/setup` and `/config` remain because staff, award, leave, infraction,
   history, promotion, and case workflows depend on their configuration.
 - `/staff` is the quick staff profile; `/history` is the complete record.

@@ -63,6 +63,9 @@ const ISRP_CHANNELS = {
 };
 
 const ISP_CHANNELS = {
+    deputyCommand:
+        '1527523195408613406',
+
     promotions:
         '1527521493087682590',
 
