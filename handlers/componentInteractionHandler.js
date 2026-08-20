@@ -41,8 +41,17 @@ const {
 const {
     handleIspCallsignInteraction,
 } = require('../utils/ispCallsignManager');
+const {
+    handleIspInformationInteraction,
+} = require('../utils/ispInformationPanelManager');
 
 const componentRoutes = [
+    {
+        matches: (interaction) =>
+            interaction.isStringSelectMenu?.() &&
+            hasPrefix(interaction, 'isp_information:'),
+        handle: handleIspInformationInteraction,
+    },
     {
         matches: (interaction) =>
             isAnyComponent(interaction) &&

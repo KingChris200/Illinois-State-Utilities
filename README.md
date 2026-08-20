@@ -263,6 +263,25 @@ member nickname where Discord permissions allow it. The prefix, ranges,
 eligible roles, command channel, and log channel are centralized in
 `config/ispCallsigns.js`; no new `.env` values are required.
 
+## Illinois State Police Information Panel
+
+The permanent ISP Information panel is one clean Components V2 card with the
+white ISP Information banner, direct access to the Shift Manager,
+Deputy-Command, department Handbook, and Melonly. Its single dropdown opens
+five private pages for department standards, ranks, shifts and callsigns,
+units, and official resources.
+
+Members with **Manage Server** can use these commands in Deputy-Command:
+
+- `/isp-information preview` checks the complete panel privately
+- `/isp-information setup channel:#information` posts and saves the panel
+- `/isp-information update` refreshes the saved panel after a change
+- `/isp-information remove` deletes the saved panel
+
+The saved channel and message survive bot restarts. No additional `.env`
+settings are required. Run `npm run deploy-commands` once after installing the
+feature, restart the bot, and preview the panel before posting it publicly.
+
 ## Permanent ISRP Dashboard
 
 The public Dashboard is one minimal Components V2 card with the official

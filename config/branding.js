@@ -68,6 +68,9 @@ const assets = {
     dashboardBanner: assetUrl(
         'thumbnails/dashboard-banner-v2.png'
     ),
+    ispInformationBanner: assetUrl(
+        'thumbnails/isp-information-banner-v1.png'
+    ),
     avatar01: assetUrl('avatars/isrp-avatar-01.jpg'),
     avatar02: assetUrl('avatars/isrp-avatar-02.jpg'),
     avatar03: assetUrl('avatars/isrp-avatar-03.jpg'),
