@@ -284,11 +284,10 @@ feature, restart the bot, and preview the panel before posting it publicly.
 
 ## Staff Feedback
 
-Community members use `/feedback staff-member:@Staff rating:5` in the
-configured commands channel. The command opens one short private form for the
-written reason, then publishes a branded feedback card in the Staff Feedback
-channel with the selected staff member's avatar, live rank, star rating, and
-the member's comments.
+Community members use `/staff feedback staff:@Staff rating:5 reason:...` in
+the configured commands channel. The command immediately publishes a compact
+branded card in the Staff Feedback channel with the selected staff member's
+live rank, star rating, and the member's comments.
 
 Self-reviews, bot reviews, non-staff targets, and repeated reviews for the same
 staff member within 24 hours are rejected. Feedback records are saved for

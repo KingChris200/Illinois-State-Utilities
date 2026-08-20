@@ -10,8 +10,16 @@ const {
 } = require('../../utils/database');
 
 const {
+    ISRP_CHANNELS,
+    MAIN_SERVER_ID,
     memberCanReviewMovements,
 } = require('../../config/serverConfigs');
+
+const {
+    getFeedbackCooldown,
+    isEligibleStaffMember,
+    submitStaffFeedback,
+} = require('../../utils/staffFeedbackManager');
 
 const {
     analyzeStaffProfile,
@@ -231,40 +239,147 @@ function formatTimeline(records, emptyMessage) {
         .join('\n\n');
 }
 
+async function executeStaffFeedback(interaction) {
+    if (interaction.guildId !== MAIN_SERVER_ID) {
+        await interaction.reply({
+            content: 'This command is only available in Illinois State Roleplay.',
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    if (interaction.channelId !== ISRP_CHANNELS.commands) {
+        await interaction.reply({
+            content: `Use \`/staff feedback\` in <#${ISRP_CHANNELS.commands}>.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    const targetUser = interaction.options.getUser('staff', true);
+    const rating = interaction.options.getInteger('rating', true);
+    const reason = interaction.options.getString('reason', true).trim();
+
+    if (targetUser.id === interaction.user.id) {
+        await interaction.reply({
+            content: 'You cannot submit feedback about yourself.',
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    const targetMember = await interaction.guild.members
+        .fetch(targetUser.id)
+        .catch(() => null);
+
+    if (!isEligibleStaffMember(targetMember)) {
+        await interaction.reply({
+            content: 'Choose a current Illinois State Roleplay staff member.',
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    const cooldownExpiresAt = await getFeedbackCooldown(
+        interaction.guildId,
+        interaction.user.id,
+        targetUser.id
+    );
+
+    if (cooldownExpiresAt) {
+        await interaction.reply({
+            content: `You can leave feedback for this staff member again <t:${Math.ceil(cooldownExpiresAt / 1000)}:R>.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    try {
+        await submitStaffFeedback({
+            interaction,
+            targetMember,
+            rating,
+            reason,
+        });
+    } catch (error) {
+        console.error('[STAFF FEEDBACK] Submission failed:', error);
+        await interaction.editReply(
+            'I could not submit that feedback. Please try again.'
+        ).catch(() => null);
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staff')
         .setDMPermission(false)
         .setDescription(
-            'View an Illinois State Roleplay staff profile.'
+            'Illinois State Roleplay staff tools.'
         )
-
-        .addUserOption((option) =>
-            option
-                .setName('staff-member')
-                .setDescription(
-                    'The staff member whose profile you want to view.'
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('profile')
+                .setDescription('View an Illinois State Roleplay staff profile.')
+                .addUserOption((option) =>
+                    option
+                        .setName('staff-member')
+                        .setDescription(
+                            'The staff member whose profile you want to view.'
+                        )
+                        .setRequired(true)
                 )
-                .setRequired(true)
+                .addStringOption((option) =>
+                    option
+                        .setName('visibility')
+                        .setDescription(
+                            'Choose whether the profile is private or public.'
+                        )
+                        .addChoices(
+                            {
+                                name: 'Private — Only you can see it',
+                                value: 'private',
+                            },
+                            {
+                                name: 'Public — Everyone can see it',
+                                value: 'public',
+                            }
+                        )
+                        .setRequired(false)
+                )
         )
-
-        .addStringOption((option) =>
-            option
-                .setName('visibility')
-                .setDescription(
-                    'Choose whether the profile is private or public.'
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('feedback')
+                .setDescription('Give feedback about a staff member.')
+                .addUserOption((option) =>
+                    option
+                        .setName('staff')
+                        .setDescription('The staff member who assisted you.')
+                        .setRequired(true)
                 )
-                .addChoices(
-                    {
-                        name: 'Private — Only you can see it',
-                        value: 'private',
-                    },
-                    {
-                        name: 'Public — Everyone can see it',
-                        value: 'public',
-                    }
+                .addIntegerOption((option) =>
+                    option
+                        .setName('rating')
+                        .setDescription('Rate your experience from one to five stars.')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: '⭐ 1 Star', value: 1 },
+                            { name: '⭐⭐ 2 Stars', value: 2 },
+                            { name: '⭐⭐⭐ 3 Stars', value: 3 },
+                            { name: '⭐⭐⭐⭐ 4 Stars', value: 4 },
+                            { name: '⭐⭐⭐⭐⭐ 5 Stars', value: 5 }
+                        )
                 )
-                .setRequired(false)
+                .addStringOption((option) =>
+                    option
+                        .setName('reason')
+                        .setDescription('Explain your experience with this staff member.')
+                        .setRequired(true)
+                        .setMinLength(15)
+                        .setMaxLength(1000)
+                )
         ),
 
     async execute(interaction) {
@@ -316,6 +431,11 @@ module.exports = {
                     content:
                         '❌ Private staff intelligence is limited to authorized management, Internal Affairs, directors, and ownership. Use `visibility:Public` for the safe staff résumé.',
                 });
+            }
+
+            if (interaction.options.getSubcommand() === 'feedback') {
+                await executeStaffFeedback(interaction);
+                return;
             }
 
             const configurations =

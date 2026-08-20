@@ -1,9 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const feedbackCommand = require('../commands/utility/feedback');
+const staffCommand = require('../commands/management/staff');
 const {
-    STAFF_FEEDBACK_BANNER_NAME,
     createStaffFeedbackEmbed,
     createStaffFeedbackModal,
     formatRating,
@@ -40,15 +39,21 @@ function createMember({
     };
 }
 
-test('/feedback stays compact and uses the configured channels', () => {
-    const command = feedbackCommand.data.toJSON();
-
-    assert.equal(command.name, 'feedback');
-    assert.deepEqual(
-        command.options.map((option) => option.name),
-        ['staff-member', 'rating']
+test('/staff feedback uses the simple staff, rating, and reason workflow', () => {
+    const command = staffCommand.data.toJSON();
+    const feedback = command.options.find(
+        (option) => option.name === 'feedback'
     );
-    assert.equal(command.options[1].choices.length, 5);
+
+    assert.equal(command.name, 'staff');
+    assert.deepEqual(
+        feedback.options.map((option) => option.name),
+        ['staff', 'rating', 'reason']
+    );
+    assert.equal(feedback.options[1].choices.length, 5);
+    assert.equal(feedback.options[2].required, true);
+    assert.equal(feedback.options[2].min_length, 15);
+    assert.equal(feedback.options[2].max_length, 1000);
     assert.equal(ISRP_CHANNELS.commands, '1490733534611116204');
     assert.equal(ISRP_CHANNELS.staffFeedback, '1539790036994629792');
 });
@@ -87,7 +92,7 @@ test('only current staff members are eligible for feedback', () => {
     assert.equal(isEligibleStaffMember(botMember), false);
 });
 
-test('feedback results use the member avatar, rank, and safe rating', () => {
+test('feedback results use a compact branded layout, rank, and safe rating', () => {
     const targetMember = createMember({
         roleIds: [MAIN_SERVER_RANKS[0].roleId],
         displayName: 'Helpful Staff',
@@ -109,10 +114,14 @@ test('feedback results use the member avatar, rank, and safe rating', () => {
         recordId: 'feedback-test',
     }).toJSON();
 
-    assert.equal(embed.thumbnail.url, 'https://cdn.example/avatar.png');
-    assert.equal(embed.image.url, `attachment://${STAFF_FEEDBACK_BANNER_NAME}`);
-    assert.match(embed.description, /Trial Moderator/);
-    assert.match(embed.description, /★★★★★/);
+    assert.equal(embed.thumbnail.url, require('../config/branding').isrp.logo);
+    assert.equal(embed.author.name, 'Feedback by Community Member');
+    assert.equal(embed.author.icon_url, 'https://cdn.example/avatar.png');
+    assert.equal(embed.fields[0].name, 'Staff');
+    assert.match(embed.fields[0].value, /Trial Moderator/);
+    assert.equal(embed.fields[1].name, 'Rating');
+    assert.match(embed.fields[1].value, /★★★★★/);
+    assert.equal(embed.fields[2].name, 'Reason');
     assert.equal(formatRating(1), '★☆☆☆☆');
     assert.equal(formatRating(5), '★★★★★');
 });

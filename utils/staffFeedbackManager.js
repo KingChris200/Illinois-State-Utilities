@@ -1,7 +1,5 @@
-const path = require('node:path');
 const {
     ActionRowBuilder,
-    AttachmentBuilder,
     EmbedBuilder,
     MessageFlags,
     ModalBuilder,
@@ -28,22 +26,6 @@ const STAFF_FEEDBACK_PREFIX = 'staff_feedback:';
 const STAFF_FEEDBACK_MODAL_PREFIX =
     `${STAFF_FEEDBACK_PREFIX}submit:`;
 const STAFF_FEEDBACK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-const STAFF_FEEDBACK_BANNER_NAME =
-    'staff-feedback-banner-v1.png';
-const STAFF_FEEDBACK_BANNER_PATH = path.join(
-    __dirname,
-    '..',
-    'assets',
-    'thumbnails',
-    STAFF_FEEDBACK_BANNER_NAME
-);
-
-function createStaffFeedbackAttachment() {
-    return new AttachmentBuilder(STAFF_FEEDBACK_BANNER_PATH, {
-        name: STAFF_FEEDBACK_BANNER_NAME,
-    });
-}
-
 function createStaffFeedbackModal({ reviewerId, targetId, rating }) {
     return new ModalBuilder()
         .setCustomId(
@@ -124,33 +106,35 @@ function createStaffFeedbackEmbed({
     const safeReason = escapeMarkdown(String(reason).trim());
     const reviewerName = escapeMarkdown(getMemberDisplayName(reviewer));
     const targetName = escapeMarkdown(getMemberDisplayName(targetMember));
+    const reviewerAvatar = getMemberAvatar(reviewer);
     const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
         .setAuthor({
-            name: guild.name,
-            iconURL: brands.isrp.logo,
+            name: `Feedback by ${reviewerName}`,
+            ...(reviewerAvatar ? { iconURL: reviewerAvatar } : {}),
         })
         .setTitle('Staff Feedback')
-        .setDescription(
-            [
-                `## ${targetName}`,
-                `**Rating:** ${formatRating(rating)}  \`${rating}/5\``,
-                `**Staff Rank:** ${rank?.name || 'Server Staff'}`,
-                '',
-                '**Member Feedback**',
-                ...safeReason.split('\n').map((line) => `> ${line || ' '}`),
-            ].join('\n')
+        .addFields(
+            {
+                name: 'Staff',
+                value: `${targetName}\n${rank?.name || 'Server Staff'}`,
+                inline: true,
+            },
+            {
+                name: 'Rating',
+                value: `${formatRating(rating)}\n\`${rating}/5\``,
+                inline: true,
+            },
+            {
+                name: 'Reason',
+                value: safeReason,
+            }
         )
-        .setImage(`attachment://${STAFF_FEEDBACK_BANNER_NAME}`)
+        .setThumbnail(brands.isrp.logo)
         .setFooter({
-            text: `Submitted by ${reviewerName} • ${recordId}`,
-            iconURL: brands.isrp.logo,
+            text: `Illinois State Roleplay • ${recordId}`,
         })
         .setTimestamp();
-
-    if (avatar) {
-        embed.setThumbnail(avatar);
-    }
 
     return embed;
 }
@@ -213,6 +197,85 @@ async function fetchFeedbackChannel(client) {
     );
 }
 
+async function submitStaffFeedback({
+    interaction,
+    targetMember,
+    rating,
+    reason,
+}) {
+    const reviewer = interaction.member;
+
+    if (!isEligibleStaffMember(targetMember)) {
+        await interaction.editReply(
+            'That member is no longer recognized as ISRP staff.'
+        );
+        return null;
+    }
+
+    const cooldownExpiresAt = await getFeedbackCooldown(
+        interaction.guildId,
+        interaction.user.id,
+        targetMember.id
+    );
+
+    if (cooldownExpiresAt) {
+        await interaction.editReply(
+            `You can leave feedback for this staff member again <t:${Math.ceil(cooldownExpiresAt / 1000)}:R>.`
+        );
+        return null;
+    }
+
+    const destination = await fetchFeedbackChannel(interaction.client);
+
+    if (!destination?.isTextBased?.() || !destination.send) {
+        await interaction.editReply(
+            'The Staff Feedback channel is unavailable. Please tell management.'
+        );
+        return null;
+    }
+
+    const recordId = createRecordId('feedback');
+    const record = {
+        id: recordId,
+        guildId: interaction.guildId,
+        reviewerId: interaction.user.id,
+        targetId: targetMember.id,
+        targetRank:
+            detectMemberRank(interaction.guildId, targetMember)?.name ||
+            'Server Staff',
+        rating,
+        reason,
+        channelId: destination.id,
+        messageId: null,
+        createdAt: Date.now(),
+    };
+    const message = await destination.send({
+        embeds: [
+            createStaffFeedbackEmbed({
+                guild: interaction.guild,
+                reviewer,
+                targetMember,
+                rating,
+                reason,
+                recordId,
+            }),
+        ],
+        allowedMentions: {
+            parse: [],
+            users: [],
+            roles: [],
+        },
+    });
+
+    record.messageId = message.id;
+    await saveFeedbackRecord(interaction.guildId, record);
+    await interaction.editReply(
+        `✅ Your feedback was posted: ${message.url}`
+    );
+
+    return record;
+}
+
 function parseFeedbackModalId(customId) {
     const expression = new RegExp(
         `^${STAFF_FEEDBACK_MODAL_PREFIX}(\\d{17,20}):(\\d{17,20}):([1-5])$`
@@ -259,76 +322,12 @@ async function handleStaffFeedbackInteraction(interaction) {
         const targetMember = await interaction.guild.members
             .fetch(request.targetId)
             .catch(() => null);
-        const reviewer = interaction.member;
-
-        if (!isEligibleStaffMember(targetMember)) {
-            await interaction.editReply(
-                'That member is no longer recognized as ISRP staff.'
-            );
-            return;
-        }
-
-        const cooldownExpiresAt = await getFeedbackCooldown(
-            interaction.guildId,
-            interaction.user.id,
-            request.targetId
-        );
-
-        if (cooldownExpiresAt) {
-            await interaction.editReply(
-                `You can leave feedback for this staff member again <t:${Math.ceil(cooldownExpiresAt / 1000)}:R>.`
-            );
-            return;
-        }
-
-        const destination = await fetchFeedbackChannel(interaction.client);
-
-        if (!destination?.isTextBased?.() || !destination.send) {
-            await interaction.editReply(
-                'The Staff Feedback channel is unavailable. Please tell management.'
-            );
-            return;
-        }
-
-        const recordId = createRecordId('feedback');
-        const record = {
-            id: recordId,
-            guildId: interaction.guildId,
-            reviewerId: interaction.user.id,
-            targetId: targetMember.id,
-            targetRank:
-                detectMemberRank(interaction.guildId, targetMember)?.name ||
-                'Server Staff',
+        await submitStaffFeedback({
+            interaction,
+            targetMember,
             rating: request.rating,
             reason,
-            channelId: destination.id,
-            messageId: null,
-            createdAt: Date.now(),
-        };
-        const message = await destination.send({
-            embeds: [
-                createStaffFeedbackEmbed({
-                    guild: interaction.guild,
-                    reviewer,
-                    targetMember,
-                    rating: request.rating,
-                    reason,
-                    recordId,
-                }),
-            ],
-            files: [createStaffFeedbackAttachment()],
-            allowedMentions: {
-                parse: [],
-                users: [],
-                roles: [],
-            },
         });
-
-        record.messageId = message.id;
-        await saveFeedbackRecord(interaction.guildId, record);
-        await interaction.editReply(
-            `✅ Your feedback was posted: ${message.url}`
-        );
     } catch (error) {
         console.error('[STAFF FEEDBACK] Submission failed:', error);
         await interaction.editReply(
@@ -338,7 +337,6 @@ async function handleStaffFeedbackInteraction(interaction) {
 }
 
 module.exports = {
-    STAFF_FEEDBACK_BANNER_NAME,
     STAFF_FEEDBACK_COOLDOWN_MS,
     STAFF_FEEDBACK_DATABASE,
     STAFF_FEEDBACK_MODAL_PREFIX,
@@ -352,4 +350,5 @@ module.exports = {
     isEligibleStaffMember,
     parseFeedbackModalId,
     saveFeedbackRecord,
+    submitStaffFeedback,
 };
