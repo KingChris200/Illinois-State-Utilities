@@ -44,8 +44,17 @@ const {
 const {
     handleIspInformationInteraction,
 } = require('../utils/ispInformationPanelManager');
+const {
+    handleStaffFeedbackInteraction,
+} = require('../utils/staffFeedbackManager');
 
 const componentRoutes = [
+    {
+        matches: (interaction) =>
+            interaction.isModalSubmit?.() &&
+            hasPrefix(interaction, 'staff_feedback:'),
+        handle: handleStaffFeedbackInteraction,
+    },
     {
         matches: (interaction) =>
             interaction.isStringSelectMenu?.() &&

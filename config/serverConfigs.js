@@ -33,6 +33,12 @@ const ISP_SERVER_ID =
  */
 
 const ISRP_CHANNELS = {
+    commands:
+        '1490733534611116204',
+
+    staffFeedback:
+        '1539790036994629792',
+
     inGameGuidelines:
         '1490680506952712233',
 

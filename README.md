@@ -282,6 +282,19 @@ The saved channel and message survive bot restarts. No additional `.env`
 settings are required. Run `npm run deploy-commands` once after installing the
 feature, restart the bot, and preview the panel before posting it publicly.
 
+## Staff Feedback
+
+Community members use `/feedback staff-member:@Staff rating:5` in the
+configured commands channel. The command opens one short private form for the
+written reason, then publishes a branded feedback card in the Staff Feedback
+channel with the selected staff member's avatar, live rank, star rating, and
+the member's comments.
+
+Self-reviews, bot reviews, non-staff targets, and repeated reviews for the same
+staff member within 24 hours are rejected. Feedback records are saved for
+future management summaries. The command and results channels are configured
+in `config/serverConfigs.js`; no new `.env` settings are required.
+
 ## Permanent ISRP Dashboard
 
 The public Dashboard is one minimal Components V2 card with the official
