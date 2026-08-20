@@ -55,6 +55,9 @@ const assets = {
     staffFeedbackBanner: assetUrl(
         'thumbnails/staff-feedback-banner-v1.png'
     ),
+    departmentsBanner: assetUrl(
+        'thumbnails/departments-banner-v1.png'
+    ),
     assistanceBanner: assetUrl(
         'thumbnails/assistance-banner-v3.png'
     ),

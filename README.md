@@ -294,6 +294,16 @@ staff member within 24 hours are rejected. Feedback records are saved for
 future management summaries. The command and results channels are configured
 in `config/serverConfigs.js`; no new `.env` settings are required.
 
+## Departments Hub
+
+Use `/departments preview` to privately review the permanent department
+directory, then `/departments setup channel:#departments` to publish it. One
+public dropdown opens private pages for ISP, CCSO, CPD, CFD, CDOT, VSC, and
+USMS, including their supplied leaders, descriptions, notices, and official
+Discord invites. Use `/departments update` after changing the directory and
+`/departments remove` to delete the saved panel. No `.env` settings are
+required.
+
 ## Permanent ISRP Dashboard
 
 The public Dashboard is one minimal Components V2 card with the official

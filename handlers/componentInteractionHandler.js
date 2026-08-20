@@ -47,8 +47,17 @@ const {
 const {
     handleStaffFeedbackInteraction,
 } = require('../utils/staffFeedbackManager');
+const {
+    handleDepartmentsInteraction,
+} = require('../utils/departmentsPanelManager');
 
 const componentRoutes = [
+    {
+        matches: (interaction) =>
+            interaction.isStringSelectMenu?.() &&
+            hasPrefix(interaction, 'departments:'),
+        handle: handleDepartmentsInteraction,
+    },
     {
         matches: (interaction) =>
             interaction.isModalSubmit?.() &&
