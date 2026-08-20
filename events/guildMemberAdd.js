@@ -90,17 +90,16 @@ function createWelcomePayload(member) {
         )
         .setDescription(
             [
-                `Hello <@${member.id}>, we're glad to have you — you are our **#${memberCount} member!**`,
-                '',
-                'Start by reviewing the server rules and information, then complete verification and choose your roles so you never miss a session.',
+            `Hey <@${member.id}>! You’re member **#${memberCount}**.`,
+            '',
+            'Read the rules, verify, and choose your roles to get started.',
             ].join('\n')
         )
         .setImage(
             `attachment://${WELCOME_BANNER_NAME}`
         )
-        .setThumbnail(brand.logo)
         .setFooter({
-            text: `${guildName} • Welcome aboard`,
+            text: guildName,
             iconURL: brand.logo,
         })
         .setTimestamp();

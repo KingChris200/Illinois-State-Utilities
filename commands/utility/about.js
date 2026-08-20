@@ -24,9 +24,8 @@ module.exports = {
         )
             .setDescription(
                 [
-                    'The official utility and management platform for Illinois State Roleplay.',
-                    '',
-                    'Illinois State Utilities supports server operations, department management, staff tools, automation, personnel systems, and community utilities.',
+                    'The bot that powers Illinois State Roleplay.',
+                    'Sessions, staff tools, departments, tickets, and ER:LC utilities.',
                 ].join('\n')
             )
             .addFields(
@@ -46,11 +45,6 @@ module.exports = {
                     inline: true,
                 },
                 {
-                    name: '⚙️ Framework',
-                    value: 'discord.js v14',
-                    inline: true,
-                },
-                {
                     name: '🌐 Connected Servers',
                     value: `${interaction.client.guilds.cache.size}`,
                     inline: true,
@@ -59,12 +53,6 @@ module.exports = {
                     name: '⌨️ Loaded Commands',
                     value: `${interaction.client.commands.size}`,
                     inline: true,
-                },
-                {
-                    name: '🛠️ Platform Purpose',
-                    value:
-                        'Supporting Illinois State Roleplay through management tools, department systems, and server-wide utilities.',
-                    inline: false,
                 }
             )
             .setImage(`attachment://${ABOUT_BANNER_NAME}`);

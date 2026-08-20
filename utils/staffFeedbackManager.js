@@ -130,7 +130,7 @@ function createStaffFeedbackEmbed({
                 value: safeReason,
             }
         )
-        .setThumbnail(brands.isrp.logo)
+        .setThumbnail(avatar || brands.isrp.logo)
         .setFooter({
             text: `Illinois State Roleplay • ${recordId}`,
         })

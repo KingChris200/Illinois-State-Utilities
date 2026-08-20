@@ -152,24 +152,21 @@ function createDepartmentsPanelPayload() {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: 'Illinois State Roleplay Departments',
-                description:
-                    'Explore official departments, specialized agencies, and public-safety organizations.',
+                description: 'Find an official ISRP department.',
             }),
             new TextDisplayBuilder().setContent(
                 [
-                    'Choose the organization that fits your interests. Serve the community, build experience, and advance through its official rank structure.',
-                    '',
                     '## Department Directory',
                     directory,
                     '',
-                    '-# Requirements, openings, and jurisdiction may be updated by each department’s leadership.',
+                    '-# Each department sets its own requirements and openings.',
                 ].join('\n')
             )
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Explore a Department\nSelect one department below. Its detailed page is visible only to you.'
+                '## Department Details\nChoose a department below.'
             )
         )
         .addActionRowComponents(
@@ -177,7 +174,7 @@ function createDepartmentsPanelPayload() {
         );
 
     addBrandSignature(container, {
-        detail: 'Serve. Lead. Belong. • Illinois State Roleplay',
+        detail: 'Illinois State Roleplay Departments',
     });
 
     return {

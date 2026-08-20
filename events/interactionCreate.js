@@ -590,44 +590,35 @@ function createVoteEmbed({
         .setImage(
             `attachment://${SESSION_BANNER_NAME}`
         )
-        .setTitle('🗳️ Server Vote')
+        .setTitle('Server Vote')
         .setDescription(
             [
-                'Illinois State Roleplay is preparing to host a new session.',
-                '',
-                'Select **Attending** below only if you genuinely plan to join.',
-                '',
-                'The session will automatically begin once the required vote goal is reached.',
+                'Would you join a session right now?',
+                'Select **Attending** only if you plan to join.',
             ].join('\n')
         )
         .addFields(
             {
-                name: '🎮 Join Code',
+                name: 'Server Code',
                 value: `\`${JOIN_CODE}\``,
                 inline: true,
             },
             {
-                name: '👤 Hosted By',
+                name: 'Host',
                 value:
                     `\`${activeVote.hostUsername}\``,
                 inline: true,
             },
             {
-                name: '📊 Vote Progress',
+                name: 'Votes',
                 value:
                     `\`${attendingCount} / ${activeVote.goal}\`\n${progressBar}`,
                 inline: true,
             },
             {
-                name: '⏰ Voting Ends',
+                name: 'Ends',
                 value:
                     `<t:${endsTimestamp}:R>`,
-                inline: true,
-            },
-            {
-                name: '🟡 Status',
-                value:
-                    '`Waiting for Votes`',
                 inline: true,
             }
         )
@@ -676,32 +667,28 @@ function createCompletedVoteEmbed({
             .setImage(
                 `attachment://${SESSION_BANNER_NAME}`
             )
-            .setTitle(
-                '✅ Server Vote Completed'
-            )
+            .setTitle('Server Vote Complete')
             .setDescription(
                 [
-                    'The required server-vote goal has been reached.',
-                    '',
-                    '**The session startup has been automatically posted.**',
+                    'The vote reached its goal. The server is now up.',
                 ].join('\n')
             )
             .addFields(
                 {
-                    name: '🎮 Join Code',
+                    name: 'Server Code',
                     value:
                         `\`${JOIN_CODE}\``,
                     inline: true,
                 },
                 {
-                    name: '👤 Hosted By',
+                    name: 'Host',
                     value:
                         `\`${activeVote.hostUsername}\``,
                     inline: true,
                 },
                 {
                     name:
-                        '📊 Final Attendance',
+                        'Attending',
                     value:
                         `\`${attendeeCount} member${
                             attendeeCount === 1
@@ -711,12 +698,7 @@ function createCompletedVoteEmbed({
                     inline: true,
                 },
                 {
-                    name: '🟢 Status',
-                    value: '`Goal Reached`',
-                    inline: true,
-                },
-                {
-                    name: '🕒 Completed',
+                    name: 'Completed',
                     value:
                         `<t:${completedTimestamp}:R>`,
                     inline: true,
@@ -772,32 +754,28 @@ function createStartupEmbed({
             .setImage(
                 `attachment://${SESSION_BANNER_NAME}`
             )
-            .setTitle('🚓 Server Startup')
+            .setTitle('Server Startup')
             .setDescription(
                 [
-                    'The required server-vote goal has been reached.',
-                    '',
-                    '**The session is now online and ready for members to join.**',
-                    '',
-                    'Please join promptly and prepare for a professional and realistic roleplay session.',
+                    'The server is now up. If you voted, please join.',
                 ].join('\n')
             )
             .addFields(
                 {
-                    name: '🎮 Join Code',
+                    name: 'Server Code',
                     value:
                         `\`${JOIN_CODE}\``,
                     inline: true,
                 },
                 {
-                    name: '👤 Hosted By',
+                    name: 'Host',
                     value:
                         `\`${activeVote.hostUsername}\``,
                     inline: true,
                 },
                 {
                     name:
-                        '📊 Confirmed Attendance',
+                        'Attending',
                     value:
                         `\`${attendeeCount} member${
                             attendeeCount === 1
@@ -807,13 +785,7 @@ function createStartupEmbed({
                     inline: true,
                 },
                 {
-                    name: '🟢 Status',
-                    value: '`Online`',
-                    inline: true,
-                },
-                {
-                    name:
-                        '⏰ Session Started',
+                    name: 'Started',
                     value:
                         `<t:${startedTimestamp}:F>\n` +
                         `<t:${startedTimestamp}:R>`,
@@ -844,14 +816,14 @@ function createStartupEmbed({
 
 function addSessionDetails(embed, session) {
     embed.addFields({
-        name: '🗺️ Roleplay Zone',
+        name: 'Roleplay Area',
         value: session.roleplayZone ?? 'Statewide',
         inline: true,
     });
 
     if (session.notes) {
         embed.addFields({
-            name: '📝 Session Notes',
+            name: 'Notes',
             value: session.notes,
         });
     }
@@ -1001,8 +973,6 @@ function createAttendanceNotification(
 
     if (attendeeCount === 0) {
         return [
-            '🚔 **Session Notification**',
-            '',
             'The server is now online.',
         ].join('\n');
     }
@@ -1017,11 +987,9 @@ function createAttendanceNotification(
                 .join('\n');
 
         return [
-            '🚔 **Session Notification**',
+            '**The server is now online.**',
             '',
-            'The server is now online!',
-            '',
-            '**Attending Members**',
+            'You voted to attend:',
             attendeeMentions,
         ].join('\n');
     }
@@ -1036,8 +1004,6 @@ function createAttendanceNotification(
                 .join(' ');
 
         return [
-            '🚔 **Session Notification**',
-            '',
             `**${attendeeCount} members** confirmed attendance.`,
             '',
             attendeeMentions,
@@ -1045,11 +1011,8 @@ function createAttendanceNotification(
     }
 
     return [
-        '🚔 **Session Notification**',
-        '',
         `**${attendeeCount} members** confirmed attendance.`,
-        '',
-        'The server is now online. Have a great patrol!',
+        'The server is now online.',
     ].join('\n');
 }
 

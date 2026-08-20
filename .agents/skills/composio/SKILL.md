@@ -27,7 +27,7 @@ Treat a named personal AI client with no product code as For You. Treat an appli
 ## 2. Choose the job
 
 Identify the requested outcome before taking action:
-
+n
 - **Explain or discover:** answer a question, compare approaches, or find the current API.
 - **Set up:** establish credentials, an MCP client, the CLI, or an SDK for the first time.
 - **Build or change:** integrate Composio into an existing agent or application.

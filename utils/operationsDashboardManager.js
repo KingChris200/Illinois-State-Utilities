@@ -240,7 +240,7 @@ async function buildOverviewView(dashboard) {
         Object.keys(server.Staff.Mods).length +
         Object.keys(server.Staff.Helpers).length;
     const embed = createEmbed(
-        'ER:LC Operations Center — Overview',
+        'ER:LC Server Status',
         'isrp',
         {
             guild: dashboard.guild,
@@ -248,7 +248,7 @@ async function buildOverviewView(dashboard) {
         }
     )
         .setDescription(
-            `Live operational snapshot for **${cleanMarkdownText(server.Name || 'Unknown Server', 100)}**.`
+            `Live status for **${cleanMarkdownText(server.Name || 'Unknown Server', 100)}**.`
         )
         .addFields(
             {
@@ -272,26 +272,8 @@ async function buildOverviewView(dashboard) {
                 inline: true,
             },
             {
-                name: 'Account Verification',
-                value: cleanMarkdownText(
-                    server.AccVerifiedReq || 'Unknown',
-                    50
-                ),
-                inline: true,
-            },
-            {
-                name: 'Team Balance',
-                value: server.TeamBalance ? 'Enabled' : 'Disabled',
-                inline: true,
-            },
-            {
-                name: 'Team Distribution',
+                name: 'Teams',
                 value: formatTeamDistribution(server.Players),
-            },
-            {
-                name: 'Operating Mode',
-                value: getOperatingMode(dashboard.config),
-                inline: true,
             }
         );
 
@@ -306,7 +288,7 @@ async function buildCallsView(dashboard) {
         (call) => !hasModerator(call.Moderator)
     ).length;
     const embed = createEmbed(
-        'ER:LC Operations Center — Mod Calls',
+        'Moderator Calls',
         'isrp',
         {
             guild: dashboard.guild,
@@ -344,7 +326,7 @@ async function buildActivityView(dashboard) {
     const joins = sortNewest(activity.JoinLogs).slice(0, 5);
     const kills = sortNewest(activity.KillLogs).slice(0, 5);
     const embed = createEmbed(
-        'ER:LC Operations Center — Activity',
+        'Recent ER:LC Activity',
         'isrp',
         {
             guild: dashboard.guild,
@@ -352,7 +334,7 @@ async function buildActivityView(dashboard) {
         }
     )
         .setDescription(
-            'Recent player movement and elimination activity.'
+            'Recent joins, departures, and eliminations.'
         )
         .addFields(
             {
@@ -385,7 +367,7 @@ async function buildHealthView(dashboard) {
     const health = erlcService.getApiHealth();
     const connected = Boolean(connection);
     const embed = createEmbed(
-        'ER:LC Operations Center — Server Health',
+        'Bot Status',
         'isrp',
         {
             guild: dashboard.guild,
@@ -396,7 +378,7 @@ async function buildHealthView(dashboard) {
         .setColor(connected ? '#27AE60' : '#C0392B')
         .setDescription(
             connected
-                ? 'The read-only ER:LC connection check completed successfully.'
+                ? 'The ER:LC connection is working.'
                 : erlcService.getPublicErrorMessage(connectionError)
         )
         .addFields(
@@ -440,11 +422,6 @@ async function buildHealthView(dashboard) {
                       ? 'Mock mode does not contact ER:LC'
                       : 'Not recorded since startup',
                 inline: true,
-            },
-            {
-                name: 'Safety',
-                value:
-                    'This dashboard only reads ER:LC information. It cannot execute an in-game command.',
             }
         );
 
@@ -454,7 +431,7 @@ async function buildHealthView(dashboard) {
 function createErrorEmbed(dashboard, error) {
     return addDashboardSession(
         createEmbed(
-            'ER:LC Operations Center — Refresh Failed',
+            'Refresh Failed',
             'isrp',
             {
                 guild: dashboard.guild,
@@ -465,12 +442,7 @@ function createErrorEmbed(dashboard, error) {
             .setColor('#C0392B')
             .setDescription(
                 erlcService.getPublicErrorMessage(error)
-            )
-            .addFields({
-                name: 'Safety',
-                value:
-                    'No remote command was executed. You can try Refresh again.',
-            }),
+            ),
         dashboard
     );
 }

@@ -79,9 +79,9 @@ async function expireRecoveredVote(client, expectedVote) {
                   message.embeds[0].toJSON()
               )
                   .setColor('#A83A3A')
-                  .setTitle('⌛ Server Vote Expired')
+                  .setTitle('Server Vote Ended')
                   .setDescription(
-                      'The server vote ended before reaching its attendance goal. A new vote may now be started.'
+                      'The vote ended before it reached the goal.'
                   )
             : null;
 

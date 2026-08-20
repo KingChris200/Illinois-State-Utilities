@@ -313,11 +313,10 @@ function createGuidePanelPayload(
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             createPanelHeader({
-                eyebrow: 'ILLINOIS STATE ROLEPLAY • OFFICIAL STAFF RESOURCE',
+                eyebrow: 'ILLINOIS STATE ROLEPLAY',
                 title: 'Illinois State Roleplay Staff Guide',
-                description:
-                    'The official handbook for staff policy, conduct, commands, moderation, and leadership expectations.',
-                note: `Current version: ${guideVersion} • Selected pages open privately`,
+                description: 'Staff policies, commands, and rank guides.',
+                note: `Version ${guideVersion}`,
             })
         )
         .addTextDisplayComponents(
@@ -340,7 +339,7 @@ function createGuidePanelPayload(
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Server Staff Team Guide\nSelect a staff team below to view its ranks, responsibilities, and expectations.'
+                '## Staff Teams\nChoose a team below.'
             )
         )
         .addActionRowComponents(
@@ -348,7 +347,7 @@ function createGuidePanelPayload(
         );
 
     addBrandSignature(container, {
-        detail: `Official Staff Guide • Version ${guideVersion}`,
+        detail: `Staff Guide • Version ${guideVersion}`,
     });
 
     return {

@@ -39,18 +39,16 @@ async function createIspShiftDashboardPayload(guild) {
     });
     const embed = new EmbedBuilder()
         .setColor(brands.isp.color)
-        .setTitle('Illinois State Police Shift Dashboard')
-        .setDescription(
-            'Manage your duty status and review the current weekly shift wave.'
-        )
+        .setTitle('ISP Shift Dashboard')
+        .setDescription('Current duty status and weekly shift time.')
         .addFields(
             {
-                name: '🔵 On Duty',
+                name: 'On Duty',
                 value: `**${activelyWorking}** officer${activelyWorking === 1 ? '' : 's'}`,
                 inline: true,
             },
             {
-                name: '🟡 On Break',
+                name: 'On Break',
                 value: `**${onBreak}** officer${onBreak === 1 ? '' : 's'}`,
                 inline: true,
             },
@@ -67,7 +65,7 @@ async function createIspShiftDashboardPayload(guild) {
                 inline: false,
             },
             {
-                name: 'Current Wave Leaders',
+                name: 'Weekly Leaders',
                 value: leaders.length
                     ? leaders.join('\n')
                     : 'No shift time has been recorded this wave.',
@@ -75,13 +73,12 @@ async function createIspShiftDashboardPayload(guild) {
             }
         )
         .setFooter({
-            text: `${brands.isp.footer} • Updates every minute`,
+            text: 'Updates every minute',
         })
         .setTimestamp();
     const icon = brands.isp.logo || guild.iconURL?.({ size: 256 });
 
     if (icon) {
-        embed.setThumbnail(icon);
         embed.setAuthor({ name: guild.name, iconURL: icon });
     }
 

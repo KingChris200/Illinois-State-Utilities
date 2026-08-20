@@ -191,17 +191,15 @@ function createDashboardPanelPayload(guild, context) {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: 'Illinois State Roleplay Dashboard',
-                description:
-                    'Everything important is kept in one clear, official place.',
-                note: 'Community information • Official links • Private resource pages',
+                description: 'Links and information for Illinois State Roleplay.',
             }),
             new TextDisplayBuilder().setContent(
                 [
                     '## Community Standard',
-                    'Illinois State Roleplay is built around **organized sessions**, **consistent moderation**, and **realistic roleplay**. Review the official resources below before participating.',
+                    'Read the rules, join sessions, and use the links below when you need help.',
                     '',
                     '## Essential Channels',
-                    'Open the guidelines, request assistance, follow active sessions, or visit the Whitelisted Roblox group.',
+                    'Everything important is linked below.',
                 ].join('\n')
             )
         );
@@ -222,7 +220,7 @@ function createDashboardPanelPayload(guild, context) {
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Explore Illinois State Roleplay\nChoose one section below. The detailed page opens privately for you.'
+                '## More Information\nChoose a section below.'
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
@@ -280,11 +278,7 @@ function getPageContent(pageId, context) {
     const pages = {
         about: {
             title: 'About Illinois State Roleplay',
-            body: [
-                'Illinois State Roleplay is a strict ER:LC community focused on organized sessions, professional moderation, and enjoyable roleplay.',
-                '',
-                'Community systems are managed through Illinois State Utilities so members and staff can find support, session information, and official resources without unnecessary clutter.',
-            ].join('\n'),
+            body: 'Illinois State Roleplay is a strict ER:LC community focused on organized sessions and realistic roleplay.',
         },
         getting_started: {
             title: 'Getting Started',
@@ -305,7 +299,7 @@ function getPageContent(pageId, context) {
                 `**Session Role:** ${sessionRoleMention}`,
                 `**ER:LC Join Code:** \`${context.serverCode}\``,
                 '',
-                'Wait for an official startup announcement before joining. Session availability and server status may change throughout the day.',
+                'Wait for a startup announcement before joining.',
             ].join('\n'),
         },
         assistance: {
@@ -317,7 +311,7 @@ function getPageContent(pageId, context) {
                 '**Internal Affairs** — Staff reports and moderation or infraction appeals.',
                 '**Management Support** — Leadership matters, partnerships, and serious concerns.',
                 '',
-                'Each ticket is private and visible only to you and the selected support team.',
+                'Tickets are private between you and the selected support team.',
             ].join('\n'),
         },
         staff: {

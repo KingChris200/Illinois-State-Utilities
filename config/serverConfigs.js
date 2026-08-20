@@ -353,31 +353,23 @@ const SERVER_CONFIGS = {
         ],
 
         embedTitles: {
-            promotion:
-                'ISRP | Staff Promotion',
+            promotion: 'Staff Promotion',
 
-            demotion:
-                'ISRP | Staff Demotion',
+            demotion: 'Staff Demotion',
 
-            infraction:
-                'ISRP | Staff Infraction',
+            infraction: 'Staff Infraction',
 
-            movement:
-                'ISRP | Staff Movement',
+            movement: 'Staff Movement',
         },
 
         messages: {
-            promotionOpening:
-                'Congratulations on receiving a staff promotion within Illinois State Roleplay!',
+            promotionOpening: 'Congratulations on your promotion!',
 
-            promotionClosing:
-                'Thank you for your continued dedication, professionalism, and service to Illinois State Roleplay.',
+            promotionClosing: 'Keep up the good work.',
 
-            demotionOpening:
-                'A staff rank adjustment has been issued within Illinois State Roleplay.',
+            demotionOpening: 'A staff rank has been changed.',
 
-            demotionClosing:
-                'Please review all expectations associated with your newly assigned rank.',
+            demotionClosing: 'Please review your rank expectations.',
 
             infractionOpening:
                 'A staff disciplinary action has been formally recorded within Illinois State Roleplay.',

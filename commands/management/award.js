@@ -853,35 +853,19 @@ module.exports = {
                 );
 
                 const descriptionLines = [
-                    `Congratulations to ${staffMember} on receiving an official Illinois State Roleplay staff award!`,
+                    `Congratulations, ${staffMember}!`,
                     '',
-                    '**Award**',
-                    `${awardType.emoji} ${finalAwardName}`,
-                    '',
-                    '**Reason**',
-                    reason,
-                    '',
-                    '**Awarded By**',
-                    `${interaction.user}`,
+                    `**Award:** ${awardType.emoji} ${finalAwardName}`,
+                    `**Reason:** ${reason}`,
+                    `**Awarded By:** ${interaction.user}`,
                 ];
 
                 if (notes) {
                     descriptionLines.push(
                         '',
-                        '**Additional Notes**',
-                        notes
+                        `**Notes:** ${notes}`
                     );
                 }
-
-                descriptionLines.push(
-                    '',
-                    '**Award ID**',
-                    `\`${awardId}\``,
-                    '',
-                    'Thank you for your continued dedication, professionalism, and service to Illinois State Roleplay!',
-                    '',
-                    '**Congratulations!**'
-                );
 
                 const awardEmbed =
                     new EmbedBuilder()
@@ -889,7 +873,7 @@ module.exports = {
                             0xf1c40f
                         )
                         .setTitle(
-                            'ISRP | Staff Award'
+                            'Staff Award'
                         )
                         .setDescription(
                             descriptionLines.join(
@@ -911,7 +895,7 @@ module.exports = {
                         })
                         .setFooter({
                             text:
-                                'Illinois State Utilities • Awards & Recognition System',
+                                'Illinois State Roleplay',
 
                             iconURL: brands.assets.logo,
                         })

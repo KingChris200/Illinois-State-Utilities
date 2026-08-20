@@ -164,12 +164,11 @@ function createTicketPanelPayload(guild) {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: 'Illinois State Roleplay Assistance',
-                description:
-                    'Private support routed directly to the team best suited to help.',
+                description: 'Open a private support ticket.',
             }),
             new TextDisplayBuilder().setContent(
                 [
-                    'Choose the category that best matches your concern. A private channel will be created for you and the selected support team.',
+                    'Choose the category that best fits your concern.',
                     '',
                     categorySummary,
                 ].join('\n')
@@ -178,7 +177,7 @@ function createTicketPanelPayload(guild) {
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Open a Ticket\nSelect one assistance category below.'
+                '## Open a Ticket\nChoose a category below.'
             )
         )
         .addActionRowComponents(
@@ -186,7 +185,7 @@ function createTicketPanelPayload(guild) {
         );
 
     addBrandSignature(container, {
-        detail: 'Private support • One ticket per concern',
+        detail: 'One ticket per concern',
     });
 
     return {
@@ -260,15 +259,15 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
         .setTitle(`${category.emoji} ${category.label}`)
         .setDescription(
             [
-                `Welcome <@${ticket.openerId}>! Your private assistance channel is ready.`,
+                `Welcome <@${ticket.openerId}>.`,
                 '',
-                'Please describe what happened, what outcome you are requesting, and attach any relevant screenshots or links.',
+                'Tell us what happened and attach any useful screenshots or links.',
                 '',
                 category.id.endsWith('appeal')
-                    ? 'An Internal Affairs team member can post the appeal questionnaire with `!appeal`.'
+                    ? 'Staff can post the appeal questions with `!appeal`.'
                     : category.id === 'internal_affairs'
-                      ? 'Internal Affairs can post the appeal questionnaire with `!appeal` when needed.'
-                    : 'A support team member will greet you and begin assisting as soon as possible.',
+                      ? 'Internal Affairs can post appeal questions with `!appeal`.'
+                    : 'A support team member will be with you soon.',
             ].join('\n')
         )
         .addFields(
@@ -290,9 +289,8 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
                 inline: true,
             }
         )
-        .setThumbnail(brands.assets.logo)
         .setFooter({
-            text: 'Illinois State Utilities • Assistance Center',
+            text: 'Illinois State Roleplay Assistance',
             iconURL: brands.assets.logo,
         })
         .setTimestamp();

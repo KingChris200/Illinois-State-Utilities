@@ -1024,59 +1024,20 @@ function buildPromotionEmbed({
         interaction.guild.name;
 
     const descriptionLines = [
-        getPromotionOpening(
-            serverConfig
-        ),
-
+        `Congratulations, ${staffMember}!`,
         '',
-
-        `## Congratulations, ${staffMember}!`,
-
-        '',
-
-        '**Previous Rank**',
-        previousRank,
-
-        '',
-
-        '**New Rank**',
-        newRank,
-
-        '',
-
-        '**Advancement Summary**',
-        `${progressionAnalysis.classification} • ${progressionAnalysis.ranksAdvanced} rank level(s) advanced`,
-
-        '',
-
-        '**Promotion Reason**',
-        reason,
-
-        '',
-
-        '**Promoted By**',
-        `${interaction.user}`,
+        `**Previous Rank:** ${previousRank}`,
+        `**New Rank:** ${newRank}`,
+        `**Reason:** ${reason}`,
+        `**Promoted By:** ${interaction.user}`,
     ];
 
     if (notes) {
         descriptionLines.push(
             '',
-            '**Additional Notes**',
-            notes
+            `**Notes:** ${notes}`
         );
     }
-
-    descriptionLines.push(
-        '',
-
-        getPromotionClosing(
-            serverConfig
-        ),
-
-        '',
-
-        '**Congratulations on your promotion!**'
-    );
 
     return new EmbedBuilder()
         .setColor(
@@ -2095,7 +2056,7 @@ module.exports = {
                 return interaction.editReply({
                     content:
                         [
-                            `⚠️ ${staffMember} was successfully promoted from **${previousRank}** to **${newRank}**.`,
+                        `⚠️ ${staffMember} was promoted from **${previousRank}** to **${newRank}**.`,
 
                             '',
 
@@ -2201,24 +2162,9 @@ module.exports = {
             return interaction.editReply({
                 content:
                     [
-                        `✅ ${staffMember} was successfully promoted from **${previousRank}** to **${newRank}**!`,
-
-                        '',
-
-                        `**Server:** ${serverConfig.serverName}`,
-
-                        `**Promotion Channel:** ${promotionChannel}`,
-
-                        `**Announcement:** ${announcementMessage.url}`,
-
-                        `**Role Removed:** ${
-                            rankResult.removedRole ||
-                            'None (initial appointment)'
-                        }`,
-
-                        `**Role Added:** ${rankResult.addedRole}`,
-
-                        `**Promotion Record:** \`${promotionId}\``,
+                        `✅ ${staffMember} was promoted to **${newRank}**.`,
+                        `${promotionChannel} • ${announcementMessage.url}`,
+                        `Record: \`${promotionId}\``,
                     ].join('\n'),
 
                 allowedMentions: {

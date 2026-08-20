@@ -224,7 +224,7 @@ function createManagePayload(interaction, snapshot, member) {
         .setDescription(
             active
                 ? `Your shift began ${discordTimestamp(active.startedAt, 'R')}.`
-                : 'Start a shift when you are ready to begin official ISP duties.'
+                : 'Start your shift when you go on duty.'
         )
         .addFields(
             {
@@ -234,14 +234,14 @@ function createManagePayload(interaction, snapshot, member) {
             },
             { name: 'Status', value: status, inline: true },
             {
-                name: 'Total This Wave',
+                name: 'This Week',
                 value: formatDuration(snapshot.weeklyDurationMs),
                 inline: true,
             },
-            { name: 'Leaderboard Placement', value: placement, inline: true },
+            { name: 'Placement', value: placement, inline: true },
             { name: 'Rank', value: getIspRank(member), inline: true },
             {
-                name: 'Weekly Progress',
+                name: 'Progress',
                 value: `\`${progress}\` ${formatDuration(snapshot.weeklyDurationMs)} / ${formatDuration(snapshot.weeklyQuotaMs)}`,
             }
         )

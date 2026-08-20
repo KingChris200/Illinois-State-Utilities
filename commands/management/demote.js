@@ -318,42 +318,21 @@ function buildDemotionEmbed({
     serverConfig,
 }) {
     const description = [
-        serverConfig.messages?.demotionOpening ||
-            'A staff rank adjustment has been formally issued.',
+        `${staffMember} has been moved to a lower staff rank.`,
         '',
-        `## ${staffMember}`,
-        '',
-        '**Previous Rank**',
-        previousRank,
-        '',
-        '**New Rank**',
-        newRank,
-        '',
-        '**Demotion Severity**',
-        `${contextAnalysis.level} • ${contextAnalysis.ranksDropped} rank level(s)`,
-        '',
-        '**Reason**',
-        reason,
-        '',
-        '**Issued By**',
-        `${interaction.user}`,
+        `**Previous Rank:** ${previousRank}`,
+        `**New Rank:** ${newRank}`,
+        `**Reason:** ${reason}`,
+        `**Issued By:** ${interaction.user}`,
     ];
 
     if (evidence) {
-        description.push('', '**Evidence / Reference**', evidence);
+        description.push('', `**Evidence:** ${evidence}`);
     }
 
     if (notes) {
-        description.push('', '**Additional Notes**', notes);
+        description.push('', `**Notes:** ${notes}`);
     }
-
-    description.push(
-        '',
-        `**Demotion Record:** \`${demotionId}\``,
-        '',
-        serverConfig.messages?.demotionClosing ||
-            'Please review all expectations associated with your newly assigned rank.'
-    );
 
     return new EmbedBuilder()
         .setColor(DEMOTION_COLOR)
@@ -1017,13 +996,9 @@ module.exports = {
 
             return interaction.editReply({
                 content: [
-                    `✅ ${staffMember} was successfully demoted from **${previousRank}** to **${newRank}**.`,
-                    '',
-                    `**Demotion Channel:** ${destinationChannel}`,
-                    `**Announcement:** ${announcementMessage.url}`,
-                    `**Role Removed:** ${rankResult.removedRole}`,
-                    `**Role Added:** ${rankResult.addedRole}`,
-                    `**Demotion Record:** \`${demotionId}\``,
+                    `✅ ${staffMember} was moved to **${newRank}**.`,
+                    `${destinationChannel} • ${announcementMessage.url}`,
+                    `Record: \`${demotionId}\``,
                 ].join('\n'),
                 allowedMentions: { parse: [] },
             });

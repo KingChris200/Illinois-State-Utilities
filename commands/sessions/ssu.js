@@ -308,54 +308,42 @@ module.exports = {
                     `attachment://${SESSION_BANNER_NAME}`
                 )
 
-                .setTitle(
-                    '🗳️ Server Vote'
-                )
+                .setTitle('Server Vote')
 
                 .setDescription(
                     [
-                        'Illinois State Roleplay is preparing to host a new session.',
-                        '',
-                        'Select **Attending** below only if you genuinely plan to join.',
-                        '',
-                        'The session will automatically begin once the required vote goal is reached.',
+                        'Would you join a session right now?',
+                        'Select **Attending** only if you plan to join.',
                     ].join('\n')
                 )
 
                 .addFields(
                     {
                         name:
-                            '🎮 Join Code',
+                            'Server Code',
                         value:
                             `\`${JOIN_CODE}\``,
                         inline: true,
                     },
                     {
                         name:
-                            '👤 Hosted By',
+                            'Host',
                         value:
                             `\`${interaction.user.username}\``,
                         inline: true,
                     },
                     {
                         name:
-                            '📊 Vote Progress',
+                            'Votes',
                         value:
                             `\`0 / ${goal}\`\n${progressBar}`,
                         inline: true,
                     },
                     {
                         name:
-                            '⏰ Voting Ends',
+                            'Ends',
                         value:
                             `<t:${endsTimestamp}:R>`,
-                        inline: true,
-                    },
-                    {
-                        name:
-                            '🟡 Status',
-                        value:
-                            '`Waiting for Votes`',
                         inline: true,
                     }
                 )
@@ -371,14 +359,14 @@ module.exports = {
                 .setTimestamp();
 
         voteEmbed.addFields({
-            name: '🗺️ Roleplay Zone',
+            name: 'Roleplay Area',
             value: roleplayZone,
             inline: true,
         });
 
         if (notes) {
             voteEmbed.addFields({
-                name: '📝 Session Notes',
+                name: 'Notes',
                 value: notes,
             });
         }
@@ -461,8 +449,7 @@ module.exports = {
             const voteMessage =
                 await interaction.channel.send({
                     content:
-                        `📢 <@&${SESSION_PING_ROLE_ID}> @here — ` +
-                        '**a new server vote has started!**',
+                        `<@&${SESSION_PING_ROLE_ID}> @here`,
 
                     files: [
                         sessionBanner,
@@ -537,13 +524,12 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    `✅ Server vote successfully started in ${interaction.channel}.\n\n` +
-                    `**Vote Goal:** ${goal}\n` +
-                    `**Voting Duration:** ${durationMinutes} minute${
+                    `✅ Server vote posted in ${interaction.channel}.\n` +
+                    `Goal: **${goal}** • Duration: **${durationMinutes} minute${
                         durationMinutes === 1
                             ? ''
                             : 's'
-                    }`,
+                    }**`,
             });
 
             console.log(
@@ -620,36 +606,32 @@ module.exports = {
                             `attachment://${SESSION_BANNER_NAME}`
                         )
 
-                        .setTitle(
-                            '⌛ Server Vote Expired'
-                        )
+                        .setTitle('Server Vote Ended')
 
                         .setDescription(
                             [
-                                'The server vote has ended before the required attendance goal was reached.',
-                                '',
-                                'A new vote may be started when the community is ready.',
+                                'The vote ended before it reached the goal.',
                             ].join('\n')
                         )
 
                         .addFields(
                             {
                                 name:
-                                    '🎮 Join Code',
+                                    'Server Code',
                                 value:
                                     `\`${JOIN_CODE}\``,
                                 inline: true,
                             },
                             {
                                 name:
-                                    '👤 Hosted By',
+                                    'Host',
                                 value:
                                     `\`${interaction.user.username}\``,
                                 inline: true,
                             },
                             {
                                 name:
-                                    '📊 Final Progress',
+                                    'Final Votes',
                                 value:
                                     `\`${attendingCount} / ${goal}\`\n${expiredProgressBar}`,
                                 inline: true,

@@ -230,18 +230,16 @@ async function createCallsignPanelPayload(interaction, member = interaction.memb
         : [];
     const embed = new EmbedBuilder()
         .setColor(brands.palette.lightBlue)
-        .setTitle('ISP Callsign Management')
-        .setDescription(
-            'Manage your official Illinois State Police callsign from one private panel.'
-        )
+        .setTitle('Callsign Manager')
+        .setDescription('View or manage your ISP callsign.')
         .addFields(
             {
-                name: 'Your Callsign',
+                name: 'Callsign',
                 value: assignment ? `\`${assignment.callsign}\`` : 'Not assigned',
                 inline: true,
             },
             {
-                name: 'Your Section',
+                name: 'Section',
                 value: section?.name || 'Not eligible',
                 inline: true,
             },
@@ -405,7 +403,7 @@ async function createDirectoryPayload(interaction, requestedPage = 0) {
 
     const embed = new EmbedBuilder()
         .setColor(brands.palette.lightBlue)
-        .setTitle(`ISP Callsign Directory — ${assignments.length} assigned`)
+        .setTitle(`Callsign Directory — ${assignments.length}`)
         .setDescription(
             lines.length ? lines.join('\n').trim() : 'No callsigns are assigned yet.'
         )

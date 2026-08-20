@@ -149,16 +149,15 @@ function createInformationPanelPayload(guild, context) {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: 'Illinois State Roleplay Information',
-                description:
-                    'A clear introduction to the community, its standards, and its official resources.',
+                description: 'Community information and useful links.',
             }),
             new TextDisplayBuilder().setContent(
                 [
                     '## About the Community',
-                    'Illinois State Roleplay is a strict ER:LC community built around **organized sessions**, **believable scenes**, **fair moderation**, and a welcoming member experience.',
+                    'Illinois State Roleplay is a strict ER:LC community focused on organized sessions and believable roleplay.',
                     '',
                     '## Start Here',
-                    'Review both guideline channels before participating. Assistance, session information, and the official Whitelisted Roblox group are available through the links below.',
+                    'Read both guideline channels before joining a session.',
                 ].join('\n')
             )
         );
@@ -171,14 +170,13 @@ function createInformationPanelPayload(guild, context) {
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## Community Information\nChoose one section below. The selected page is shown only to you.'
+                '## More Information\nChoose a section below.'
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
 
     addBrandSignature(container, {
-        detail:
-            'Official community information • Built for Realism. Driven by Community.',
+        detail: 'Illinois State Roleplay Information',
     });
 
     return {
@@ -223,9 +221,9 @@ function getInformationPage(pageId, context) {
         about: {
             title: 'About Illinois State Roleplay',
             body: [
-                'ISRP is a strict roleplay community for Emergency Response: Liberty County. Members can participate as civilians, emergency services, and approved department personnel during organized sessions.',
+                'ISRP is a strict Emergency Response: Liberty County community with organized sessions for civilians and emergency services.',
                 '',
-                'Professional conduct, believable roleplay, cooperation, and respect are expected throughout the community.',
+                'Keep roleplay believable and treat others with respect.',
             ].join('\n'),
             buttons: [
                 createLinkButton(
@@ -241,7 +239,7 @@ function getInformationPage(pageId, context) {
                 `Read ${channels.discordGuidelines} for community conduct and Discord expectations.`,
                 `Read ${channels.inGameGuidelines} for session rules, roleplay standards, and restricted behavior.`,
                 '',
-                'The latest posted version of each guide remains the official policy.',
+                'The latest posted guides are the official rules.',
             ].join('\n'),
             buttons: [
                 createLinkButton(
@@ -270,7 +268,7 @@ function getInformationPage(pageId, context) {
                 `**Notification Role:** ${sessionRole}`,
                 `**ER:LC Join Code:** \`${context.serverCode}\``,
                 '',
-                'Wait for an official startup announcement before joining the game server.',
+                'Wait for a startup announcement before joining.',
             ].join('\n'),
             buttons: [
                 createLinkButton(
@@ -289,7 +287,7 @@ function getInformationPage(pageId, context) {
                 '**Internal Affairs** — Staff reports and moderation or infraction appeals.',
                 '**Management Support** — Leadership matters, partnerships, and serious concerns.',
                 '',
-                'Tickets are private between the opener and the selected support team.',
+                'Tickets are private between you and the selected support team.',
             ].join('\n'),
             buttons: [
                 createLinkButton(

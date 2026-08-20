@@ -37,7 +37,7 @@ const brands = require('../../config/branding');
 const INFRACTION_TYPES = {
     notice: {
         label: 'Notice',
-        title: 'ISRP | Staff Notice',
+        title: 'Staff Notice',
         color: 0xf1c40f,
         recordPrefix: 'notice',
         counterField: 'noticeCount',
@@ -49,7 +49,7 @@ const INFRACTION_TYPES = {
 
     inactivity_notice: {
         label: 'Inactivity Notice',
-        title: 'ISRP | Inactivity Notice',
+        title: 'Inactivity Notice',
         color: 0xe67e22,
         recordPrefix: 'inactivity',
         counterField: 'inactivityNoticeCount',
@@ -61,7 +61,7 @@ const INFRACTION_TYPES = {
 
     warning: {
         label: 'Warning',
-        title: 'ISRP | Staff Warning',
+        title: 'Staff Warning',
         color: 0xf39c12,
         recordPrefix: 'warning',
         counterField: 'warningCount',
@@ -73,7 +73,7 @@ const INFRACTION_TYPES = {
 
     strike: {
         label: 'Strike',
-        title: 'ISRP | Staff Strike',
+        title: 'Staff Strike',
         color: 0xe74c3c,
         recordPrefix: 'strike',
         counterField: 'strikeCount',
@@ -85,7 +85,7 @@ const INFRACTION_TYPES = {
 
     demotion: {
         label: 'Demotion',
-        title: 'ISRP | Staff Demotion',
+        title: 'Staff Demotion',
         color: 0xc0392b,
         recordPrefix: 'demotion',
         counterField: 'demotionCount',
@@ -97,7 +97,7 @@ const INFRACTION_TYPES = {
 
     termination: {
         label: 'Termination',
-        title: 'ISRP | Staff Termination',
+        title: 'Staff Termination',
         color: 0x992d22,
         recordPrefix: 'termination',
         counterField: 'terminationCount',
@@ -109,7 +109,7 @@ const INFRACTION_TYPES = {
 
     blacklist: {
         label: 'Blacklist',
-        title: 'ISRP | Staff Blacklist',
+        title: 'Staff Blacklist',
         color: 0x2b2d31,
         recordPrefix: 'blacklist',
         counterField: 'blacklistCount',
@@ -1110,65 +1110,33 @@ module.exports = {
             );
 
             const descriptionLines = [
-                `${staffMember} ${infractionType.opening}`,
+                `${staffMember} received a **${infractionType.label}**.`,
                 '',
-                '**Action Type**',
-                infractionType.label,
-                '',
-                isTermination || isBlacklist
-                    ? '**Final Rank**'
-                    : '**Current Rank**',
-                currentRank,
-                '',
-                '**Reason**',
-                reason,
-                '',
-                '**Issued By**',
-                `${interaction.user}`,
+                `**${isTermination || isBlacklist ? 'Final Rank' : 'Current Rank'}:** ${currentRank}`,
+                `**Reason:** ${reason}`,
+                `**Issued By:** ${interaction.user}`,
             ];
 
             if (duration) {
                 descriptionLines.push(
                     '',
-                    isBlacklist
-                        ? '**Blacklist Duration**'
-                        : '**Duration / Expiration**',
-                    duration
+                    `**${isBlacklist ? 'Blacklist Duration' : 'Duration'}:** ${duration}`
                 );
             }
 
             if (evidence) {
                 descriptionLines.push(
                     '',
-                    '**Evidence / Reference**',
-                    evidence
+                    `**Evidence:** ${evidence}`
                 );
             }
 
             if (notes) {
                 descriptionLines.push(
                     '',
-                    '**Additional Notes**',
-                    notes
+                    `**Notes:** ${notes}`
                 );
             }
-
-            descriptionLines.push(
-                '',
-                '**Accountability Summary**',
-                `${historyAnalysis.level} risk • ${historyAnalysis.activeCount} prior active record(s) • ${historyAnalysis.recentCount} record(s) within 30 days`
-            );
-
-            descriptionLines.push(
-                '',
-                '**Infraction Record ID**',
-                `\`${infractionId}\``,
-                '',
-                '**Official Case ID**',
-                `\`${officialCase.id}\``,
-                '',
-                infractionType.closing
-            );
 
             const infractionEmbed =
                 new EmbedBuilder()
@@ -1325,10 +1293,8 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `✅ A **${infractionType.label}** was successfully issued to ${staffMember} in ${destinationChannel}.\n\n` +
-                    `Infraction Record ID: \`${infractionId}\`\n` +
-                    `Official Case ID: \`${officialCase.id}\`\n\n` +
-                    `Use \`/case view\` with the official case ID to open the complete record.`,
+                    `✅ ${staffMember} received a **${infractionType.label}** in ${destinationChannel}.\n` +
+                    `Records: \`${infractionId}\` • \`${officialCase.id}\``,
 
                 allowedMentions: {
                     parse: [],

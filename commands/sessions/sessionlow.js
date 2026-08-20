@@ -99,53 +99,34 @@ module.exports = {
             }
 
             const descriptionLines = [
-                'The current Illinois State Roleplay session is beginning to lose activity.',
+                'The session needs more players.',
                 '',
-                'We need more **officers, civilians, firefighters, and dispatchers** to help keep today’s roleplay active!',
-                '',
-                '**Session Status**',
-                '🟢 Active — Players Needed',
-                '',
-                '**Server Information**',
-                'Server Name: Illinois State Roleplay | Strict',
-                'Server Code: `ILLINOISrp`',
-                '',
-                `**Session Host**`,
-                `${interaction.user}`,
+                '**Server Code:** `ILLINOISrp`',
+                `**Host:** ${interaction.user}`,
             ];
 
             if (playerCount !== null) {
                 descriptionLines.push(
                     '',
-                    '**Current Player Count**',
-                    `${playerCount} player${playerCount === 1 ? '' : 's'}`
+                    `**Players:** ${playerCount}`
                 );
             }
 
             if (notes) {
                 descriptionLines.push(
                     '',
-                    '**Notes**',
-                    notes
+                    `**Notes:** ${notes}`
                 );
             }
 
-            descriptionLines.push(
-                '',
-                'We appreciate everyone who joins and helps keep the session active.',
-                '',
-                '**Join up, Illinois!**'
-            );
-
             const sessionLowEmbed = new EmbedBuilder()
                 .setColor(0x3498db)
-                .setTitle('ISRP | Session Low')
+                .setTitle('Players Needed')
                 .setDescription(descriptionLines.join('\n'))
                 .setAuthor({
                     name: interaction.guild.name,
                     iconURL: brands.assets.logo,
                 })
-                .setThumbnail(brands.assets.logo)
                 .setImage(brands.assets.sessionBanner)
                 .setFooter({
                     text: 'Illinois State Utilities • Supporting Illinois State Roleplay',
@@ -171,7 +152,7 @@ module.exports = {
             });
 
             await interaction.reply({
-                content: `✅ The session-low announcement was sent successfully in ${destinationChannel}.`,
+                content: `✅ Player notice posted in ${destinationChannel}.`,
                 flags: MessageFlags.Ephemeral,
             });
         } catch (error) {

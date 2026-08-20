@@ -18,7 +18,6 @@ const {
     saveSessionState,
 } = require('../../services/sessionStateStore');
 const {
-    createSessionRecapEmbed,
     saveCompletedSessionAnalytics,
 } = require('../../services/sessionAnalyticsService');
 const brands = require('../../config/branding');
@@ -154,56 +153,48 @@ module.exports = {
                 name: SERVER_NAME,
                 iconURL: guildIcon ?? undefined,
             })
-            .setTitle('🌙 Server Shutdown')
+            .setTitle('Server Shutdown')
             .setDescription(
                 [
-                    'The Illinois State Roleplay session has officially concluded.',
-                    '',
-                    'Thank you to everyone who attended and participated in today’s session.',
-                    '',
-                    '**The server is now offline. Please wait for another startup announcement before joining.**',
+                    'The session has ended. The server is now offline.',
+                    'Thanks to everyone who joined.',
                 ].join('\n')
             )
             .addFields(
                 {
-                    name: '🎮 Server Code',
+                    name: 'Server Code',
                     value: `\`${SERVER_CODE}\``,
                     inline: true,
                 },
                 {
-                    name: '👤 Session Host',
+                    name: 'Host',
                     value: sessionHostMention,
                     inline: true,
                 },
                 {
-                    name: '🛡️ Shutdown By',
+                    name: 'Ended By',
                     value: shutdownByMention,
                     inline: true,
                 },
                 {
-                    name: '⏱️ Session Duration',
+                    name: 'Duration',
                     value: `\`${sessionDuration}\``,
                     inline: true,
                 },
                 {
-                    name: '👥 Confirmed Attendance',
+                    name: 'Attending',
                     value: `\`${attendeeCount} members\``,
                     inline: true,
                 },
                 {
-                    name: '🔴 Status',
-                    value: '`Offline`',
-                    inline: true,
-                },
-                {
-                    name: '🕒 Session Started',
+                    name: 'Started',
                     value:
                         `<t:${startedTimestamp}:F>\n` +
                         `<t:${startedTimestamp}:R>`,
                     inline: true,
                 },
                 {
-                    name: '🛑 Session Ended',
+                    name: 'Ended',
                     value:
                         `<t:${endedTimestamp}:F>\n` +
                         `<t:${endedTimestamp}:R>`,
@@ -224,7 +215,7 @@ module.exports = {
         await saveSessionState();
 
         shutdownEmbed.addFields({
-            name: '🗺️ Roleplay Zone',
+            name: 'Roleplay Area',
             value:
                 endedSession.roleplayZone ??
                 'Statewide',
@@ -233,7 +224,7 @@ module.exports = {
 
         if (endedSession.notes) {
             shutdownEmbed.addFields({
-                name: '📝 Session Notes',
+                name: 'Notes',
                 value: endedSession.notes,
             });
         }
@@ -244,30 +235,17 @@ module.exports = {
             )
         ) {
             shutdownEmbed.addFields({
-                name: '🎮 Final Live Player Count',
+                name: 'Final Player Count',
                 value:
                     `\`${endedSession.livePlayerCount} / ${endedSession.maxPlayerCount ?? 40}\` players in-game`,
                 inline: true,
             });
         }
 
-        const recapEmbed =
-            createSessionRecapEmbed({
-                session: endedSession,
-                endedAt,
-                durationDisplay:
-                    sessionDuration,
-                guildIcon,
-                serverName: SERVER_NAME,
-            });
-
         try {
             const shutdownMessage =
                 await interaction.channel.send({
-                    embeds: [
-                        shutdownEmbed,
-                        recapEmbed,
-                    ],
+                    embeds: [shutdownEmbed],
                 });
 
             try {
@@ -303,9 +281,8 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    `✅ The server shutdown was successfully posted in ${interaction.channel}.\n\n` +
-                    `**Session Duration:** ${sessionDuration}\n` +
-                    `**Shutdown Message:** ${shutdownMessage.url}`,
+                    `✅ Shutdown posted in ${interaction.channel}.\n` +
+                    `Duration: **${sessionDuration}** • ${shutdownMessage.url}`,
             });
 
             console.log(
