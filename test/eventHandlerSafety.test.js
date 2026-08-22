@@ -43,7 +43,8 @@ test('event failures are contained and interaction users receive a private error
         reply.flags,
         MessageFlags.Ephemeral
     );
-    assert.match(reply.content, /unexpected error/i);
+    assert.match(reply.content, /something went wrong/i);
+    assert.match(reply.content, /ERR-[A-F0-9]{8}/);
 });
 
 test('event failures follow up safely after an interaction was deferred', async () => {

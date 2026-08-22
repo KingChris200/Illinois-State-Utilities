@@ -1,6 +1,12 @@
 const {
     MessageFlags,
 } = require('discord.js');
+const {
+    recordCommandUsage,
+} = require('../services/commandAnalyticsService');
+const {
+    reportError,
+} = require('../services/errorReportingService');
 
 async function handleAutocomplete(interaction) {
     const command =
@@ -19,16 +25,22 @@ async function handleAutocomplete(interaction) {
     try {
         await command.autocomplete(interaction);
     } catch (error) {
-        console.error(
-            `Error while autocompleting /${interaction.commandName}:`,
-            error
-        );
+        await reportError({
+            client: interaction.client,
+            error,
+            context: 'Command autocomplete',
+            command: `/${interaction.commandName}`,
+            guildId: interaction.guildId,
+            channelId: interaction.channelId,
+            userId: interaction.user?.id,
+        });
 
         await interaction.respond([]).catch(() => {});
     }
 }
 
 async function handleSlashCommand(interaction) {
+    const startedAt = Date.now();
     const command =
         interaction.client.commands.get(
             interaction.commandName
@@ -44,15 +56,34 @@ async function handleSlashCommand(interaction) {
 
     try {
         await command.execute(interaction);
+        await recordCommandUsage({
+            guildId: interaction.guildId,
+            commandName: interaction.commandName,
+            type: 'slash',
+            outcome: 'success',
+            durationMs: Date.now() - startedAt,
+        }).catch(() => null);
     } catch (error) {
-        console.error(
-            `Error while executing /${interaction.commandName}:`,
-            error
-        );
+        const record = await reportError({
+            client: interaction.client,
+            error,
+            context: 'Slash command',
+            command: `/${interaction.commandName}`,
+            guildId: interaction.guildId,
+            channelId: interaction.channelId,
+            userId: interaction.user?.id,
+        });
+        await recordCommandUsage({
+            guildId: interaction.guildId,
+            commandName: interaction.commandName,
+            type: 'slash',
+            outcome: 'error',
+            durationMs: Date.now() - startedAt,
+        }).catch(() => null);
 
         const errorMessage = {
             content:
-                '❌ An unexpected error occurred while running this command.',
+                `❌ Something went wrong. Reference: \`${record.id}\``,
             flags: MessageFlags.Ephemeral,
         };
 

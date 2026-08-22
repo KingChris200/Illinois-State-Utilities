@@ -471,10 +471,25 @@ is preserved.
 
 ## Configuration doctor and data backups
 
-`/doctor` runs a private, read-only review of the Discord connection,
-required gateway intents, ER:LC mode, configured channels, channel
-permissions, permanent Staff Guide, live data directory, and automatic
-backup service. It reports problems without changing configuration.
+`/doctor` is the private reliability center. Its four compact views cover:
+
+- **Launch Readiness** — Discord connection, gateway intents, ER:LC mode,
+  configured channels, bot permissions, permanent panels, live data,
+  centralized error reporting, backup health, restore verification, and
+  sensitive-command policy coverage.
+- **Command Usage** — aggregate command counts, errors, blocked attempts,
+  and average runtimes from the last 30 days. Message text and member IDs
+  are never stored in analytics.
+- **Recent Errors** — safe reference IDs for the latest locally stored bot
+  errors. Stack traces and credentials are never posted to Discord.
+- **Permission Audit** — confirms every slash command is classified as a
+  management, runtime role-protected, member, or mixed workflow and remains
+  unavailable in DMs.
+
+Set `BOT_ERROR_LOG_CHANNEL_ID` to a private management channel to receive
+central error alerts. When it is blank, the bot falls back to
+`ERLC_COMMAND_LOG_CHANNEL_ID`; errors are still stored locally if neither is
+configured.
 
 Automatic backups copy every JSON file from `data` into timestamped
 folders under the gitignored `backups` directory. They run once when the
@@ -486,11 +501,14 @@ Management can use:
 
 - `/backup status` to review scheduling and the most recent result.
 - `/backup create` to create a snapshot immediately.
+- `/backup verify` to validate the latest manifest, parse every JSON file,
+  verify SHA-256 hashes, and perform a temporary test restoration.
 
 Local snapshots protect against accidental data damage, but they remain
 on the same computer. Periodically copy the `backups` folder to a secure
-off-device location for full disaster recovery. Restoring data remains a
-manual operation so the bot cannot overwrite live records accidentally.
+off-device location for full disaster recovery. Verification never replaces
+live records: the temporary restored copy is removed after it passes. A real
+restore remains manual so the bot cannot overwrite live data accidentally.
 
 ## Private watchlist
 

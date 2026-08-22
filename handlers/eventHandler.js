@@ -4,21 +4,28 @@ const {
     Events,
     MessageFlags,
 } = require('discord.js');
+const {
+    reportError,
+} = require('../services/errorReportingService');
 
 async function executeEvent(event, file, args, client) {
     try {
         await event.execute(...args, client);
     } catch (error) {
-        console.error(
-            `[EVENT ERROR] ${file} (${event.name}):`,
-            error
-        );
+        const interaction = args[0];
+        const record = await reportError({
+            client,
+            error,
+            context: `Event: ${event.name}`,
+            command: file,
+            guildId: interaction?.guildId,
+            channelId: interaction?.channelId,
+            userId: interaction?.user?.id,
+        });
 
         if (event.name !== Events.InteractionCreate) {
             return;
         }
-
-        const interaction = args[0];
 
         if (!interaction) {
             return;
@@ -26,7 +33,7 @@ async function executeEvent(event, file, args, client) {
 
         const response = {
             content:
-                '❌ An unexpected error occurred while processing that interaction. Please try again.',
+                `❌ Something went wrong. Reference: \`${record.id}\``,
             flags: MessageFlags.Ephemeral,
         };
 

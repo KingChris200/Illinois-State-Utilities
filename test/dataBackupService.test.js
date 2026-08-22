@@ -8,6 +8,8 @@ const {
     createDataBackup,
     listBackupDirectories,
     pruneDataBackups,
+    verifyDataBackup,
+    verifyLatestDataBackup,
 } = require('../services/dataBackupService');
 
 test('data backups copy JSON records with a manifest', async () => {
@@ -112,5 +114,71 @@ test('backup retention removes only expired snapshot directories', async () => {
             recursive: true,
             force: true,
         });
+    }
+});
+
+test('backup verification safely test-restores every JSON file', async () => {
+    const root = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'isrp-restore-test-')
+    );
+    const sourceDirectory = path.join(root, 'data');
+    const backupDirectory = path.join(root, 'backups');
+
+    try {
+        await fs.mkdir(sourceDirectory);
+        await fs.writeFile(
+            path.join(sourceDirectory, 'watchlist.json'),
+            '{"records":[{"id":"safe"}]}',
+            'utf8'
+        );
+        const backup = await createDataBackup({
+            sourceDirectory,
+            backupDirectory,
+            retention: 5,
+        });
+        const verified = await verifyDataBackup({
+            backupPath: backup.backupPath,
+            backupDirectory,
+        });
+
+        assert.equal(verified.status, 'verified');
+        assert.equal(verified.fileCount, 1);
+        assert.equal(verified.simulatedRestore, true);
+    } finally {
+        await fs.rm(root, { recursive: true, force: true });
+    }
+});
+
+test('latest backup verification detects damaged JSON', async () => {
+    const root = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'isrp-damaged-backup-test-')
+    );
+    const sourceDirectory = path.join(root, 'data');
+    const backupDirectory = path.join(root, 'backups');
+
+    try {
+        await fs.mkdir(sourceDirectory);
+        await fs.writeFile(
+            path.join(sourceDirectory, 'cases.json'),
+            '{"records":[]}',
+            'utf8'
+        );
+        const backup = await createDataBackup({
+            sourceDirectory,
+            backupDirectory,
+            retention: 5,
+        });
+        await fs.writeFile(
+            path.join(backup.backupPath, 'cases.json'),
+            '{broken',
+            'utf8'
+        );
+
+        await assert.rejects(
+            verifyLatestDataBackup({ backupDirectory }),
+            /JSON|Unexpected|position|property/i
+        );
+    } finally {
+        await fs.rm(root, { recursive: true, force: true });
     }
 });

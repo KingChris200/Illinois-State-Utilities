@@ -90,7 +90,7 @@ test('backup and doctor slash commands remain private management tools', () => {
         backup.options.map(
             (option) => option.name
         ),
-        ['status', 'create']
+        ['status', 'create', 'verify']
     );
     assert.equal(
         doctor.default_member_permissions,

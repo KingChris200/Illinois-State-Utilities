@@ -12,6 +12,7 @@ const {
 const {
     createDataBackup,
     getDataBackupStatus,
+    verifyLatestDataBackup,
 } = require('../../services/dataBackupService');
 
 module.exports = {
@@ -34,6 +35,13 @@ module.exports = {
                 .setName('create')
                 .setDescription(
                     'Creates a backup of the current JSON data now.'
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('verify')
+                .setDescription(
+                    'Safely test-restores and verifies the latest backup.'
                 )
         ),
 
@@ -76,6 +84,16 @@ module.exports = {
                 return;
             }
 
+            if (subcommand === 'verify') {
+                const result = await verifyLatestDataBackup();
+
+                await interaction.editReply({
+                    embeds: [createBackupVerificationEmbed(result)],
+                    allowedMentions: { parse: [] },
+                });
+                return;
+            }
+
             const status =
                 await getDataBackupStatus();
 
@@ -106,6 +124,7 @@ module.exports = {
     canManageBackups,
     createBackupResultEmbed,
     createBackupStatusEmbed,
+    createBackupVerificationEmbed,
 };
 
 function canManageBackups(interaction) {
@@ -212,6 +231,25 @@ function createBackupResultEmbed(
         .setTimestamp();
 
     return embed;
+}
+
+function createBackupVerificationEmbed(result) {
+    const hasBackup = result.status !== 'no_backup';
+
+    return new EmbedBuilder()
+        .setColor(hasBackup ? 0x2ecc71 : 0xf1c40f)
+        .setTitle(hasBackup ? 'Backup Verified' : 'No Backup Found')
+        .setDescription(
+            hasBackup
+                ? `The latest snapshot passed its manifest, JSON, checksum, and test-restore checks. **${result.fileCount} files** were restored into a temporary test location and removed afterward.`
+                : 'Create a snapshot with `/backup create`, then run `/backup verify` again.'
+        )
+        .addFields({
+            name: 'Live Data',
+            value: 'No live records were replaced or changed.',
+        })
+        .setFooter({ text: brands.isrp.footer })
+        .setTimestamp();
 }
 
 function formatLastResult(status) {

@@ -11,6 +11,10 @@ const loadEvents = require('./handlers/eventHandler');
 const {
     startPresenceRotation,
 } = require('./services/presenceService');
+const {
+    registerConsoleErrorCapture,
+    registerProcessErrorHandlers,
+} = require('./services/errorReportingService');
 
 if (!process.env.DISCORD_TOKEN) {
     console.error('❌ DISCORD_TOKEN is missing from the .env file.');
@@ -27,6 +31,8 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+registerConsoleErrorCapture(client);
+registerProcessErrorHandlers(client);
 
 const loadedCommandCount = loadCommands(client);
 const loadedEventCount = loadEvents(client);

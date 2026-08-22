@@ -2,12 +2,32 @@ const {
     SlashCommandBuilder,
     EmbedBuilder,
     MessageFlags,
+    PermissionFlagsBits,
 } = require('discord.js');
 
 const {
     readDatabase,
 } = require('../../utils/database');
 const brands = require('../../config/branding');
+const {
+    memberCanReviewMovements,
+} = require('../../config/serverConfigs');
+
+function canViewStaffHistory(interaction) {
+    return Boolean(
+        interaction.guild?.ownerId === interaction.user?.id ||
+        interaction.member?.permissions?.has?.(
+            PermissionFlagsBits.Administrator
+        ) ||
+        interaction.member?.permissions?.has?.(
+            PermissionFlagsBits.ManageGuild
+        ) ||
+        memberCanReviewMovements(
+            interaction.member,
+            interaction.guildId
+        )
+    );
+}
 
 function convertHexToDecimal(hexColor) {
     if (typeof hexColor !== 'string') {
@@ -522,6 +542,15 @@ module.exports = {
                 });
             }
 
+            if (!canViewStaffHistory(interaction)) {
+                return interaction.reply({
+                    content:
+                        '❌ Staff history is restricted to authorized management reviewers.',
+                    flags: MessageFlags.Ephemeral,
+                    allowedMentions: { parse: [] },
+                });
+            }
+
             const staffMember =
                 interaction.options.getUser(
                     'staff-member',
@@ -919,4 +948,6 @@ module.exports = {
             }
         }
     },
+
+    canViewStaffHistory,
 };

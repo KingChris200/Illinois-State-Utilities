@@ -1,4 +1,6 @@
 const fs = require('node:fs/promises');
+const crypto = require('node:crypto');
+const os = require('node:os');
 const path = require('node:path');
 
 const DEFAULT_BACKUP_INTERVAL_MS = 21_600_000;
@@ -107,6 +109,13 @@ async function listJsonFiles(directory) {
     }
 }
 
+function hashBuffer(buffer) {
+    return crypto
+        .createHash('sha256')
+        .update(buffer)
+        .digest('hex');
+}
+
 function createDataBackup(options = {}) {
     const operation = backupOperationQueue
         .catch(() => undefined)
@@ -165,13 +174,19 @@ async function performDataBackup(options = {}) {
     });
 
     try {
+        const checksums = {};
+
         for (const fileName of files) {
+            const sourcePath = path.join(sourceDirectory, fileName);
             await fs.copyFile(
-                path.join(sourceDirectory, fileName),
+                sourcePath,
                 path.join(
                     temporaryDirectory,
                     fileName
                 )
+            );
+            checksums[fileName] = hashBuffer(
+                await fs.readFile(sourcePath)
             );
         }
 
@@ -179,6 +194,7 @@ async function performDataBackup(options = {}) {
             createdAt: createdAt.toISOString(),
             fileCount: files.length,
             files,
+            checksums,
         };
 
         await fs.writeFile(
@@ -216,6 +232,105 @@ async function performDataBackup(options = {}) {
         }).catch(() => undefined);
         throw error;
     }
+}
+
+function assertSafeSnapshotPath(backupPath, backupDirectory) {
+    const root = path.resolve(backupDirectory);
+    const target = path.resolve(backupPath);
+
+    if (
+        !target.startsWith(`${root}${path.sep}`) ||
+        !/^backup-\d{4}-\d{2}-\d{2}T/.test(path.basename(target))
+    ) {
+        throw new Error('Refused to inspect an unsafe backup path.');
+    }
+
+    return target;
+}
+
+async function verifyDataBackup({
+    backupPath,
+    backupDirectory = BACKUP_DIRECTORY,
+    simulateRestore = true,
+} = {}) {
+    const target = assertSafeSnapshotPath(backupPath, backupDirectory);
+    const manifest = JSON.parse(
+        await fs.readFile(path.join(target, 'manifest.json'), 'utf8')
+    );
+    const files = Array.isArray(manifest.files) ? manifest.files : [];
+
+    if (manifest.fileCount !== files.length || files.length === 0) {
+        throw new Error('The backup manifest is incomplete.');
+    }
+
+    const restoreDirectory = simulateRestore
+        ? await fs.mkdtemp(path.join(os.tmpdir(), 'isrp-restore-test-'))
+        : null;
+
+    try {
+        for (const fileName of files) {
+            if (
+                path.basename(fileName) !== fileName ||
+                !fileName.toLowerCase().endsWith('.json')
+            ) {
+                throw new Error('The backup manifest contains an unsafe file.');
+            }
+
+            const sourcePath = path.join(target, fileName);
+            const contents = await fs.readFile(sourcePath);
+            JSON.parse(contents.toString('utf8'));
+
+            if (
+                manifest.checksums?.[fileName] &&
+                manifest.checksums[fileName] !== hashBuffer(contents)
+            ) {
+                throw new Error(`Checksum mismatch for ${fileName}.`);
+            }
+
+            if (restoreDirectory) {
+                const restoredPath = path.join(restoreDirectory, fileName);
+                await fs.copyFile(sourcePath, restoredPath);
+                JSON.parse(await fs.readFile(restoredPath, 'utf8'));
+            }
+        }
+
+        return {
+            status: 'verified',
+            backupName: path.basename(target),
+            createdAt: manifest.createdAt || null,
+            fileCount: files.length,
+            simulatedRestore: Boolean(restoreDirectory),
+        };
+    } finally {
+        if (restoreDirectory) {
+            await fs.rm(restoreDirectory, {
+                recursive: true,
+                force: true,
+            });
+        }
+    }
+}
+
+async function verifyLatestDataBackup(options = {}) {
+    const configuration = getDataBackupConfiguration();
+    const backupDirectory = path.resolve(
+        options.backupDirectory || configuration.backupDirectory
+    );
+    const backups = await listBackupDirectories(backupDirectory);
+
+    if (backups.length === 0) {
+        return {
+            status: 'no_backup',
+            fileCount: 0,
+            simulatedRestore: false,
+        };
+    }
+
+    return verifyDataBackup({
+        backupPath: path.join(backupDirectory, backups[0]),
+        backupDirectory,
+        simulateRestore: options.simulateRestore !== false,
+    });
 }
 
 async function listBackupDirectories(
@@ -411,4 +526,6 @@ module.exports = {
     pruneDataBackups,
     startDataBackupService,
     stopDataBackupService,
+    verifyDataBackup,
+    verifyLatestDataBackup,
 };

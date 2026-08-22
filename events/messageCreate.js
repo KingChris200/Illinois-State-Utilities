@@ -9,6 +9,12 @@ const erlcService = require('../services/erlcService');
 const {
     handleTicketMessage,
 } = require('../utils/ticketManager');
+const {
+    recordCommandUsage,
+} = require('../services/commandAnalyticsService');
+const {
+    reportError,
+} = require('../services/errorReportingService');
 
 const cooldowns = new Map();
 
@@ -51,6 +57,8 @@ module.exports = {
             return;
         }
 
+        const startedAt = Date.now();
+
         if (
             !memberCanUseCommand(
                 message.member,
@@ -66,6 +74,13 @@ module.exports = {
                 commandName,
                 'permission_denied'
             );
+            await recordCommandUsage({
+                guildId: message.guildId,
+                commandName,
+                type: 'prefix',
+                outcome: 'denied',
+                durationMs: Date.now() - startedAt,
+            }).catch(() => null);
             return;
         }
 
@@ -81,6 +96,13 @@ module.exports = {
                 commandName,
                 'channel_denied'
             );
+            await recordCommandUsage({
+                guildId: message.guildId,
+                commandName,
+                type: 'prefix',
+                outcome: 'denied',
+                durationMs: Date.now() - startedAt,
+            }).catch(() => null);
             return;
         }
 
@@ -97,6 +119,13 @@ module.exports = {
             await message.reply(
                 `Please wait ${remaining} second${remaining === 1 ? '' : 's'} before using that command again.`
             );
+            await recordCommandUsage({
+                guildId: message.guildId,
+                commandName,
+                type: 'prefix',
+                outcome: 'denied',
+                durationMs: Date.now() - startedAt,
+            }).catch(() => null);
             return;
         }
 
@@ -132,16 +161,28 @@ module.exports = {
                     ? 'mock_success'
                     : 'success'
             );
+            await recordCommandUsage({
+                guildId: message.guildId,
+                commandName,
+                type: 'prefix',
+                outcome: 'success',
+                durationMs: Date.now() - startedAt,
+            }).catch(() => null);
         } catch (error) {
-            console.error(
-                `Error while executing ?${commandName}:`,
-                error
-            );
+            const record = await reportError({
+                client: message.client,
+                error,
+                context: 'Prefix command',
+                command: `?${commandName}`,
+                guildId: message.guildId,
+                channelId: message.channelId,
+                userId: message.author.id,
+            });
 
             const response =
                 error instanceof erlcService.ErlcServiceError
                     ? erlcService.getPublicErrorMessage(error)
-                    : 'An unexpected error occurred while running this command.';
+                    : `Something went wrong. Reference: \`${record.id}\``;
 
             await message.reply(response).catch(() => null);
             await logPrefixCommand(
@@ -149,6 +190,13 @@ module.exports = {
                 commandName,
                 error.code || 'error'
             );
+            await recordCommandUsage({
+                guildId: message.guildId,
+                commandName,
+                type: 'prefix',
+                outcome: 'error',
+                durationMs: Date.now() - startedAt,
+            }).catch(() => null);
         }
     },
 };

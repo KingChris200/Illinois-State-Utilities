@@ -10,7 +10,14 @@ const {
 const {
     DATA_DIRECTORY,
     getDataBackupStatus,
+    verifyLatestDataBackup,
 } = require('./dataBackupService');
+const {
+    resolveErrorLogChannelId,
+} = require('./errorReportingService');
+const {
+    auditCommandPermissions,
+} = require('./commandPermissionAudit');
 const {
     fetchStoredGuideMessage,
     getStoredGuidePanel,
@@ -109,6 +116,11 @@ async function runConfigurationDoctor({
                     .ERLC_MODERATION_LOG_CHANNEL_ID,
             required: false,
         },
+        {
+            name: 'Private Error Log Channel',
+            id: resolveErrorLogChannelId(),
+            required: false,
+        },
     ];
 
     for (const definition of channelDefinitions) {
@@ -124,10 +136,15 @@ async function runConfigurationDoctor({
         );
     }
 
+    checks.push(checkErrorReporting());
+    checks.push(checkCommandAnalytics());
+
     checks.push(
         await checkStaffGuide(client, guild)
     );
     checks.push(await checkBackups());
+    checks.push(await checkBackupRestore());
+    checks.push(checkCommandPermissions());
     checks.push(await checkDataDirectory());
 
     const summary = {
@@ -154,6 +171,64 @@ async function runConfigurationDoctor({
                   ? 'warning'
                   : 'pass',
     };
+}
+
+function checkErrorReporting() {
+    const channelId = resolveErrorLogChannelId();
+
+    return createCheck(
+        'Central Error Reporting',
+        channelId ? 'pass' : 'warning',
+        channelId
+            ? `Errors are stored locally and sent to <#${channelId}>.`
+            : 'Errors are stored locally. Add BOT_ERROR_LOG_CHANNEL_ID to send private alerts to Discord.'
+    );
+}
+
+function checkCommandAnalytics() {
+    return createCheck(
+        'Private Command Analytics',
+        'pass',
+        'Aggregate command counts and runtimes are stored locally without message text or member IDs.'
+    );
+}
+
+async function checkBackupRestore() {
+    try {
+        const result = await verifyLatestDataBackup();
+
+        if (result.status === 'no_backup') {
+            return createCheck(
+                'Backup Restore Test',
+                'warning',
+                'No snapshot exists yet. Run /backup create, then /backup verify.'
+            );
+        }
+
+        return createCheck(
+            'Backup Restore Test',
+            'pass',
+            `Verified and test-restored ${result.fileCount} JSON file(s) from ${result.backupName}. Live data was not changed.`
+        );
+    } catch {
+        return createCheck(
+            'Backup Restore Test',
+            'fail',
+            'The latest snapshot failed its manifest, JSON, checksum, or test-restore check.'
+        );
+    }
+}
+
+function checkCommandPermissions() {
+    const report = auditCommandPermissions();
+
+    return createCheck(
+        'Sensitive Command Permissions',
+        report.status,
+        report.status === 'pass'
+            ? `${report.checkedCommands} commands have reviewed access policies and are disabled in DMs.`
+            : `${report.findings.length} command permission finding(s) need review. Open /doctor view:Permission Audit.`
+    );
 }
 
 function checkErlcReadiness() {
@@ -329,6 +404,10 @@ async function checkDataDirectory() {
 module.exports = {
     checkChannel,
     checkErlcReadiness,
+    checkBackupRestore,
+    checkCommandAnalytics,
+    checkCommandPermissions,
+    checkErrorReporting,
     createCheck,
     environmentEnabled,
     runConfigurationDoctor,
