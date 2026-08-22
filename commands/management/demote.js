@@ -235,12 +235,10 @@ async function requestDemotionConfirmation({
         )
         .setAuthor({
             name: serverConfig.serverName,
-            iconURL: brands.assets.logo,
         })
         .setFooter({
             text:
                 'Illinois State Utilities • Smart Demotion Review',
-            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 
@@ -346,11 +344,9 @@ function buildDemotionEmbed({
         )
         .setAuthor({
             name: serverConfig.serverName,
-            iconURL: brands.assets.logo,
         })
         .setFooter({
             text: FOOTER_TEXT,
-            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 }
@@ -977,7 +973,6 @@ module.exports = {
                     .setFooter({
                         text:
                             'Illinois State Utilities • Management Logs',
-                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 

@@ -191,8 +191,7 @@ async function sendShiftLog(
     if (reason) {
         embed.addFields({ name: 'Reason', value: String(reason).slice(0, 1024) });
     }
-    const icon = brands.isp.logo || guild.iconURL?.({ size: 128 });
-    if (icon) embed.setAuthor({ name: guild.name, iconURL: icon });
+    embed.setAuthor({ name: guild.name });
 
     return channel
         .send({ embeds: [embed], allowedMentions: { parse: [] } })

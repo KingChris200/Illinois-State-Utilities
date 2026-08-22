@@ -15,7 +15,6 @@ const {
 const { getDashboardContext } = require('./dashboardManager');
 const { readDatabase, updateDatabase } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -147,13 +146,10 @@ function createInformationPanelPayload(guild, context) {
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                title: 'Illinois State Roleplay Information',
-                description: 'Community information and useful links.',
-            }),
             new TextDisplayBuilder().setContent(
                 [
-                    '## About the Community',
+                    '**Community information and useful links.**',
+                    '',
                     'Illinois State Roleplay is a strict ER:LC community focused on organized sessions and believable roleplay.',
                     '',
                     '## Start Here',
@@ -174,10 +170,6 @@ function createInformationPanelPayload(guild, context) {
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
-
-    addBrandSignature(container, {
-        detail: 'Illinois State Roleplay Information',
-    });
 
     return {
         files: [createInformationAttachment()],
@@ -371,10 +363,6 @@ function createInformationPagePayload(guild, pageId, context) {
             container.addActionRowComponents(row);
         }
     }
-
-    addBrandSignature(container, {
-        detail: 'Official community information • Illinois State Roleplay',
-    });
 
     return {
         files: [createInformationAttachment()],

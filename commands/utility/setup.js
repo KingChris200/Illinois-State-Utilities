@@ -224,11 +224,6 @@ module.exports = {
                 )
                 .setAuthor({
                     name: interaction.guild.name,
-                    iconURL:
-                        interaction.guild.iconURL({
-                            extension: 'png',
-                            size: 256,
-                        }) || undefined,
                 })
                 .setDescription(
                     [
@@ -256,16 +251,9 @@ module.exports = {
                         `\`${brandColor.hex}\``,
                     ].join('\n')
                 )
-                .setThumbnail(
-                    interaction.guild.iconURL({
-                        dynamic: true,
-                    })
-                )
                 .setFooter({
                     text:
                         'Illinois State Utilities • Configuration System',
-                    iconURL:
-                        interaction.client.user.displayAvatarURL(),
                 })
                 .setTimestamp();
 
@@ -280,11 +268,6 @@ module.exports = {
                 .setTitle('Server Configuration Updated')
                 .setAuthor({
                     name: interaction.guild.name,
-                    iconURL:
-                        interaction.guild.iconURL({
-                            extension: 'png',
-                            size: 256,
-                        }) || undefined,
                 })
                 .setDescription(
                     [
@@ -304,8 +287,6 @@ module.exports = {
                 .setFooter({
                     text:
                         'Illinois State Utilities • Management Logs',
-                    iconURL:
-                        interaction.client.user.displayAvatarURL(),
                 })
                 .setTimestamp();
 

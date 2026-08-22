@@ -18,7 +18,6 @@ const { getServerConfig } = require('../config/serverConfigs');
 const { getTicketConfig } = require('../config/tickets');
 const { readDatabase, updateDatabase } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -183,13 +182,10 @@ function createDashboardPanelPayload(guild, context) {
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                title: 'Illinois State Roleplay Dashboard',
-                description: 'The main links for Illinois State Roleplay.',
-            }),
             new TextDisplayBuilder().setContent(
                 [
-                    '## Start Here',
+                    '**Everything important in one clear place.**',
+                    '',
                     'Read both rule channels before joining a session. Use Assistance whenever you need help.',
                 ].join('\n')
             )
@@ -215,11 +211,6 @@ function createDashboardPanelPayload(guild, context) {
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
-
-    addBrandSignature(container, {
-        detail:
-            'Illinois’ Premier Roleplay • Built for Realism. Driven by Community.',
-    });
 
     return {
         files: [createDashboardAttachment()],
@@ -404,10 +395,6 @@ function createDashboardPagePayload(guild, pageId, context) {
         container.addSeparatorComponents(createPanelSeparator());
         container.addActionRowComponents(linkRow);
     }
-
-    addBrandSignature(container, {
-        detail: 'Official community information',
-    });
 
     return {
         files: [createDashboardAttachment()],

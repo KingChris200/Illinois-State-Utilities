@@ -32,9 +32,7 @@ const {
     updateDatabase,
 } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
-    createPanelHeader,
     createPanelSeparator,
 } = require('./componentTheme');
 const { detectMemberRank } = require('./rankManager');
@@ -162,12 +160,10 @@ function createTicketPanelPayload(guild) {
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                title: 'Illinois State Roleplay Assistance',
-                description: 'Open a private support ticket.',
-            }),
             new TextDisplayBuilder().setContent(
                 [
+                    '**Open a private support ticket.**',
+                    '',
                     'Choose the category that best fits your concern.',
                     '',
                     categorySummary,
@@ -183,10 +179,6 @@ function createTicketPanelPayload(guild) {
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(menu)
         );
-
-    addBrandSignature(container, {
-        detail: 'One ticket per concern',
-    });
 
     return {
         files: [createPanelAttachment()],
@@ -291,7 +283,6 @@ function createTicketWelcomeEmbed(ticket, category, guild) {
         )
         .setFooter({
             text: 'Illinois State Roleplay Assistance',
-            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 
@@ -532,10 +523,8 @@ async function archiveTicketTranscript(
                         inline: true,
                     }
                 )
-                .setThumbnail(brands.assets.logo)
                 .setFooter({
                     text: 'Illinois State Utilities • Private ticket archive',
-                    iconURL: brands.assets.logo,
                 })
                 .setTimestamp(),
         ],
@@ -1045,12 +1034,6 @@ function createPartnershipRequirementsPayload(guild) {
             text: 'Illinois State Utilities • Partnership Review',
         })
         .setTimestamp();
-
-    const guildIcon = guild?.iconURL?.({ size: 256 });
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
 
     return {
         embeds: [embed],

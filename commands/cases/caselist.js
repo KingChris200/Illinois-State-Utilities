@@ -338,7 +338,6 @@ module.exports = {
                             interaction.guild
                                 .name,
 
-                        iconURL: guildIcon || undefined,
                     })
                     .setFooter({
                         text:
@@ -347,14 +346,8 @@ module.exports = {
                                 ? `Illinois State Utilities • Showing ${displayedCount} of ${recentCases.length} retrieved cases`
                                 : 'Illinois State Utilities • Case Management System',
 
-                        iconURL:
-                            interaction.client.user.displayAvatarURL(),
                     })
                     .setTimestamp();
-
-            if (guildIcon) {
-                listEmbed.setThumbnail(guildIcon);
-            }
 
             return interaction.editReply({
                 content: null,

@@ -674,7 +674,6 @@ function createWatchlistEmbed(record, interaction) {
         .setColor(severity.color)
         .setAuthor({
             name: interaction.guild?.name || brands.isrp.name,
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
         })
         .setTitle(
             `🔒 Private Watchlist — ${safeText(record.robloxUsername, 50)}`
@@ -735,7 +734,6 @@ function createWatchlistEmbed(record, interaction) {
         .setFooter({
             text:
                 'Illinois State Utilities • Management access only',
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
         })
         .setTimestamp(new Date(record.updatedAt || record.createdAt));
 
@@ -777,10 +775,6 @@ function createWatchlistEmbed(record, interaction) {
         });
     }
 
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
-
     return embed;
 }
 
@@ -807,7 +801,6 @@ function createSearchEmbed(records, interaction) {
         .setFooter({
             text:
                 'Illinois State Utilities • Management access only',
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
         })
         .setTimestamp();
 
@@ -825,10 +818,6 @@ function createSearchEmbed(records, interaction) {
                 `Updated ${discordTimestamp(record.updatedAt, 'R')}`,
             ].join('\n'),
         });
-    }
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
     }
 
     return embed;
@@ -880,7 +869,6 @@ function createScanEmbed(
         .setFooter({
             text:
                 'Illinois State Utilities • Management access only • No public alert was sent',
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
         })
         .setTimestamp();
 
@@ -909,10 +897,6 @@ function createScanEmbed(
             value:
                 `There are **${matches.length - visibleMatches.length}** more verified matches. Use \`/watchlist search\` to review all active records.`,
         });
-    }
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
     }
 
     return embed;

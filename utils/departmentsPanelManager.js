@@ -14,7 +14,6 @@ const {
 
 const { readDatabase, updateDatabase } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -150,12 +149,10 @@ function createDepartmentsPanelPayload() {
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                title: 'Illinois State Roleplay Departments',
-                description: 'Find an official ISRP department.',
-            }),
             new TextDisplayBuilder().setContent(
                 [
+                    '**Find an official ISRP department.**',
+                    '',
                     '## Department Directory',
                     directory,
                     '',
@@ -172,10 +169,6 @@ function createDepartmentsPanelPayload() {
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(createDepartmentMenu())
         );
-
-    addBrandSignature(container, {
-        detail: 'Illinois State Roleplay Departments',
-    });
 
     return {
         files: [createDepartmentsAttachment()],
@@ -235,10 +228,6 @@ function createDepartmentPagePayload(departmentId) {
                 )
             );
     }
-
-    addBrandSignature(container, {
-        detail: `${department.abbreviation} • Official department directory`,
-    });
 
     return {
         files: [createDepartmentsAttachment()],

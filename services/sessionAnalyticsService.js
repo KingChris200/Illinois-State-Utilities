@@ -21,8 +21,6 @@ function createSessionRecapEmbed({
     session,
     endedAt = session?.endedAt ?? Date.now(),
     durationDisplay,
-    guildIcon = null,
-    serverName = 'Illinois State Roleplay | Strict',
 } = {}) {
     const summary = summarizeSessionAnalytics(
         session,
@@ -91,7 +89,6 @@ function createSessionRecapEmbed({
         )
         .setFooter({
             text: 'Private session report',
-            iconURL: guildIcon || undefined,
         })
         .setTimestamp(endedAt);
 

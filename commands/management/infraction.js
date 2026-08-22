@@ -557,7 +557,6 @@ module.exports = {
                     .setFooter({
                         text:
                             'Illinois State Utilities • Smart Discipline Review',
-                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
@@ -1159,13 +1158,11 @@ module.exports = {
                             guildConfiguration.serverName ||
                             interaction.guild.name,
 
-                        iconURL: brands.assets.logo,
                     })
                     .setFooter({
                         text:
                             'Illinois State Utilities • Staff Discipline System',
 
-                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
@@ -1269,7 +1266,6 @@ module.exports = {
                             text:
                                 'Illinois State Utilities • Management Logs',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 

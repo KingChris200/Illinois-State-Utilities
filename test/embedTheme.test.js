@@ -2,7 +2,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EmbedBuilder } = require('discord.js');
 
-const brands = require('../config/branding');
 const createEmbed = require('../utils/createEmbed');
 const {
     applyEmbedTheme,
@@ -18,21 +17,15 @@ function createGuild() {
     };
 }
 
-test('server-wide embeds use the community name and official brand mark', () => {
+test('server-wide embeds keep branding in the text without repeated logo icons', () => {
     const embed = createEmbed('Server Overview', 'isrp', {
         guild: createGuild(),
     }).toJSON();
 
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
-    assert.equal(
-        embed.author.icon_url,
-        brands.isrp.logo
-    );
-    assert.equal(
-        embed.thumbnail.url,
-        brands.isrp.logo
-    );
-    assert.equal(embed.footer.icon_url, brands.isrp.logo);
+    assert.equal(embed.author.icon_url, undefined);
+    assert.equal(embed.thumbnail, undefined);
+    assert.equal(embed.footer.icon_url, undefined);
 });
 
 test('member-focused embeds prefer the member avatar as their thumbnail', () => {
@@ -49,10 +42,7 @@ test('member-focused embeds prefer the member avatar as their thumbnail', () => 
         embed.thumbnail.url,
         'https://cdn.discordapp.com/avatars/456/member.png'
     );
-    assert.equal(
-        embed.author.icon_url,
-        brands.isrp.logo
-    );
+    assert.equal(embed.author.icon_url, undefined);
 });
 
 test('embed tones provide consistent success, warning, and danger colors', () => {
@@ -87,6 +77,6 @@ test('missing or faulty image providers fall back safely', () => {
         guild: { name: 'Illinois State Roleplay' },
     }).toJSON();
 
-    assert.equal(embed.thumbnail.url, brands.isrp.logo);
+    assert.equal(embed.thumbnail, undefined);
     assert.equal(embed.author.name, 'Illinois State Roleplay');
 });

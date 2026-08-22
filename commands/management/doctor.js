@@ -148,14 +148,5 @@ function createDoctorEmbed(interaction, report) {
             new Date(report.checkedAt)
         );
 
-    const icon = interaction.guild.iconURL?.({
-        extension: 'png',
-        size: 256,
-    });
-
-    if (icon) {
-        embed.setThumbnail(icon);
-    }
-
     return embed;
 }

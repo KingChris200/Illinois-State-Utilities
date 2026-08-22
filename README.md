@@ -15,6 +15,19 @@ documented in [`docs/architecture.md`](docs/architecture.md).
 Run `npm run check` before committing a change. It checks every source file
 for syntax errors and then runs the complete automated test suite.
 
+## Permanent panel control center
+
+Members with **Manage Server** can maintain every saved permanent panel from
+one command:
+
+- `/panels status` checks which panels are online, missing, or not set up
+- `/panels refresh` updates every panel that is currently online
+- `/panels repair` recreates deleted panel messages in their saved channels
+
+The optional `panel` choice limits any action to one panel. Repair never posts
+a panel that was not previously set up; use that panel's normal setup command
+first. ISRP and ISP each show only the panels belonging to that server.
+
 For safe testing without live ER:LC access, leave `ERLC_DRY_RUN=true` and
 `ERLC_MOCK_MODE=true`. Set both to `false` only when the live server key and
 Discord permissions have been verified.
@@ -148,6 +161,13 @@ asset URLs instead of temporary Discord attachment links, while commands
 such as `/about`, `/embed`, the welcome system, and session announcements
 attach the wide artwork directly when appropriate. Keep the `assets`
 folder in the same commit as branding changes.
+
+The wide banner is the primary identity on public panels and announcements.
+Do not repeat the server logo as an author icon, thumbnail, footer icon, or
+bottom signature on the same message. Keep member avatars only when they
+identify the person a staff, case, feedback, LOA, shift, or callsign record is
+about. Panel headings should add new information instead of repeating the
+title already shown in the banner.
 
 ## Permanent ISRP Information Panel
 

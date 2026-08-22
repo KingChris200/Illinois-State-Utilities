@@ -87,8 +87,7 @@ test('/about presents the minimal about banner and guild identity', async () => 
     const embed = replies[0].embeds[0].toJSON();
     assert.equal(embed.image.url, 'attachment://about-banner-v2.png');
     assert.equal(embed.author.name, 'Illinois State Roleplay | Strict');
-    assert.equal(
-        embed.thumbnail.url,
-        brands.assets.logo
-    );
+    assert.equal(embed.thumbnail, undefined);
+    assert.equal(embed.author.icon_url, undefined);
+    assert.equal(embed.footer.icon_url, undefined);
 });

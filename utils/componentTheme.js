@@ -44,26 +44,7 @@ function createPanelHeader({
     return new TextDisplayBuilder().setContent(lines.join('\n\n'));
 }
 
-function addBrandSignature(
-    container,
-    {
-        label = 'Illinois State Roleplay',
-        detail = 'Built for Realism. Driven by Community.',
-    } = {}
-) {
-    container
-        .addSeparatorComponents(createPanelSeparator())
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                `### ${label}\n-# ${detail}`
-            )
-        );
-
-    return container;
-}
-
 module.exports = {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,

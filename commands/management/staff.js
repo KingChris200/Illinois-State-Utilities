@@ -497,7 +497,6 @@ module.exports = {
                         )
                         .setFooter({
                             text: 'Illinois State Utilities',
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -593,7 +592,6 @@ module.exports = {
                                 ? 'Private management record'
                                 : 'Illinois State Roleplay',
 
-                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 

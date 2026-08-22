@@ -100,7 +100,6 @@ function createWelcomePayload(member) {
         )
         .setFooter({
             text: guildName,
-            iconURL: brand.logo,
         })
         .setTimestamp();
 

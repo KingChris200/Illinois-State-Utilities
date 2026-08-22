@@ -150,15 +150,10 @@ function createAnnouncementEmbed({
     const brand = brands.isrp || brands.utilities;
     const guildName =
         interaction.guild?.name || brand.name;
-    const serverLogo = getServerLogo(interaction, brand);
-
     const embed = new EmbedBuilder()
         .setColor(brand.color)
         .setAuthor({
             name: guildName,
-            ...(serverLogo
-                ? { iconURL: serverLogo }
-                : {}),
         })
         .setTitle(title)
         .setDescription(message)
@@ -167,29 +162,10 @@ function createAnnouncementEmbed({
         )
         .setFooter({
             text: brand.footer,
-            ...(serverLogo
-                ? { iconURL: serverLogo }
-                : {}),
         })
         .setTimestamp();
 
-    if (serverLogo) {
-        embed.setThumbnail(serverLogo);
-    }
-
     return embed;
-}
-
-/**
- * Prefer the Discord server icon so branding stays current automatically.
- */
-function getServerLogo(interaction, brand) {
-    const guildIcon = interaction.guild?.iconURL?.({
-        extension: 'png',
-        size: 256,
-    });
-
-    return brand.logo || guildIcon || null;
 }
 
 /**

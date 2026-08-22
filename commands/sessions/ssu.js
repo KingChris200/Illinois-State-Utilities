@@ -22,7 +22,6 @@ const sessionAutomationConfig = require(
 const {
     saveSessionState,
 } = require('../../services/sessionStateStore');
-const brands = require('../../config/branding');
 
 /*
  * ==========================================
@@ -253,7 +252,6 @@ module.exports = {
          * ==========================================
          */
 
-        const guildIcon = brands.assets.logo;
 
         /*
          * ==========================================
@@ -310,9 +308,6 @@ module.exports = {
                 )
                 .setFooter({
                     text: 'Vote only if you plan to join',
-                    iconURL:
-                        guildIcon ??
-                        undefined,
                 })
                 .setTimestamp();
 
@@ -543,9 +538,6 @@ module.exports = {
                         )
                         .setFooter({
                             text: 'Illinois State Roleplay',
-                            iconURL:
-                                guildIcon ??
-                                undefined,
                         })
                         .setTimestamp();
 

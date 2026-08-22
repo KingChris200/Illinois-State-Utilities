@@ -20,7 +20,6 @@ const {
 const {
     saveCompletedSessionAnalytics,
 } = require('../../services/sessionAnalyticsService');
-const brands = require('../../config/branding');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -120,7 +119,6 @@ module.exports = {
             endedAt - startedAt
         );
 
-        const guildIcon = brands.assets.logo;
 
         /*
          * The original session host is shown separately
@@ -154,7 +152,6 @@ module.exports = {
             .setDescription(shutdownLines.join('\n'))
             .setFooter({
                 text: `Ended by ${interaction.user.username}`,
-                iconURL: guildIcon ?? undefined,
             })
             .setTimestamp();
 

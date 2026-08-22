@@ -76,11 +76,7 @@ async function createIspShiftDashboardPayload(guild) {
             text: 'Updates every minute',
         })
         .setTimestamp();
-    const icon = brands.isp.logo || guild.iconURL?.({ size: 256 });
-
-    if (icon) {
-        embed.setAuthor({ name: guild.name, iconURL: icon });
-    }
+    embed.setAuthor({ name: guild.name });
 
     const controls = new ActionRowBuilder().addComponents(
         new ButtonBuilder()

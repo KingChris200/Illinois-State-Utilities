@@ -22,7 +22,6 @@ const {
 const {
     announceSessionEvent,
 } = require('../services/sessionErlcAutomation');
-const brands = require('../config/branding');
 const {
     startSessionPlayerCountMonitor,
     createSessionDashboardEmbed,
@@ -197,7 +196,6 @@ async function handleAttendanceVote(
 
     const voteEmbed =
         createVoteEmbed({
-            interaction,
             activeVote,
             attendingCount,
             progressBar,
@@ -412,7 +410,6 @@ async function completeServerVote(
 
     const completedVoteEmbed =
         createCompletedVoteEmbed({
-            interaction,
             activeVote,
             attendeeCount,
         });
@@ -437,7 +434,6 @@ async function completeServerVote(
 
     const startupEmbed =
         createStartupEmbed({
-            interaction,
             activeVote,
             attendeeCount,
         });
@@ -461,10 +457,7 @@ async function completeServerVote(
         content: attendanceNotification,
         embeds: [
             startupEmbed,
-            createSessionDashboardEmbed({
-                guildIcon:
-                    getGuildIcon(interaction),
-            }),
+            createSessionDashboardEmbed(),
         ],
 
         allowedMentions: {
@@ -568,14 +561,10 @@ async function completeServerVote(
  */
 
 function createVoteEmbed({
-    interaction,
     activeVote,
     attendingCount,
     progressBar,
 }) {
-    const guildIcon =
-        getGuildIcon(interaction);
-
     const endsTimestamp = Math.floor(
         activeVote.endsAt / 1000
     );
@@ -599,8 +588,6 @@ function createVoteEmbed({
         )
         .setFooter({
             text: 'Vote only if you plan to join',
-            iconURL:
-                guildIcon ?? undefined,
         })
         .setTimestamp();
 
@@ -616,13 +603,9 @@ function createVoteEmbed({
  */
 
 function createCompletedVoteEmbed({
-    interaction,
     activeVote,
     attendeeCount,
 }) {
-    const guildIcon =
-        getGuildIcon(interaction);
-
     const completedEmbed =
         new EmbedBuilder()
             .setColor('#3A8D48')
@@ -641,8 +624,6 @@ function createCompletedVoteEmbed({
             )
             .setFooter({
                 text: 'Illinois State Roleplay',
-                iconURL:
-                    guildIcon ?? undefined,
             })
             .setTimestamp();
 
@@ -661,13 +642,9 @@ function createCompletedVoteEmbed({
  */
 
 function createStartupEmbed({
-    interaction,
     activeVote,
     attendeeCount,
 }) {
-    const guildIcon =
-        getGuildIcon(interaction);
-
     const startupEmbed =
         new EmbedBuilder()
             .setColor('#2D6FA7')
@@ -686,8 +663,6 @@ function createStartupEmbed({
             )
             .setFooter({
                 text: 'Illinois State Roleplay',
-                iconURL:
-                    guildIcon ?? undefined,
             })
             .setTimestamp();
 
@@ -992,14 +967,4 @@ function createSessionBannerAttachment() {
             name: SESSION_BANNER_NAME,
         }
     );
-}
-
-/*
- * ==========================================
- * GUILD ICON
- * ==========================================
- */
-
-function getGuildIcon(interaction) {
-    return brands.assets.logo;
 }

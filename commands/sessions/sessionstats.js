@@ -14,7 +14,6 @@ const {
     summarizeSessionHistory,
     findSessionRecords,
 } = require('../../utils/sessionAnalytics');
-const brands = require('../../config/branding');
 
 const SERVER_NAME = 'Illinois State Roleplay | Strict';
 const EMBED_COLOR = '#24589B';
@@ -95,33 +94,26 @@ function formatRecord(record, value) {
     return details.join('\n');
 }
 
-function createBaseEmbed({ guildIcon, title, description }) {
+function createBaseEmbed({ title, description }) {
     const embed = new EmbedBuilder()
         .setColor(EMBED_COLOR)
         .setAuthor({
             name: SERVER_NAME,
-            iconURL: guildIcon || undefined,
         })
         .setTitle(title)
         .setDescription(description)
         .setFooter({
             text:
                 'Illinois State Utilities • Private Session Report',
-            iconURL: guildIcon || undefined,
         })
         .setTimestamp();
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
 
     return embed;
 }
 
-function createLatestSessionEmbed(history, guildIcon) {
+function createLatestSessionEmbed(history) {
     const latest = history[0];
     const embed = createBaseEmbed({
-        guildIcon,
         title: '📋 Latest Session Report',
         description:
             'The most recently completed Illinois State Roleplay session.',
@@ -204,10 +196,9 @@ function createLatestSessionEmbed(history, guildIcon) {
     return embed;
 }
 
-function createSummaryEmbed(history, guildIcon) {
+function createSummaryEmbed(history) {
     const summary = summarizeSessionHistory(history);
     const embed = createBaseEmbed({
-        guildIcon,
         title: '📊 Session Statistics Summary',
         description:
             'Combined performance across every completed session currently stored by Illinois State Utilities.',
@@ -281,10 +272,9 @@ function createSummaryEmbed(history, guildIcon) {
     return embed;
 }
 
-function createRecordsEmbed(history, guildIcon) {
+function createRecordsEmbed(history) {
     const records = findSessionRecords(history);
     const embed = createBaseEmbed({
-        guildIcon,
         title: '🏆 Illinois Session Records',
         description:
             'All-time session highs calculated from completed session recaps.',
@@ -445,25 +435,14 @@ module.exports = {
                 });
             }
 
-            const guildIcon = brands.assets.logo;
-
             let embed;
 
             if (view === 'latest') {
-                embed = createLatestSessionEmbed(
-                    history,
-                    guildIcon
-                );
+                embed = createLatestSessionEmbed(history);
             } else if (view === 'records') {
-                embed = createRecordsEmbed(
-                    history,
-                    guildIcon
-                );
+                embed = createRecordsEmbed(history);
             } else {
-                embed = createSummaryEmbed(
-                    history,
-                    guildIcon
-                );
+                embed = createSummaryEmbed(history);
             }
 
             await interaction.editReply({

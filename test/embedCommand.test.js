@@ -8,7 +8,6 @@ const {
 const embedCommand = require(
     '../commands/management/embed'
 );
-const brands = require('../config/branding');
 
 function createInteraction({
     message = 'Please review the latest server update.',
@@ -103,18 +102,13 @@ test('/embed posts a branded announcement in the current channel', async () => {
         embed.author.name,
         'Illinois State Roleplay | Strict'
     );
-    assert.equal(
-        embed.thumbnail.url,
-        brands.assets.logo
-    );
+    assert.equal(embed.thumbnail, undefined);
+    assert.equal(embed.author.icon_url, undefined);
     assert.equal(
         embed.image.url,
         'attachment://announcements-banner-v2.png'
     );
-    assert.equal(
-        embed.footer.icon_url,
-        brands.assets.logo
-    );
+    assert.equal(embed.footer.icon_url, undefined);
     assert.ok(embed.timestamp);
     assert.equal(payload.files.length, 1);
     assert.equal(

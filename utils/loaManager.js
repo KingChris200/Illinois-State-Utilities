@@ -244,11 +244,9 @@ function createRequestEmbed(record, guild, avatarUrl = null) {
         )
         .setAuthor({
             name: guild.name,
-            iconURL: brands.assets.logo,
         })
         .setFooter({
             text: 'Illinois State Utilities • Leave Management',
-            iconURL: brands.assets.logo,
         })
         .setTimestamp(new Date(record.requestedAt));
 
@@ -289,11 +287,9 @@ function createDecisionEmbed(record, guild) {
         )
         .setAuthor({
             name: guild.name,
-            iconURL: brands.assets.logo,
         })
         .setFooter({
             text: 'Illinois State Utilities • Leave Management',
-            iconURL: brands.assets.logo,
         })
         .setTimestamp(new Date(record.reviewedAt));
 }
@@ -319,7 +315,6 @@ function createManagePayload(records, user, guild) {
         })
         .setFooter({
             text: 'Illinois State Utilities • Your LOA records',
-            iconURL: brands.assets.logo,
         });
 
     if (!active) {
@@ -347,8 +342,6 @@ function createManagePayload(records, user, guild) {
                 { name: 'Reason', value: active.reason }
             );
     }
-
-    embed.setThumbnail(brands.assets.logo);
 
     const controls = new ActionRowBuilder();
 

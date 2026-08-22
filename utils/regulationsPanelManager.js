@@ -15,7 +15,6 @@ const {
 const { getDashboardContext } = require('./dashboardManager');
 const { readDatabase, updateDatabase } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -259,10 +258,6 @@ function createRegulationsPanelPayload(guild, panelType, context) {
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
 
-    addBrandSignature(container, {
-        detail: configuration.footer,
-    });
-
     return {
         files: [createRegulationsAttachment()],
         components: [container],
@@ -472,11 +467,6 @@ function createRegulationsPagePayload(guild, panelType, pageId, context) {
             .addSeparatorComponents(createPanelSeparator())
             .addActionRowComponents(linkRow);
     }
-
-    addBrandSignature(container, {
-        detail:
-            'Official guideline-channel posts remain the final source for policy.',
-    });
 
     return {
         files: [createRegulationsAttachment()],

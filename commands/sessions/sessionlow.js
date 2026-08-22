@@ -125,7 +125,6 @@ module.exports = {
                 .setImage(brands.assets.sessionBanner)
                 .setFooter({
                     text: `Posted by ${interaction.user.username}`,
-                    iconURL: brands.assets.logo,
                 })
                 .setTimestamp();
 

@@ -58,32 +58,27 @@ function applyEmbedTheme(
     } = {}
 ) {
     const brand = brands[brandName] || brands.utilities;
-    const guildIcon = getGuildIcon(guild);
     const subjectAvatar = getDisplayAvatar(subject);
-    const clientAvatar = getClientAvatar(client);
     const toneColor = EMBED_TONES[tone];
 
     embed.setColor(toneColor || brand.color);
 
     const resolvedAuthorName =
         authorName || guild?.name || brand.name;
-    const authorIcon = brand.logo || guildIcon || clientAvatar;
-
     if (resolvedAuthorName) {
         embed.setAuthor({
             name: resolvedAuthorName,
-            ...(authorIcon ? { iconURL: authorIcon } : {}),
         });
     }
 
     let thumbnailUrl = null;
 
     if (thumbnail === 'auto') {
-        thumbnailUrl = subjectAvatar || brand.logo || guildIcon;
+        thumbnailUrl = subjectAvatar;
     } else if (thumbnail === 'subject') {
         thumbnailUrl = subjectAvatar;
     } else if (thumbnail === 'server') {
-        thumbnailUrl = guildIcon || brand.logo;
+        thumbnailUrl = getGuildIcon(guild);
     } else if (thumbnail === 'brand') {
         thumbnailUrl = brand.logo;
     } else if (typeof thumbnail === 'string') {
@@ -94,13 +89,11 @@ function applyEmbedTheme(
         embed.setThumbnail(thumbnailUrl);
     }
 
-    const footerIcon = brand.logo || clientAvatar || guildIcon;
     const resolvedFooterText = footerText || brand.footer;
 
     if (resolvedFooterText) {
         embed.setFooter({
             text: resolvedFooterText,
-            ...(footerIcon ? { iconURL: footerIcon } : {}),
         });
     }
 

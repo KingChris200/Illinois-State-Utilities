@@ -21,7 +21,6 @@ const {
 } = require('../config/serverConfigs');
 const { readDatabase, updateDatabase } = require('./database');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -167,14 +166,10 @@ function createIspInformationPanelPayload() {
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                eyebrow: 'ILLINOIS STATE POLICE',
-                title: 'Department Information',
-                description:
-                    'One official place for ISP structure, systems, and resources.',
-            }),
             new TextDisplayBuilder().setContent(
                 [
+                    '**One official place for ISP structure, systems, and resources.**',
+                    '',
                     '## Department Standard',
                     'Illinois State Police personnel are expected to serve with **integrity**, communicate professionally, follow the chain of command, and represent the department responsibly.',
                     '',
@@ -196,11 +191,6 @@ function createIspInformationPanelPayload() {
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
-
-    addBrandSignature(container, {
-        label: 'Illinois State Police',
-        detail: 'Integrity • Service • Pride',
-    });
 
     return {
         files: [createIspInformationAttachment()],
@@ -374,11 +364,6 @@ function createIspInformationPagePayload(pageId) {
             .addSeparatorComponents(createPanelSeparator())
             .addActionRowComponents(linkRow);
     }
-
-    addBrandSignature(container, {
-        label: 'Illinois State Police',
-        detail: 'Integrity • Service • Pride',
-    });
 
     return {
         files: [createIspInformationAttachment()],

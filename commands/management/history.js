@@ -735,13 +735,11 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Staff Management System',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -872,13 +870,11 @@ module.exports = {
                             guildConfiguration.serverName ||
                             interaction.guild.name,
 
-                        iconURL: brands.assets.logo,
                     })
                     .setFooter({
                         text:
                             'Illinois State Utilities • Unified Staff History',
 
-                        iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 

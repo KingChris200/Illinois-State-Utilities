@@ -891,13 +891,11 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Roleplay',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -963,7 +961,6 @@ module.exports = {
                                 text:
                                     'Illinois State Utilities • Management Logs',
 
-                                iconURL: brands.assets.logo,
                             })
                             .setTimestamp();
 
@@ -1254,7 +1251,6 @@ module.exports = {
                             text:
                                 'Illinois State Utilities • Management Logs',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -1439,13 +1435,11 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Awards & Recognition System',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 
@@ -1578,13 +1572,11 @@ module.exports = {
                                 guildConfiguration.serverName ||
                                 interaction.guild.name,
 
-                            iconURL: brands.assets.logo,
                         })
                         .setFooter({
                             text:
                                 'Illinois State Utilities • Awards & Recognition System',
 
-                            iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
 

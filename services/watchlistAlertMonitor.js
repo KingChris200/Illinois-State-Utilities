@@ -402,18 +402,10 @@ function createWatchlistAlertEmbeds(matches, guild = null) {
             size: 256,
         });
 
-        if (guildIcon) {
-            embed.setThumbnail(guildIcon).setFooter({
-                text:
-                    'Illinois State Utilities • Management access only • No public ping sent',
-                iconURL: guildIcon,
-            });
-        } else {
-            embed.setFooter({
-                text:
-                    'Illinois State Utilities • Management access only • No public ping sent',
-            });
-        }
+        embed.setFooter({
+            text:
+                'Illinois State Utilities • Management access only • No public ping sent',
+        });
 
         if (
             index + MATCHES_PER_EMBED >=

@@ -18,7 +18,6 @@ const {
 
 const brands = require('../config/branding');
 const {
-    addBrandSignature,
     colorToDecimal,
     createPanelHeader,
     createPanelSeparator,
@@ -181,13 +180,10 @@ function createBaseEmbed(guild, color = brands.isrp.color) {
             name:
                 guild?.name ||
                 'Illinois State Roleplay',
-            iconURL: brands.assets.logo,
         })
-        .setThumbnail(brands.assets.logo)
         .setFooter({
             text:
                 'ISRP Staff Guide • Official staff resource',
-            iconURL: brands.assets.logo,
         })
         .setTimestamp();
 }
@@ -245,10 +241,6 @@ function createStaffGuidePagePayload({
             ...actionRows
         );
     }
-
-    addBrandSignature(container, {
-        detail: `Official Staff Guide • Version ${version}`,
-    });
 
     return {
         components: [container],
@@ -312,12 +304,9 @@ function createGuidePanelPayload(
         )
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
-            createPanelHeader({
-                eyebrow: 'ILLINOIS STATE ROLEPLAY',
-                title: 'Illinois State Roleplay Staff Guide',
-                description: 'Staff policies, commands, and rank guides.',
-                note: `Version ${guideVersion}`,
-            })
+            new TextDisplayBuilder().setContent(
+                `**Staff policies, commands, and team guides.**\n-# Version ${guideVersion}`
+            )
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
@@ -345,10 +334,6 @@ function createGuidePanelPayload(
         .addActionRowComponents(
             new ActionRowBuilder().addComponents(rankMenu)
         );
-
-    addBrandSignature(container, {
-        detail: `Staff Guide • Version ${guideVersion}`,
-    });
 
     return {
         files: [createStaffGuideBannerAttachment()],

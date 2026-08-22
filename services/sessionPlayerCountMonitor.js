@@ -98,8 +98,6 @@ function parseSessionDashboardStats(server) {
 }
 
 function createSessionDashboardEmbed({
-    guildIcon = null,
-    guildName = 'Illinois State Roleplay',
     updatedAt = null,
     currentPlayers = null,
     maxPlayers = 40,
@@ -144,7 +142,6 @@ function createSessionDashboardEmbed({
         )
         .setFooter({
             text: DASHBOARD_FOOTER,
-            iconURL: guildIcon || undefined,
         });
 
     return embed;
@@ -188,8 +185,6 @@ function replacePlayerCountFields(
         )
         .setFooter({
             text: DASHBOARD_FOOTER,
-            iconURL:
-                embed.data.footer?.icon_url || undefined,
         });
 
     return embed;
