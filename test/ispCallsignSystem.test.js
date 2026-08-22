@@ -232,7 +232,7 @@ test('private callsign panel exposes four simple member controls', async () => {
     const embed = payload.embeds[0].toJSON();
     const buttons = payload.components[0].toJSON().components;
 
-    assert.equal(embed.title, 'ISP Callsign Management');
+    assert.equal(embed.title, 'Callsign Manager');
     assert.deepEqual(
         buttons.map((button) => button.label),
         ['My Callsign', 'Request Callsign', 'Browse / List', 'Find by Callsign']

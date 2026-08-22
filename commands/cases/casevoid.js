@@ -181,7 +181,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `✅ Case \`${voidedCase.id}\` has been voided successfully.`,
+                    `✅ Case \`${voidedCase.id}\` was voided.`,
 
                 embeds: [
                     voidedCaseEmbed,

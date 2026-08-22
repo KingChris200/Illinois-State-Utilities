@@ -18,9 +18,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('backup')
         .setDMPermission(false)
-        .setDescription(
-            'Reviews or creates private local data backups.'
-        )
+        .setDescription('View or create a data backup.')
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageGuild
         )
@@ -138,7 +136,7 @@ function createBackupStatusEmbed(
                 ? 0x2ecc71
                 : 0xf1c40f
         )
-        .setTitle('💾 Data Backup Status')
+        .setTitle('Backup Status')
         .setDescription(
             'Backups are private local snapshots of the bot’s JSON data. They are never committed to GitHub.'
         )
@@ -207,7 +205,7 @@ function createBackupResultEmbed(
         )
         .setDescription(
             created
-                ? `A protected local snapshot containing **${result.fileCount} JSON files** was created successfully.`
+                ? `Backup created with **${result.fileCount} JSON files**.`
                 : 'The data directory does not contain JSON records yet, so no empty snapshot was created.'
         )
         .addFields({

@@ -30,9 +30,6 @@ const brands = require('../../config/branding');
  * ==========================================
  */
 
-const SERVER_NAME =
-    'Illinois State Roleplay | Strict';
-
 const JOIN_CODE =
     'ILLINOISrp';
 
@@ -77,9 +74,7 @@ const SESSION_BANNER_PATH = path.join(
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssu')
-        .setDescription(
-            'Begin an automated server vote and startup.'
-        )
+        .setDescription('Start a server vote.')
 
         /*
          * Vote goal option.
@@ -89,7 +84,7 @@ module.exports = {
             option
                 .setName('goal')
                 .setDescription(
-                    'The number of Attending votes required to begin the session.'
+                    'How many Attending votes are needed.'
                 )
                 .setMinValue(1)
                 .setMaxValue(100)
@@ -110,7 +105,7 @@ module.exports = {
             option
                 .setName('notes')
                 .setDescription(
-                    'Optional notes shown in the vote and startup.'
+                    'Optional notes for members.'
                 )
                 .setMaxLength(500)
                 .setRequired(false)
@@ -124,7 +119,7 @@ module.exports = {
             option
                 .setName('duration')
                 .setDescription(
-                    'How many minutes the server vote should remain open.'
+                    'How long the vote stays open.'
                 )
                 .setMinValue(1)
                 .setMaxValue(60)
@@ -296,90 +291,30 @@ module.exports = {
         const voteEmbed =
             new EmbedBuilder()
                 .setColor('#24589B')
-
-                .setAuthor({
-                    name: SERVER_NAME,
-                    iconURL:
-                        guildIcon ??
-                        undefined,
-                })
-
                 .setImage(
                     `attachment://${SESSION_BANNER_NAME}`
                 )
-
                 .setTitle('Server Vote')
-
                 .setDescription(
                     [
                         'Would you join a session right now?',
-                        'Select **Attending** only if you plan to join.',
+                        '',
+                        `**Code:** \`${JOIN_CODE}\``,
+                        `**Host:** ${interaction.user.username}`,
+                        `**Area:** ${roleplayZone}`,
+                        `**Votes:** 0/${goal}`,
+                        progressBar,
+                        `**Ends:** <t:${endsTimestamp}:R>`,
+                        ...(notes ? ['', notes] : []),
                     ].join('\n')
                 )
-
-                .addFields(
-                    {
-                        name:
-                            'Server Code',
-                        value:
-                            `\`${JOIN_CODE}\``,
-                        inline: true,
-                    },
-                    {
-                        name:
-                            'Host',
-                        value:
-                            `\`${interaction.user.username}\``,
-                        inline: true,
-                    },
-                    {
-                        name:
-                            'Votes',
-                        value:
-                            `\`0 / ${goal}\`\n${progressBar}`,
-                        inline: true,
-                    },
-                    {
-                        name:
-                            'Ends',
-                        value:
-                            `<t:${endsTimestamp}:R>`,
-                        inline: true,
-                    }
-                )
-
                 .setFooter({
-                    text:
-                        `${SERVER_NAME} • Session Management`,
+                    text: 'Vote only if you plan to join',
                     iconURL:
                         guildIcon ??
                         undefined,
                 })
-
                 .setTimestamp();
-
-        voteEmbed.addFields({
-            name: 'Roleplay Area',
-            value: roleplayZone,
-            inline: true,
-        });
-
-        if (notes) {
-            voteEmbed.addFields({
-                name: 'Notes',
-                value: notes,
-            });
-        }
-
-        /*
-         * Add the server icon as the thumbnail.
-         */
-
-        if (guildIcon) {
-            voteEmbed.setThumbnail(
-                guildIcon
-            );
-        }
 
         /*
          * ==========================================
@@ -593,83 +528,26 @@ module.exports = {
                         .setColor(
                             '#A83A3A'
                         )
-
-                        .setAuthor({
-                            name:
-                                SERVER_NAME,
-                            iconURL:
-                                guildIcon ??
-                                undefined,
-                        })
-
                         .setImage(
                             `attachment://${SESSION_BANNER_NAME}`
                         )
-
-                        .setTitle('Server Vote Ended')
-
+                        .setTitle('Vote Ended')
                         .setDescription(
                             [
                                 'The vote ended before it reached the goal.',
+                                '',
+                                `**Host:** ${interaction.user.username}`,
+                                `**Votes:** ${attendingCount}/${goal}`,
+                                expiredProgressBar,
                             ].join('\n')
                         )
-
-                        .addFields(
-                            {
-                                name:
-                                    'Server Code',
-                                value:
-                                    `\`${JOIN_CODE}\``,
-                                inline: true,
-                            },
-                            {
-                                name:
-                                    'Host',
-                                value:
-                                    `\`${interaction.user.username}\``,
-                                inline: true,
-                            },
-                            {
-                                name:
-                                    'Final Votes',
-                                value:
-                                    `\`${attendingCount} / ${goal}\`\n${expiredProgressBar}`,
-                                inline: true,
-                            },
-                            {
-                                name:
-                                    '🔴 Status',
-                                value:
-                                    '`Vote Goal Not Reached`',
-                                inline: true,
-                            },
-                            {
-                                name:
-                                    '🕒 Voting Ended',
-                                value:
-                                    `<t:${Math.floor(
-                                        Date.now() /
-                                            1000
-                                    )}:R>`,
-                                inline: true,
-                            }
-                        )
-
                         .setFooter({
-                            text:
-                                `${SERVER_NAME} • Session Management`,
+                            text: 'Illinois State Roleplay',
                             iconURL:
                                 guildIcon ??
                                 undefined,
                         })
-
                         .setTimestamp();
-
-                if (guildIcon) {
-                    expiredEmbed.setThumbnail(
-                        guildIcon
-                    );
-                }
 
                 /*
                  * Disable every vote button.

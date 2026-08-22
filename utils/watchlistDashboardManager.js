@@ -329,7 +329,7 @@ function buildOverviewView(dashboard, summary) {
             tone: 'neutral',
         })
             .setDescription(
-                'Live, server-scoped management intelligence. All dashboard views are private and read-only.'
+                'Private, read-only watchlist records for this server.'
             )
             .addFields(
                 {

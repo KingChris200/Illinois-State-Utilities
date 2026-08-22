@@ -106,7 +106,7 @@ function createBaseEmbed({ guildIcon, title, description }) {
         .setDescription(description)
         .setFooter({
             text:
-                'Illinois State Utilities • Private Session Intelligence',
+                'Illinois State Utilities • Private Session Report',
             iconURL: guildIcon || undefined,
         })
         .setTimestamp();
@@ -417,7 +417,7 @@ module.exports = {
         if (!canViewStatistics) {
             return interaction.reply({
                 content:
-                    '❌ You need the **Manage Server** permission to view private session intelligence.',
+                    '❌ You need the **Manage Server** permission to view session reports.',
                 flags: MessageFlags.Ephemeral,
             });
         }

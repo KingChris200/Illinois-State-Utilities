@@ -791,7 +791,7 @@ function createSearchEmbed(records, interaction) {
     });
     const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
-        .setTitle('🔒 Private Watchlist Search')
+        .setTitle('Watchlist Search')
         .setDescription(
             records.length
                 ? [
@@ -850,7 +850,7 @@ function createScanEmbed(
     const visibleMatches = matches.slice(0, 10);
     const embed = new EmbedBuilder()
         .setColor(matches.length ? 0xed4245 : 0x57f287)
-        .setTitle('🔒 Live Watchlist Scan')
+        .setTitle('Live Watchlist Scan')
         .setDescription(
             activeRecordCount === 0
                 ? '✅ There are no active private watchlist records to scan.'

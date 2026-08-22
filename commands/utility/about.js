@@ -14,7 +14,7 @@ const ABOUT_BANNER_PATH = path.join(
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('about')
-        .setDescription('Displays information about Illinois State Utilities.'),
+        .setDescription('About Illinois State Utilities.'),
 
     async execute(interaction) {
         const embed = createEmbed(

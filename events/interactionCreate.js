@@ -582,11 +582,6 @@ function createVoteEmbed({
 
     const voteEmbed = new EmbedBuilder()
         .setColor('#24589B')
-        .setAuthor({
-            name: SERVER_NAME,
-            iconURL:
-                guildIcon ?? undefined,
-        })
         .setImage(
             `attachment://${SESSION_BANNER_NAME}`
         )
@@ -594,45 +589,20 @@ function createVoteEmbed({
         .setDescription(
             [
                 'Would you join a session right now?',
-                'Select **Attending** only if you plan to join.',
+                '',
+                `**Code:** \`${JOIN_CODE}\``,
+                `**Host:** ${activeVote.hostUsername}`,
+                `**Votes:** ${attendingCount}/${activeVote.goal}`,
+                progressBar,
+                `**Ends:** <t:${endsTimestamp}:R>`,
             ].join('\n')
         )
-        .addFields(
-            {
-                name: 'Server Code',
-                value: `\`${JOIN_CODE}\``,
-                inline: true,
-            },
-            {
-                name: 'Host',
-                value:
-                    `\`${activeVote.hostUsername}\``,
-                inline: true,
-            },
-            {
-                name: 'Votes',
-                value:
-                    `\`${attendingCount} / ${activeVote.goal}\`\n${progressBar}`,
-                inline: true,
-            },
-            {
-                name: 'Ends',
-                value:
-                    `<t:${endsTimestamp}:R>`,
-                inline: true,
-            }
-        )
         .setFooter({
-            text:
-                `${SERVER_NAME} • Session Management`,
+            text: 'Vote only if you plan to join',
             iconURL:
                 guildIcon ?? undefined,
         })
         .setTimestamp();
-
-    if (guildIcon) {
-        voteEmbed.setThumbnail(guildIcon);
-    }
 
     addSessionDetails(voteEmbed, activeVote);
 
@@ -653,70 +623,28 @@ function createCompletedVoteEmbed({
     const guildIcon =
         getGuildIcon(interaction);
 
-    const completedTimestamp =
-        Math.floor(Date.now() / 1000);
-
     const completedEmbed =
         new EmbedBuilder()
             .setColor('#3A8D48')
-            .setAuthor({
-                name: SERVER_NAME,
-                iconURL:
-                    guildIcon ?? undefined,
-            })
             .setImage(
                 `attachment://${SESSION_BANNER_NAME}`
             )
-            .setTitle('Server Vote Complete')
+            .setTitle('Vote Passed')
             .setDescription(
                 [
-                    'The vote reached its goal. The server is now up.',
+                    'The vote reached its goal. The server is starting now.',
+                    '',
+                    `**Code:** \`${JOIN_CODE}\``,
+                    `**Host:** ${activeVote.hostUsername}`,
+                    `**Attending:** ${attendeeCount}`,
                 ].join('\n')
             )
-            .addFields(
-                {
-                    name: 'Server Code',
-                    value:
-                        `\`${JOIN_CODE}\``,
-                    inline: true,
-                },
-                {
-                    name: 'Host',
-                    value:
-                        `\`${activeVote.hostUsername}\``,
-                    inline: true,
-                },
-                {
-                    name:
-                        'Attending',
-                    value:
-                        `\`${attendeeCount} member${
-                            attendeeCount === 1
-                                ? ''
-                                : 's'
-                        }\``,
-                    inline: true,
-                },
-                {
-                    name: 'Completed',
-                    value:
-                        `<t:${completedTimestamp}:R>`,
-                    inline: true,
-                }
-            )
             .setFooter({
-                text:
-                    `${SERVER_NAME} • Session Management`,
+                text: 'Illinois State Roleplay',
                 iconURL:
                     guildIcon ?? undefined,
             })
             .setTimestamp();
-
-    if (guildIcon) {
-        completedEmbed.setThumbnail(
-            guildIcon
-        );
-    }
 
     addSessionDetails(
         completedEmbed,
@@ -740,17 +668,9 @@ function createStartupEmbed({
     const guildIcon =
         getGuildIcon(interaction);
 
-    const startedTimestamp =
-        Math.floor(Date.now() / 1000);
-
     const startupEmbed =
         new EmbedBuilder()
             .setColor('#2D6FA7')
-            .setAuthor({
-                name: SERVER_NAME,
-                iconURL:
-                    guildIcon ?? undefined,
-            })
             .setImage(
                 `attachment://${SESSION_BANNER_NAME}`
             )
@@ -758,53 +678,18 @@ function createStartupEmbed({
             .setDescription(
                 [
                     'The server is now up. If you voted, please join.',
+                    '',
+                    `**Code:** \`${JOIN_CODE}\``,
+                    `**Host:** ${activeVote.hostUsername}`,
+                    `**Attending:** ${attendeeCount}`,
                 ].join('\n')
             )
-            .addFields(
-                {
-                    name: 'Server Code',
-                    value:
-                        `\`${JOIN_CODE}\``,
-                    inline: true,
-                },
-                {
-                    name: 'Host',
-                    value:
-                        `\`${activeVote.hostUsername}\``,
-                    inline: true,
-                },
-                {
-                    name:
-                        'Attending',
-                    value:
-                        `\`${attendeeCount} member${
-                            attendeeCount === 1
-                                ? ''
-                                : 's'
-                        }\``,
-                    inline: true,
-                },
-                {
-                    name: 'Started',
-                    value:
-                        `<t:${startedTimestamp}:F>\n` +
-                        `<t:${startedTimestamp}:R>`,
-                    inline: true,
-                }
-            )
             .setFooter({
-                text:
-                    `${SERVER_NAME} • Session Management`,
+                text: 'Illinois State Roleplay',
                 iconURL:
                     guildIcon ?? undefined,
             })
             .setTimestamp();
-
-    if (guildIcon) {
-        startupEmbed.setThumbnail(
-            guildIcon
-        );
-    }
 
     addSessionDetails(
         startupEmbed,
@@ -815,17 +700,20 @@ function createStartupEmbed({
 }
 
 function addSessionDetails(embed, session) {
-    embed.addFields({
-        name: 'Roleplay Area',
-        value: session.roleplayZone ?? 'Statewide',
-        inline: true,
-    });
+    const details = [];
+
+    if (session.roleplayZone) {
+        details.push(`**Area:** ${session.roleplayZone}`);
+    }
 
     if (session.notes) {
-        embed.addFields({
-            name: 'Notes',
-            value: session.notes,
-        });
+        details.push('', session.notes);
+    }
+
+    if (details.length > 0) {
+        embed.setDescription(
+            [embed.data.description, ...details].join('\n')
+        );
     }
 
     return embed;

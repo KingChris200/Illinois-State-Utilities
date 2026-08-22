@@ -31,14 +31,8 @@ function createSessionRecapEmbed({
 
     const embed = new EmbedBuilder()
         .setColor('#24589B')
-        .setAuthor({
-            name: serverName,
-            iconURL: guildIcon || undefined,
-        })
-        .setTitle('📊 Session Analytics Recap')
-        .setDescription(
-            'A final, automatically calculated summary of the completed Illinois State Roleplay session.'
-        )
+        .setTitle('Session Report')
+        .setDescription('Private statistics from the completed session.')
         .addFields(
             {
                 name: 'Starting Players',
@@ -69,23 +63,9 @@ function createSessionRecapEmbed({
                 inline: true,
             },
             {
-                name: 'Confirmed Attendance',
-                value: displayCount(
-                    summary.attendeeCount
-                ),
-                inline: true,
-            },
-            {
-                name: 'Live Samples',
-                value: displayCount(
-                    summary.sampleCount
-                ),
-                inline: true,
-            },
-            {
-                name: 'Attendance vs Actual',
+                name: 'Attendance',
                 value: [
-                    `**${summary.attendanceComparison.label}**`,
+                    `${displayCount(summary.attendeeCount)} voted to attend`,
                     summary.attendanceComparison.summary,
                 ].join('\n'),
                 inline: false,
@@ -98,14 +78,7 @@ function createSessionRecapEmbed({
                 inline: true,
             },
             {
-                name: 'Peak Queue',
-                value: displayCount(
-                    summary.peakQueueCount
-                ),
-                inline: true,
-            },
-            {
-                name: 'Session Duration',
+                name: 'Duration',
                 value: `\`${
                     durationDisplay ||
                     `${Math.floor(
@@ -117,15 +90,10 @@ function createSessionRecapEmbed({
             }
         )
         .setFooter({
-            text:
-                'Illinois State Utilities • Completed Session Analytics',
+            text: 'Private session report',
             iconURL: guildIcon || undefined,
         })
         .setTimestamp(endedAt);
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
 
     return embed;
 }

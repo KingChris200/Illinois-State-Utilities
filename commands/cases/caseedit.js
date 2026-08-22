@@ -272,7 +272,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `✅ Case \`${updatedCase.id}\` was updated successfully.`,
+                    `✅ Case \`${updatedCase.id}\` was updated.`,
 
                 embeds: [
                     updatedEmbed,

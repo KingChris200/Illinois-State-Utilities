@@ -120,7 +120,7 @@ function createDoctorEmbed(interaction, report) {
               : 0x2ecc71;
     const embed = new EmbedBuilder()
         .setColor(color)
-        .setTitle('🩺 Illinois State Utilities Doctor')
+        .setTitle('Bot Check')
         .setDescription(
             [
                 'A read-only check of the bot’s important configuration, channels, permissions, Staff Guide, and backup protection.',

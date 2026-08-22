@@ -22,13 +22,10 @@ const {
 } = require('../../services/sessionAnalyticsService');
 const brands = require('../../config/branding');
 
-const SERVER_NAME = 'Illinois State Roleplay | Strict';
-const SERVER_CODE = 'ILLINOISrp';
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssd')
-        .setDescription('End the active Illinois State Roleplay session.')
+        .setDescription('End the active session.')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .setDMPermission(false),
 
@@ -123,14 +120,6 @@ module.exports = {
             endedAt - startedAt
         );
 
-        const startedTimestamp = Math.floor(
-            startedAt / 1000
-        );
-
-        const endedTimestamp = Math.floor(
-            endedAt / 1000
-        );
-
         const guildIcon = brands.assets.logo;
 
         /*
@@ -141,105 +130,40 @@ module.exports = {
         const sessionHostMention =
             `<@${endedSession.hostId}>`;
 
-        const shutdownByMention =
-            `${interaction.user}`;
-
         const attendeeCount =
             endedSession.attendeeIds?.length ?? 0;
 
+        const shutdownLines = [
+            'The session has ended. Thanks for joining!',
+            '',
+            `**Host:** ${sessionHostMention}`,
+            `**Duration:** ${sessionDuration}`,
+        ];
+
+        if (Number.isFinite(endedSession.livePlayerCount)) {
+            shutdownLines.push(
+                `**Final players:** ${endedSession.livePlayerCount}/${endedSession.maxPlayerCount ?? 40}`
+            );
+        } else if (attendeeCount > 0) {
+            shutdownLines.push(`**Attending votes:** ${attendeeCount}`);
+        }
+
         const shutdownEmbed = new EmbedBuilder()
             .setColor('#8B1E2D')
-            .setAuthor({
-                name: SERVER_NAME,
-                iconURL: guildIcon ?? undefined,
-            })
             .setTitle('Server Shutdown')
-            .setDescription(
-                [
-                    'The session has ended. The server is now offline.',
-                    'Thanks to everyone who joined.',
-                ].join('\n')
-            )
-            .addFields(
-                {
-                    name: 'Server Code',
-                    value: `\`${SERVER_CODE}\``,
-                    inline: true,
-                },
-                {
-                    name: 'Host',
-                    value: sessionHostMention,
-                    inline: true,
-                },
-                {
-                    name: 'Ended By',
-                    value: shutdownByMention,
-                    inline: true,
-                },
-                {
-                    name: 'Duration',
-                    value: `\`${sessionDuration}\``,
-                    inline: true,
-                },
-                {
-                    name: 'Attending',
-                    value: `\`${attendeeCount} members\``,
-                    inline: true,
-                },
-                {
-                    name: 'Started',
-                    value:
-                        `<t:${startedTimestamp}:F>\n` +
-                        `<t:${startedTimestamp}:R>`,
-                    inline: true,
-                },
-                {
-                    name: 'Ended',
-                    value:
-                        `<t:${endedTimestamp}:F>\n` +
-                        `<t:${endedTimestamp}:R>`,
-                    inline: true,
-                }
-            )
+            .setDescription(shutdownLines.join('\n'))
             .setFooter({
-                text:
-                    `${SERVER_NAME} • Session Management`,
+                text: `Ended by ${interaction.user.username}`,
                 iconURL: guildIcon ?? undefined,
             })
             .setTimestamp();
 
-        if (guildIcon) {
-            shutdownEmbed.setThumbnail(guildIcon);
-        }
-
         await saveSessionState();
 
-        shutdownEmbed.addFields({
-            name: 'Roleplay Area',
-            value:
-                endedSession.roleplayZone ??
-                'Statewide',
-            inline: true,
-        });
-
         if (endedSession.notes) {
-            shutdownEmbed.addFields({
-                name: 'Notes',
-                value: endedSession.notes,
-            });
-        }
-
-        if (
-            Number.isFinite(
-                endedSession.livePlayerCount
-            )
-        ) {
-            shutdownEmbed.addFields({
-                name: 'Final Player Count',
-                value:
-                    `\`${endedSession.livePlayerCount} / ${endedSession.maxPlayerCount ?? 40}\` players in-game`,
-                inline: true,
-            });
+            shutdownEmbed.setDescription(
+                `${shutdownLines.join('\n')}\n\n${endedSession.notes}`
+            );
         }
 
         try {

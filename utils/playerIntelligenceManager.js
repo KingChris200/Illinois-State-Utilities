@@ -114,7 +114,7 @@ async function handlePlayerIntelligenceButton(interaction) {
         removePlayerPanel(id);
         await interaction.reply({
             content:
-                'This player-intelligence profile has expired. Run `?player <username>` to open a new one.',
+                'This player profile has expired. Run `?player <username>` to open a new one.',
             flags: MessageFlags.Ephemeral,
         });
         return true;
@@ -278,7 +278,7 @@ async function buildPlayerView(
 }
 
 function buildOverviewView(panel, onlinePlayer, activity) {
-    const title = `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)}`;
+    const title = `Player Profile — ${cleanMarkdownText(panel.target.username, 60)}`;
     const embed = createEmbed(title, 'isrp', {
         guild: panel.guild,
         client: panel.client,
@@ -381,7 +381,7 @@ function buildActivityView(panel, onlinePlayer, activity) {
         .slice(0, 8)
         .map(formatCombatEvent);
     const embed = createEmbed(
-        `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Activity`,
+        `Player Profile — ${cleanMarkdownText(panel.target.username, 60)} — Activity`,
         'isrp',
         {
             guild: panel.guild,
@@ -422,7 +422,7 @@ function buildActivityView(panel, onlinePlayer, activity) {
 function buildVehiclesView(panel, onlinePlayer, activity) {
     const vehicles = activity.vehicles.slice(0, 10);
     const embed = createEmbed(
-        `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Vehicles`,
+        `Player Profile — ${cleanMarkdownText(panel.target.username, 60)} — Vehicles`,
         'isrp',
         {
             guild: panel.guild,
@@ -452,7 +452,7 @@ function buildCallsView(panel, onlinePlayer, activity) {
         .slice(0, 8)
         .map(formatCallEvent);
     const embed = createEmbed(
-        `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Mod Calls`,
+        `Player Profile — ${cleanMarkdownText(panel.target.username, 60)} — Mod Calls`,
         'isrp',
         {
             guild: panel.guild,
@@ -587,7 +587,7 @@ function addPanelSession(embed, panel) {
 function createErrorEmbed(panel, error) {
     return addPanelSession(
         createEmbed(
-            `Player Intelligence — ${cleanMarkdownText(panel.target.username, 60)} — Refresh Failed`,
+            `Player Profile — ${cleanMarkdownText(panel.target.username, 60)} — Refresh Failed`,
             'isrp',
             {
                 guild: panel.guild,

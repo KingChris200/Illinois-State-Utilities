@@ -256,7 +256,7 @@ function formatInlineCode(value) {
 function createTicketWelcomeEmbed(ticket, category, guild) {
     const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
-        .setTitle(`${category.emoji} ${category.label}`)
+        .setTitle(category.label)
         .setDescription(
             [
                 `Welcome <@${ticket.openerId}>.`,
@@ -491,7 +491,7 @@ async function archiveTicketTranscript(
         embeds: [
             new EmbedBuilder()
                 .setColor(brands.isrp.color)
-                .setTitle('📄 Assistance Transcript Archived')
+                .setTitle('Ticket Transcript')
                 .setDescription(
                     'A private record of the completed assistance ticket is attached.'
                 )
@@ -923,7 +923,7 @@ async function closeTicket(interaction, ticketId) {
         embeds: [
             new EmbedBuilder()
                 .setColor(0x95a5a6)
-                .setTitle('🔒 Ticket Closed')
+                .setTitle('Ticket Closed')
                 .setDescription(
                     `Closed by ${interaction.user}. A private transcript will be archived, then this channel will be deleted automatically.`
                 )
@@ -1018,7 +1018,7 @@ function createAppealQuestionnaire(ticket) {
 function createPartnershipRequirementsPayload(guild) {
     const embed = new EmbedBuilder()
         .setColor(brands.isrp.color)
-        .setTitle('🤝 | Partnership Requirements')
+        .setTitle('Partnership Requirements')
         .setDescription(
             [
                 'Thank you for your interest in partnering with **Illinois State Roleplay**. Please review every requirement before continuing with your request.',

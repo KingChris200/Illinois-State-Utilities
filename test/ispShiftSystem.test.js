@@ -79,7 +79,7 @@ test('permanent ISP dashboard exposes simple private shift controls', async () =
     const embed = payload.embeds[0].toJSON();
     const buttons = payload.components[0].toJSON().components;
 
-    assert.equal(embed.title, 'Illinois State Police Shift Dashboard');
+    assert.equal(embed.title, 'ISP Shift Dashboard');
     assert.ok(embed.fields.some((field) => field.name.includes('On Duty')));
     assert.ok(embed.fields.some((field) => field.name.includes('Weekly Quota')));
     assert.deepEqual(

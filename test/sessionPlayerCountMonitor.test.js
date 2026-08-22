@@ -112,19 +112,19 @@ test('updates the active session startup embed and state', async () => {
         fields.find(
             (field) => field.name === 'Player Count'
         ).value,
-        '[12 / 40]'
+        '**12/40**'
     );
     assert.equal(
         fields.find(
             (field) => field.name === 'Staff Members'
         ).value,
-        '[1]'
+        '**1**'
     );
     assert.equal(
         fields.find(
             (field) => field.name === 'Queue'
         ).value,
-        '[2]'
+        '**2**'
     );
     assert.equal(
         sessionManager.getSession().livePlayerCount,

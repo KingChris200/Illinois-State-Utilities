@@ -6,16 +6,16 @@ const EVENT_BUILDERS = {
         `:h A session vote has started${hostUsername ? ` by ${hostUsername}` : ''}${voteGoal ? ` with a goal of ${voteGoal} attendees` : ''}${roleplayZone ? ` for ${roleplayZone}` : ''}.`,
 
     session_started: ({ hostUsername, attendeeCount, roleplayZone }) =>
-        `:m Illinois State Roleplay is now in session! Join code: ILLINOISrp.${hostUsername ? ` Hosted by ${hostUsername}.` : ''}${roleplayZone ? ` Roleplay zone: ${roleplayZone}.` : ''}${Number.isInteger(attendeeCount) ? ` Confirmed attendees: ${attendeeCount}.` : ''}`,
+        `:m The server is now up! Code: ILLINOISrp.${hostUsername ? ` Host: ${hostUsername}.` : ''}${roleplayZone ? ` Area: ${roleplayZone}.` : ''}${Number.isInteger(attendeeCount) ? ` ${attendeeCount} members voted to join.` : ''}`,
 
     session_shutdown: ({ duration }) =>
-        `:m The Illinois State Roleplay session has concluded${duration ? ` after ${duration}` : ''}. Thank you for participating!`,
+        `:m The session has ended${duration ? ` after ${duration}` : ''}. Thanks for joining!`,
 
     session_low: ({ playerCount }) =>
         `:h Session low! More players are needed to keep roleplay active.${Number.isInteger(playerCount) ? ` Current player count: ${playerCount}.` : ''}`,
 
     session_full: ({ playerCount }) =>
-        `:h The session has reached a healthy player count.${Number.isInteger(playerCount) ? ` Current player count: ${playerCount}.` : ''} Please continue professional roleplay.`,
+        `:h The session has enough players now. Thanks for joining!${Number.isInteger(playerCount) ? ` Current players: ${playerCount}.` : ''}`,
 };
 
 async function announceSessionEvent(eventName, context = {}) {

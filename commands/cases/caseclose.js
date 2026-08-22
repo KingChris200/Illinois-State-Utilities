@@ -176,7 +176,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `✅ Case \`${closedCase.id}\` has been closed successfully.`,
+                    `✅ Case \`${closedCase.id}\` was closed.`,
 
                 embeds: [
                     closedCaseEmbed,

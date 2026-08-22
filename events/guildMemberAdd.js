@@ -90,7 +90,7 @@ function createWelcomePayload(member) {
         )
         .setDescription(
             [
-            `Hey <@${member.id}>! You’re member **#${memberCount}**.`,
+            `Hey <@${member.id}>! You’re our **#${memberCount} member**.`,
             '',
             'Read the rules, verify, and choose your roles to get started.',
             ].join('\n')

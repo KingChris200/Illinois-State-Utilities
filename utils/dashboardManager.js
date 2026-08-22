@@ -45,31 +45,26 @@ const DASHBOARD_PAGES = [
         label: 'About ISRP',
         description: 'Learn what Illinois State Roleplay is about.',
         value: 'about',
-        emoji: '🏛️',
     },
     {
         label: 'Getting Started',
         description: 'The best steps for new community members.',
         value: 'getting_started',
-        emoji: '👋',
     },
     {
         label: 'Session Information',
         description: 'Find sessions, notifications, and the join code.',
         value: 'sessions',
-        emoji: '🎮',
     },
     {
         label: 'Assistance & Appeals',
         description: 'Learn how to contact the correct support team.',
         value: 'assistance',
-        emoji: '🎫',
     },
     {
         label: 'Staff Resources',
         description: 'Private handbook and staff utility links.',
         value: 'staff',
-        emoji: '📘',
     },
 ];
 
@@ -120,7 +115,6 @@ function createLinkButton(label, emoji, url) {
 
     return new ButtonBuilder()
         .setLabel(label)
-        .setEmoji(emoji)
         .setStyle(ButtonStyle.Link)
         .setURL(url);
 }
@@ -191,15 +185,12 @@ function createDashboardPanelPayload(guild, context) {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: 'Illinois State Roleplay Dashboard',
-                description: 'Links and information for Illinois State Roleplay.',
+                description: 'The main links for Illinois State Roleplay.',
             }),
             new TextDisplayBuilder().setContent(
                 [
-                    '## Community Standard',
-                    'Read the rules, join sessions, and use the links below when you need help.',
-                    '',
-                    '## Essential Channels',
-                    'Everything important is linked below.',
+                    '## Start Here',
+                    'Read both rule channels before joining a session. Use Assistance whenever you need help.',
                 ].join('\n')
             )
         );
@@ -211,7 +202,7 @@ function createDashboardPanelPayload(guild, context) {
     if (communityLinks) {
         container
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('### Community Channels')
+                new TextDisplayBuilder().setContent('### Community')
             )
             .addActionRowComponents(communityLinks);
     }
@@ -220,7 +211,7 @@ function createDashboardPanelPayload(guild, context) {
         .addSeparatorComponents(createPanelSeparator())
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                '## More Information\nChoose a section below.'
+                '## Learn More\nChoose a section.'
             )
         )
         .addActionRowComponents(new ActionRowBuilder().addComponents(menu));
@@ -404,7 +395,7 @@ function createDashboardPagePayload(guild, pageId, context) {
         .addTextDisplayComponents(
             createPanelHeader({
                 title: page.title,
-                description: 'Official Illinois State Roleplay resource',
+                description: 'Illinois State Roleplay',
             }),
             new TextDisplayBuilder().setContent(page.body)
         );
@@ -415,7 +406,7 @@ function createDashboardPagePayload(guild, pageId, context) {
     }
 
     addBrandSignature(container, {
-        detail: 'Dashboard resource • Official community information',
+        detail: 'Official community information',
     });
 
     return {

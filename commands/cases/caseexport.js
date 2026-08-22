@@ -104,7 +104,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `📄 Successfully exported case \`${caseRecord.id}\`.`,
+                    `📄 Case \`${caseRecord.id}\` was exported.`,
                 files: [
                     attachment,
                 ],

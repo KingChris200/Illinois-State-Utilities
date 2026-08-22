@@ -32,7 +32,7 @@ test('builds commands for every supported session event', () => {
         EVENT_BUILDERS.session_started({
             roleplayZone: 'Springfield',
         }),
-        /Roleplay zone: Springfield/
+        /Area: Springfield/
     );
 });
 

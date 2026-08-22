@@ -1284,7 +1284,7 @@ module.exports = {
 
                 return interaction.editReply({
                     content:
-                        `✅ Award \`${awardId}\` was revoked successfully.`,
+                        `✅ Award \`${awardId}\` was revoked.`,
                 });
             }
 

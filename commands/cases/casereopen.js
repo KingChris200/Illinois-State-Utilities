@@ -140,7 +140,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    `✅ Case \`${reopenedCase.id}\` has been reopened successfully.`,
+                    `✅ Case \`${reopenedCase.id}\` was reopened.`,
 
                 embeds: [
                     embed,

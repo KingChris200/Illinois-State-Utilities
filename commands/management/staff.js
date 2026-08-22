@@ -229,7 +229,7 @@ function formatTimeline(records, emptyMessage) {
                 : '';
 
             return [
-                `${action.emoji} **${action.label}**${status} — ${createDiscordTimestamp(
+                `**${action.label}**${status} — ${createDiscordTimestamp(
                     record.createdAt,
                     'd'
                 )}`,
@@ -316,17 +316,17 @@ module.exports = {
         .setName('staff')
         .setDMPermission(false)
         .setDescription(
-            'Illinois State Roleplay staff tools.'
+            'Staff records and feedback.'
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('profile')
-                .setDescription('View an Illinois State Roleplay staff profile.')
+                .setDescription('View a staff record.')
                 .addUserOption((option) =>
                     option
                         .setName('staff-member')
                         .setDescription(
-                            'The staff member whose profile you want to view.'
+                            'The staff member to view.'
                         )
                         .setRequired(true)
                 )
@@ -334,15 +334,15 @@ module.exports = {
                     option
                         .setName('visibility')
                         .setDescription(
-                            'Choose whether the profile is private or public.'
+                            'Show the record privately or publicly.'
                         )
                         .addChoices(
                             {
-                                name: 'Private — Only you can see it',
+                                name: 'Private',
                                 value: 'private',
                             },
                             {
-                                name: 'Public — Everyone can see it',
+                                name: 'Public',
                                 value: 'public',
                             }
                         )
@@ -392,6 +392,13 @@ module.exports = {
                 });
             }
 
+            const subcommand = interaction.options.getSubcommand();
+
+            if (subcommand === 'feedback') {
+                await executeStaffFeedback(interaction);
+                return;
+            }
+
             const staffMember =
                 interaction.options.getUser(
                     'staff-member',
@@ -429,13 +436,8 @@ module.exports = {
             ) {
                 return interaction.editReply({
                     content:
-                        '❌ Private staff intelligence is limited to authorized management, Internal Affairs, directors, and ownership. Use `visibility:Public` for the safe staff résumé.',
+                        '❌ Private staff records are limited to management, Internal Affairs, directors, and ownership. Use `visibility:Public` for the public profile.',
                 });
-            }
-
-            if (interaction.options.getSubcommand() === 'feedback') {
-                await executeStaffFeedback(interaction);
-                return;
             }
 
             const configurations =
@@ -480,14 +482,12 @@ module.exports = {
                                 guildConfiguration.brandColor
                             )
                         )
-                        .setTitle(
-                            'Illinois State Roleplay — Staff Profile'
-                        )
+                        .setTitle('Staff Record')
                         .setDescription(
                             [
                                 `${staffMember} does not have a saved staff profile yet.`,
                                 '',
-                                'A profile is created automatically after their first recorded promotion, demotion, or disciplinary action.',
+                                'Their record will appear after the first staff action is logged.',
                             ].join('\n')
                         )
                         .setThumbnail(
@@ -495,15 +495,8 @@ module.exports = {
                                 size: 256,
                             })
                         )
-                        .setAuthor({
-                            name:
-                                guildConfiguration.serverName ||
-                                interaction.guild.name,
-                            iconURL: brands.assets.logo,
-                        })
                         .setFooter({
-                            text:
-                                'Illinois State Utilities • Staff Management System',
+                            text: 'Illinois State Utilities',
                             iconURL: brands.assets.logo,
                         })
                         .setTimestamp();
@@ -542,10 +535,6 @@ module.exports = {
                     history: staffHistory,
                 });
 
-            const recentActions = isPrivate
-                ? profileAnalysis.events.slice(0, 5)
-                : profileAnalysis.careerTimeline;
-
             const staffStatus =
                 staffProfile.staffStatus ||
                 'Active';
@@ -564,93 +553,14 @@ module.exports = {
                     : 'None';
 
             const profileDescription = [
-                isPrivate
-                    ? `Private management review for ${staffMember}.`
-                    : `Public staff résumé for ${staffMember}.`,
+                `${staffMember}`,
                 '',
-                '**Current Rank**',
-                staffProfile.currentRank ||
-                    'Not recorded',
-                '',
-                '**Staff Status**',
-                staffStatus,
-                '',
-                '**Leave of Absence**',
-                loaDisplay,
-                '',
-                '**Career Records**',
-                `Promotions: ${profileAnalysis.totals.promotions}`,
-                `Active Awards: ${profileAnalysis.totals.awards}`,
-                '',
-                '**Shift Activity**',
-                `Total Recorded Time: ${formatDuration(
-                    staffProfile
-                        .totalShiftMilliseconds
-                )}`,
-                '',
-                '**Profile Information**',
-                `Joined Staff: ${createDiscordTimestamp(
-                    staffProfile.joinedStaffAt,
-                    'D'
-                )}`,
-                `Profile Created: ${createDiscordTimestamp(
-                    staffProfile.createdAt,
-                    'D'
-                )}`,
-                `Last Updated: ${createDiscordTimestamp(
-                    staffProfile.updatedAt,
-                    'R'
-                )}`,
+                `**Rank:** ${staffProfile.currentRank || 'Not recorded'}`,
+                `**Status:** ${staffStatus}`,
+                `**LOA:** ${loaDisplay}`,
+                `**Staff since:** ${createDiscordTimestamp(staffProfile.joinedStaffAt, 'D')}`,
+                `**Shift time:** ${formatDuration(staffProfile.totalShiftMilliseconds)}`,
             ];
-
-            if (isPrivate) {
-                profileDescription.push(
-                    '',
-                    '**Restricted Management Records**',
-                    `Blacklist Status: ${blacklistStatus}`,
-                    `Demotions: ${profileAnalysis.totals.demotions}`,
-                    `Notices: ${Number(
-                        staffProfile.noticeCount || 0
-                    )}`,
-                    `Inactivity Notices: ${Number(
-                        staffProfile
-                            .inactivityNoticeCount || 0
-                    )}`,
-                    `Warnings: ${Number(
-                        staffProfile.warningCount || 0
-                    )}`,
-                    `Strikes: ${Number(
-                        staffProfile.strikeCount || 0
-                    )}`,
-                    `Terminations: ${Number(
-                        staffProfile
-                            .terminationCount || 0
-                    )}`,
-                    `Blacklists: ${Number(
-                        staffProfile.blacklistCount || 0
-                    )}`,
-                    `Active Actions: ${profileAnalysis.totals.activeInfractions}`
-                );
-            }
-
-            if (isPrivate) {
-                profileDescription.push(
-                    '',
-                    '**Recent Activity Summary**',
-                    `${profileAnalysis.recent.actions30Days} action(s) within 30 days`,
-                    `${profileAnalysis.recent.actions90Days} action(s) within 90 days`,
-                    `${profileAnalysis.totals.activeInfractions} active disciplinary record(s)`
-                );
-            } else {
-                profileDescription.push(
-                    '',
-                    '**Recent Career Highlights**',
-                    formatTimeline(
-                        recentActions,
-                        'No recent promotions or active awards are recorded.'
-                    )
-                );
-            }
 
             const statusColor =
                 staffStatus === 'Blacklisted'
@@ -666,8 +576,8 @@ module.exports = {
                     .setColor(statusColor)
                     .setTitle(
                         isPrivate
-                            ? 'Illinois State Roleplay — Staff Management Profile'
-                            : 'Illinois State Roleplay — Public Staff Profile'
+                            ? 'Staff Record'
+                            : 'Staff Profile'
                     )
                     .setDescription(
                         profileDescription.join('\n')
@@ -677,112 +587,51 @@ module.exports = {
                             size: 256,
                         })
                     )
-                    .setAuthor({
-                        name:
-                            guildConfiguration.serverName ||
-                            interaction.guild.name,
-                        iconURL: brands.assets.logo,
-                    })
                     .setFooter({
                         text:
                             isPrivate
-                                ? 'Illinois State Utilities • Private Management Review'
-                                : 'Illinois State Utilities • Public Staff Résumé',
+                                ? 'Private management record'
+                                : 'Illinois State Roleplay',
 
                         iconURL: brands.assets.logo,
                     })
                     .setTimestamp();
 
-            const managementInsightsEmbed =
-                isPrivate
-                    ? new EmbedBuilder()
-                          .setColor(
-                              profileAnalysis
-                                  .standing.color
-                          )
-                          .setTitle(
-                              'Private Management Intelligence'
-                          )
-                          .setDescription(
-                              'Rule-based decision support generated from saved staff records. This does not replace leadership judgment or authorize an automatic promotion.'
-                          )
-                          .addFields(
-                              {
-                                  name: 'Overall Standing',
-                                  value: `${profileAnalysis.standing.emoji} **${profileAnalysis.standing.label}**\nReview index: **${profileAnalysis.score} / 100**`,
-                                  inline: true,
-                              },
-                              {
-                                  name: 'Promotion Guidance',
-                                  value: `${profileAnalysis.eligibility.emoji} **${profileAnalysis.eligibility.label}**\n${profileAnalysis.eligibility.recommendation}`,
-                                  inline: false,
-                              },
-                              {
-                                  name: 'Review Context',
-                                  value: [
-                                      `Recorded tenure: **${
-                                          profileAnalysis.tenureDays ===
-                                          null
-                                              ? 'Unknown'
-                                              : `${profileAnalysis.tenureDays} day(s)`
-                                      }**`,
-                                      `Last promotion: **${
-                                          profileAnalysis.daysSincePromotion ===
-                                          null
-                                              ? 'None recorded'
-                                              : `${profileAnalysis.daysSincePromotion} day(s) ago`
-                                      }**`,
-                                      `Active discipline: **${profileAnalysis.totals.activeInfractions}**`,
-                                  ].join('\n'),
-                                  inline: true,
-                              },
-                              {
-                                  name: 'Assessment Factors',
-                                  value: profileAnalysis.factors
-                                      .map(
-                                          (factor) =>
-                                              `• ${factor}`
-                                      )
-                                      .join('\n'),
-                                  inline: false,
-                              },
-                              {
-                                  name: 'Career Timeline',
-                                  value: formatTimeline(
-                                      profileAnalysis.careerTimeline,
-                                      'No promotions or active awards are recorded.'
-                                  ),
-                                  inline: false,
-                              },
-                              {
-                                  name: 'Disciplinary Timeline',
-                                  value: formatTimeline(
-                                      profileAnalysis.disciplinaryTimeline,
-                                      'No demotions or disciplinary actions are recorded.'
-                                  ),
-                                  inline: false,
-                              }
-                          )
-                          .setThumbnail(
-                              staffMember.displayAvatarURL({
-                                  size: 256,
-                              })
-                          )
-                          .setFooter({
-                              text:
-                                  'Illinois State Utilities • Authorized Management Only',
-                              iconURL: brands.assets.logo,
-                          })
-                          .setTimestamp()
-                    : null;
+            staffProfileEmbed.addFields({
+                name: isPrivate ? 'Record Summary' : 'Career Summary',
+                value: [
+                    `Promotions: **${profileAnalysis.totals.promotions}**`,
+                    `Awards: **${profileAnalysis.totals.awards}**`,
+                    ...(isPrivate
+                        ? [
+                              `Demotions: **${profileAnalysis.totals.demotions}**`,
+                              `Active actions: **${profileAnalysis.totals.activeInfractions}**`,
+                              `Blacklist: **${blacklistStatus}**`,
+                          ]
+                        : []),
+                ].join('\n'),
+                inline: true,
+            });
+
+            staffProfileEmbed.addFields({
+                name: 'Recent Records',
+                value: formatTimeline(
+                    isPrivate
+                        ? profileAnalysis.events
+                        : profileAnalysis.careerTimeline,
+                    'No recent records.'
+                ),
+            });
+
+            if (isPrivate) {
+                staffProfileEmbed.addFields({
+                    name: 'Management Note',
+                    value: `**${profileAnalysis.standing.label}** — ${profileAnalysis.eligibility.recommendation}`,
+                });
+            }
 
             await interaction.editReply({
-                embeds: managementInsightsEmbed
-                    ? [
-                          staffProfileEmbed,
-                          managementInsightsEmbed,
-                      ]
-                    : [staffProfileEmbed],
+                embeds: [staffProfileEmbed],
 
                 allowedMentions: {
                     parse: [],

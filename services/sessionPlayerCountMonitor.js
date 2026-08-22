@@ -10,9 +10,9 @@ const DEFAULT_REFRESH_MS = 30_000;
 const MINIMUM_REFRESH_MS = 15_000;
 const MAXIMUM_REFRESH_MS = 5 * 60_000;
 const DASHBOARD_TITLE =
-    '🎮 Illinois State Roleplay Live Status';
+    'Live Player Count';
 const DASHBOARD_FOOTER =
-    'Illinois State Utilities • Live Session Dashboard';
+    'Live session • Updates automatically';
 
 const monitors = new Map();
 
@@ -109,40 +109,36 @@ function createSessionDashboardEmbed({
     const embed = new EmbedBuilder()
         .setColor('#24589B')
         .setTitle(DASHBOARD_TITLE)
-        .setAuthor({
-            name: guildName,
-            ...(guildIcon ? { iconURL: guildIcon } : {}),
-        })
         .setDescription(
             updatedAt
-                ? `**Last Updated:** <t:${Math.floor(
+                ? `Updated <t:${Math.floor(
                       updatedAt / 1000
                   )}:R>`
-                : '**Last Updated:** Waiting for ER:LC…'
+                : 'Connecting to ER:LC…'
         )
         .addFields(
             {
                 name: 'Player Count',
                 value:
                     currentPlayers === null
-                        ? '[Connecting…]'
-                        : `[${currentPlayers} / ${maxPlayers}]`,
+                        ? '—'
+                        : `**${currentPlayers}/${maxPlayers}**`,
                 inline: true,
             },
             {
                 name: 'Staff Members',
                 value:
                     staffCount === null
-                        ? '[Connecting…]'
-                        : `[${staffCount}]`,
+                        ? '—'
+                        : `**${staffCount}**`,
                 inline: true,
             },
             {
                 name: 'Queue',
                 value:
                     queueCount === null
-                        ? '[Connecting…]'
-                        : `[${queueCount}]`,
+                        ? '—'
+                        : `**${queueCount}**`,
                 inline: true,
             }
         )
@@ -150,10 +146,6 @@ function createSessionDashboardEmbed({
             text: DASHBOARD_FOOTER,
             iconURL: guildIcon || undefined,
         });
-
-    if (guildIcon) {
-        embed.setThumbnail(guildIcon);
-    }
 
     return embed;
 }
@@ -175,22 +167,22 @@ function replacePlayerCountFields(
     embed
         .setTitle(DASHBOARD_TITLE)
         .setDescription(
-            `**Last Updated:** <t:${updatedTimestamp}:R>`
+            `Updated <t:${updatedTimestamp}:R>`
         )
         .setFields(
         {
             name: 'Player Count',
-            value: `[${currentPlayers} / ${maxPlayers}]`,
+            value: `**${currentPlayers}/${maxPlayers}**`,
             inline: true,
         },
         {
             name: 'Staff Members',
-            value: `[${staffCount}]`,
+            value: `**${staffCount}**`,
             inline: true,
         },
         {
             name: 'Queue',
-            value: `[${queueCount}]`,
+            value: `**${queueCount}**`,
             inline: true,
         }
         )

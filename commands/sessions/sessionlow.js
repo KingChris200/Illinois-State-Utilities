@@ -14,7 +14,7 @@ const brands = require('../../config/branding');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('sessionlow')
-        .setDescription('Announce that the current session needs more players.')
+        .setDescription('Ask members to join the current session.')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .setDMPermission(false)
         .addIntegerOption((option) =>
@@ -28,7 +28,7 @@ module.exports = {
         .addStringOption((option) =>
             option
                 .setName('notes')
-                .setDescription('Additional information for members.')
+                .setDescription('Optional notes for members.')
                 .setMaxLength(500)
                 .setRequired(false)
         )
@@ -99,16 +99,15 @@ module.exports = {
             }
 
             const descriptionLines = [
-                'The session needs more players.',
+                'We need a few more players to keep the session going.',
                 '',
-                '**Server Code:** `ILLINOISrp`',
-                `**Host:** ${interaction.user}`,
+                '**Code:** `ILLINOISrp`',
             ];
 
             if (playerCount !== null) {
                 descriptionLines.push(
                     '',
-                    `**Players:** ${playerCount}`
+                    `**Players:** ${playerCount}/40`
                 );
             }
 
@@ -123,13 +122,9 @@ module.exports = {
                 .setColor(0x3498db)
                 .setTitle('Players Needed')
                 .setDescription(descriptionLines.join('\n'))
-                .setAuthor({
-                    name: interaction.guild.name,
-                    iconURL: brands.assets.logo,
-                })
                 .setImage(brands.assets.sessionBanner)
                 .setFooter({
-                    text: 'Illinois State Utilities • Supporting Illinois State Roleplay',
+                    text: `Posted by ${interaction.user.username}`,
                     iconURL: brands.assets.logo,
                 })
                 .setTimestamp();

@@ -273,7 +273,7 @@ function createResultEmbed(pending, outcome, error = null) {
             title: `${actionName} Completed`,
             color: '#27AE60',
             description:
-                'The confirmed command was sent to ER:LC successfully.',
+                'The command was sent to ER:LC.',
         },
         failed: {
             title: `${actionName} Not Completed`,

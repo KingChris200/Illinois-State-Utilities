@@ -114,7 +114,7 @@ test('feedback results use a compact branded layout, rank, and safe rating', () 
         recordId: 'feedback-test',
     }).toJSON();
 
-    assert.equal(embed.thumbnail.url, require('../config/branding').isrp.logo);
+    assert.equal(embed.thumbnail.url, 'https://cdn.example/avatar.png');
     assert.equal(embed.author.name, 'Feedback by Community Member');
     assert.equal(embed.author.icon_url, 'https://cdn.example/avatar.png');
     assert.equal(embed.fields[0].name, 'Staff');

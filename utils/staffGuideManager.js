@@ -725,7 +725,7 @@ function createHelpPayload(
             {
                 name: 'Handbook Sections',
                 value:
-                    'Choose a topic for an operational summary and a direct link to its official handbook tab.',
+                    'Choose a topic for a short summary and its handbook link.',
             },
             {
                 name: 'Rank Divisions',

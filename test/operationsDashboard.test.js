@@ -33,7 +33,7 @@ test('operations dashboard opens on a complete overview', async () => {
 
         assert.equal(
             embed.title,
-            'ER:LC Operations Center \u2014 Overview'
+            'ER:LC Server Status'
         );
         assert.equal(row.components.length, 5);
         assert.equal(
@@ -108,7 +108,7 @@ test('operations controls switch views and refresh safely', async () => {
         assert.equal(deferred, true);
         assert.equal(
             edited.embeds[0].toJSON().title,
-            'ER:LC Operations Center \u2014 Mod Calls'
+            'Moderator Calls'
         );
         assert.equal(edited.components.length, 1);
 
@@ -126,7 +126,7 @@ test('operations controls switch views and refresh safely', async () => {
         });
         assert.equal(
             edited.embeds[0].toJSON().title,
-            'ER:LC Operations Center \u2014 Mod Calls'
+            'Moderator Calls'
         );
 
         removeOperationsDashboard(dashboard.id);
@@ -164,8 +164,8 @@ test('activity and health dashboard views render in mock mode', async () => {
         );
 
         assert.match(activity.toJSON().title, /Activity/);
-        assert.match(health.toJSON().title, /Server Health/);
-        assert.match(health.toJSON().description, /successfully/);
+        assert.equal(health.toJSON().title, 'Bot Status');
+        assert.match(health.toJSON().description, /working/);
     });
 });
 

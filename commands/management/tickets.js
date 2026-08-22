@@ -101,7 +101,7 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor(brands.isrp.color)
-                        .setTitle('ISRP Assistance System Status')
+                        .setTitle('Assistance Status')
                         .addFields(
                             {
                                 name: 'Panel',

@@ -232,7 +232,7 @@ module.exports = {
                 })
                 .setDescription(
                     [
-                        'Illinois State Utilities has been configured successfully!',
+                        'Illinois State Utilities is now configured.',
                         '',
                         '**Server Name**',
                         serverName,
