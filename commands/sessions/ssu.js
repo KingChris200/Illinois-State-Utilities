@@ -22,6 +22,9 @@ const sessionAutomationConfig = require(
 const {
     saveSessionState,
 } = require('../../services/sessionStateStore');
+const {
+    fetchSessionChannel,
+} = require('../../utils/sessionChannel');
 
 /*
  * ==========================================
@@ -42,7 +45,7 @@ const JOIN_CODE =
  */
 
 const SESSION_PING_ROLE_ID =
-    '1377126063926411334';
+    sessionAutomationConfig.pingRoleId;
 
 /*
  * ==========================================
@@ -74,62 +77,6 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('ssu')
         .setDescription('Start a server vote.')
-
-        /*
-         * Vote goal option.
-         */
-
-        .addIntegerOption((option) =>
-            option
-                .setName('goal')
-                .setDescription(
-                    'How many Attending votes are needed.'
-                )
-                .setMinValue(1)
-                .setMaxValue(100)
-                .setRequired(false)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('roleplay-zone')
-                .setDescription(
-                    'The roleplay zone for this session.'
-                )
-                .setMaxLength(100)
-                .setRequired(false)
-        )
-
-        .addStringOption((option) =>
-            option
-                .setName('notes')
-                .setDescription(
-                    'Optional notes for members.'
-                )
-                .setMaxLength(500)
-                .setRequired(false)
-        )
-
-        /*
-         * Vote duration option.
-         */
-
-        .addIntegerOption((option) =>
-            option
-                .setName('duration')
-                .setDescription(
-                    'How long the vote stays open.'
-                )
-                .setMinValue(1)
-                .setMaxValue(60)
-                .setRequired(false)
-        )
-
-        /*
-         * Members need Manage Server permission
-         * to use this command.
-         */
-
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageGuild
         )
@@ -146,17 +93,6 @@ module.exports = {
             return interaction.reply({
                 content:
                     '❌ This command can only be used inside a server.',
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-
-        if (
-            interaction.channelId !==
-            sessionAutomationConfig.channelId
-        ) {
-            return interaction.reply({
-                content:
-                    `❌ The official session workflow must be started in <#${sessionAutomationConfig.channelId}>.`,
                 flags: MessageFlags.Ephemeral,
             });
         }
@@ -216,25 +152,11 @@ module.exports = {
          * ==========================================
          */
 
-        const goal =
-            interaction.options.getInteger(
-                'goal'
-            ) ?? 10;
-
+        const goal = sessionAutomationConfig.voteGoal;
         const durationMinutes =
-            interaction.options.getInteger(
-                'duration'
-            ) ?? 5;
-
-        const roleplayZone =
-            interaction.options.getString(
-                'roleplay-zone'
-            ) ?? 'Statewide';
-
-        const notes =
-            interaction.options.getString(
-                'notes'
-            ) ?? null;
+            sessionAutomationConfig.voteDurationMinutes;
+        const roleplayZone = 'Statewide';
+        const notes = null;
 
         const startedAt =
             Date.now();
@@ -370,6 +292,16 @@ module.exports = {
         });
 
         try {
+            const destinationChannel =
+                await fetchSessionChannel(interaction);
+
+            if (!destinationChannel) {
+                return interaction.editReply({
+                    content:
+                        `❌ The Sessions channel <#${sessionAutomationConfig.channelId}> is unavailable.`,
+                });
+            }
+
             /*
              * ==========================================
              * SEND SERVER VOTE
@@ -377,7 +309,7 @@ module.exports = {
              */
 
             const voteMessage =
-                await interaction.channel.send({
+                await destinationChannel.send({
                     content:
                         `<@&${SESSION_PING_ROLE_ID}> @here`,
 
@@ -415,7 +347,7 @@ module.exports = {
                     interaction.guild.id,
 
                 channelId:
-                    interaction.channel.id,
+                    destinationChannel.id,
 
                 messageId:
                     voteMessage.id,
@@ -440,7 +372,7 @@ module.exports = {
             await saveSessionState();
 
             await announceSessionEvent('vote_started', {
-                sourceChannelId: interaction.channel.id,
+                sourceChannelId: destinationChannel.id,
                 hostUsername: interaction.user.username,
                 voteGoal: goal,
                 roleplayZone,
@@ -454,7 +386,7 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    `✅ Server vote posted in ${interaction.channel}.\n` +
+                    `✅ Server vote posted in ${destinationChannel}.\n` +
                     `Goal: **${goal}** • Duration: **${durationMinutes} minute${
                         durationMinutes === 1
                             ? ''

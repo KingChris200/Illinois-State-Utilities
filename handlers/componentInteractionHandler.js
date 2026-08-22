@@ -50,8 +50,17 @@ const {
 const {
     handleDepartmentsInteraction,
 } = require('../utils/departmentsPanelManager');
+const {
+    handleSessionControlInteraction,
+} = require('../utils/sessionControlManager');
 
 const componentRoutes = [
+    {
+        matches: (interaction) =>
+            interaction.isButton?.() &&
+            hasPrefix(interaction, 'session_control:'),
+        handle: handleSessionControlInteraction,
+    },
     {
         matches: (interaction) =>
             interaction.isStringSelectMenu?.() &&

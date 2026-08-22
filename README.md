@@ -77,6 +77,9 @@ ERLC_MODERATION_LOG_CHANNEL_ID=678901234567890123
 
 # Session automation is restricted to this Discord channel
 ERLC_SESSION_CHANNEL_ID=1490731232311378010
+ERLC_SESSION_PING_ROLE_ID=1377126063926411334
+ERLC_SESSION_VOTE_GOAL=10
+ERLC_SESSION_VOTE_DURATION_MINUTES=5
 
 # New-member welcomes are sent here
 WELCOME_CHANNEL_ID=1490733409037975654
@@ -118,6 +121,17 @@ remain administrator-only.
 Enable **Message Content Intent** for the bot in the Discord Developer
 Portal before starting it. No slash-command redeployment is needed for
 the prefix commands above.
+
+## Session Manager
+
+`/session manage` opens one private control panel with **Start Vote**,
+**Players Needed**, **Session Full**, **End Session**, and **Refresh**.
+`/ssu` and `/ssd` remain available as quick shortcuts.
+
+Routine choices are automatic. Public updates go to the configured Sessions
+channel, use the configured Session Ping role, and read the current player
+count from ER:LC when it is available. `/ssu`, `/sessionlow`, `/sessionfull`,
+and `/ssd` no longer ask staff to select channels, roles, or player counts.
 
 ## Branded `/embed` announcements
 

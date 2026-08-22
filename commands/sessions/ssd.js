@@ -20,6 +20,9 @@ const {
 const {
     saveCompletedSessionAnalytics,
 } = require('../../services/sessionAnalyticsService');
+const {
+    fetchSessionChannel,
+} = require('../../utils/sessionChannel');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -63,6 +66,16 @@ module.exports = {
         await interaction.deferReply({
             flags: MessageFlags.Ephemeral,
         });
+
+        const destinationChannel =
+            await fetchSessionChannel(interaction);
+
+        if (!destinationChannel) {
+            return interaction.editReply({
+                content:
+                    '❌ The configured Sessions channel is unavailable.',
+            });
+        }
 
         /*
          * Freeze the repeating monitor, then request one final
@@ -165,7 +178,7 @@ module.exports = {
 
         try {
             const shutdownMessage =
-                await interaction.channel.send({
+                await destinationChannel.send({
                     embeds: [shutdownEmbed],
                 });
 
@@ -191,7 +204,7 @@ module.exports = {
                 'session_shutdown',
                 {
                     sourceChannelId:
-                        interaction.channel.id,
+                        destinationChannel.id,
                     hostUsername:
                         endedSession.hostUsername,
                     shutdownBy:
@@ -202,7 +215,7 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    `✅ Shutdown posted in ${interaction.channel}.\n` +
+                    `✅ Shutdown posted in ${destinationChannel}.\n` +
                     `Duration: **${sessionDuration}** • ${shutdownMessage.url}`,
             });
 

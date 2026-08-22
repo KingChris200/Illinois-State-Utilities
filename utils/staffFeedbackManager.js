@@ -142,6 +142,18 @@ function createStaffFeedbackEmbed({
     return embed;
 }
 
+function createStaffFeedbackMessagePayload(options) {
+    return {
+        content: `<@${options.targetMember.id}>`,
+        embeds: [createStaffFeedbackEmbed(options)],
+        allowedMentions: {
+            parse: [],
+            users: [options.targetMember.id],
+            roles: [],
+        },
+    };
+}
+
 async function getFeedbackRecords(guildId) {
     const database = await readDatabase(STAFF_FEEDBACK_DATABASE, {});
     return Array.isArray(database[guildId])
@@ -252,23 +264,16 @@ async function submitStaffFeedback({
         messageId: null,
         createdAt: Date.now(),
     };
-    const message = await destination.send({
-        embeds: [
-            createStaffFeedbackEmbed({
-                guild: interaction.guild,
-                reviewer,
-                targetMember,
-                rating,
-                reason,
-                recordId,
-            }),
-        ],
-        allowedMentions: {
-            parse: [],
-            users: [],
-            roles: [],
-        },
-    });
+    const message = await destination.send(
+        createStaffFeedbackMessagePayload({
+            guild: interaction.guild,
+            reviewer,
+            targetMember,
+            rating,
+            reason,
+            recordId,
+        })
+    );
 
     record.messageId = message.id;
     await saveFeedbackRecord(interaction.guildId, record);
@@ -345,6 +350,7 @@ module.exports = {
     STAFF_FEEDBACK_MODAL_PREFIX,
     STAFF_FEEDBACK_PREFIX,
     createStaffFeedbackEmbed,
+    createStaffFeedbackMessagePayload,
     createStaffFeedbackModal,
     formatRating,
     getFeedbackCooldown,

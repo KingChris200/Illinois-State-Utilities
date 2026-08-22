@@ -1,6 +1,5 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { MessageFlags } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -8,19 +7,14 @@ const ssuCommand = require('../commands/sessions/ssu');
 const sessionConfig = require('../config/sessionAutomation');
 const sessionManager = require('../utils/sessionManager');
 
-test('ssu exposes the complete vote and startup workflow', () => {
+test('ssu starts the automatic vote workflow without command options', () => {
     const command = ssuCommand.data.toJSON();
-    const optionNames = command.options.map(
-        (option) => option.name
-    );
 
     assert.equal(command.name, 'ssu');
-    assert.deepEqual(optionNames, [
-        'goal',
-        'roleplay-zone',
-        'notes',
-        'duration',
-    ]);
+    assert.deepEqual(command.options || [], []);
+    assert.equal(sessionConfig.voteGoal, 10);
+    assert.equal(sessionConfig.voteDurationMinutes, 5);
+    assert.equal(sessionConfig.pingRoleId, '1377126063926411334');
 });
 
 test('legacy svote command has been removed', () => {
@@ -30,27 +24,6 @@ test('legacy svote command has been removed', () => {
     );
 
     assert.equal(fs.existsSync(svotePath), false);
-});
-
-test('ssu refuses to start outside the sessions channel', async () => {
-    let reply = null;
-
-    await ssuCommand.execute({
-        inGuild: () => true,
-        channelId: 'wrong-channel',
-        reply: async (payload) => {
-            reply = payload;
-        },
-    });
-
-    assert.equal(
-        reply.flags,
-        MessageFlags.Ephemeral
-    );
-    assert.match(
-        reply.content,
-        new RegExp(sessionConfig.channelId)
-    );
 });
 
 test('session details persist from vote through shutdown', () => {

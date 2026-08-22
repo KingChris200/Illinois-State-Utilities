@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const staffCommand = require('../commands/management/staff');
 const {
     createStaffFeedbackEmbed,
+    createStaffFeedbackMessagePayload,
     createStaffFeedbackModal,
     formatRating,
     isEligibleStaffMember,
@@ -124,4 +125,29 @@ test('feedback results use a compact branded layout, rank, and safe rating', () 
     assert.equal(embed.fields[2].name, 'Reason');
     assert.equal(formatRating(1), '★☆☆☆☆');
     assert.equal(formatRating(5), '★★★★★');
+});
+
+test('feedback safely pings only the reviewed staff member', () => {
+    const targetMember = createMember({
+        id: '222222222222222222',
+        roleIds: [MAIN_SERVER_RANKS[0].roleId],
+    });
+    const reviewer = createMember({
+        id: '333333333333333333',
+    });
+    const payload = createStaffFeedbackMessagePayload({
+        guild: { id: MAIN_SERVER_ID },
+        reviewer,
+        targetMember,
+        rating: 5,
+        reason: 'They handled the ticket clearly and professionally.',
+        recordId: 'feedback-test',
+    });
+
+    assert.equal(payload.content, '<@222222222222222222>');
+    assert.deepEqual(payload.allowedMentions, {
+        parse: [],
+        users: ['222222222222222222'],
+        roles: [],
+    });
 });
