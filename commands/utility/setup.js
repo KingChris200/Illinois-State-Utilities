@@ -10,6 +10,8 @@ const {
     updateDatabase,
 } = require('../../utils/database');
 
+const DEFAULT_BRAND_COLOR = '#3498DB';
+
 function normalizeHexColor(colorInput) {
     const cleanedColor = colorInput
         .trim()
@@ -164,54 +166,82 @@ module.exports = {
                     .getString('secondary-owner')
                     ?.trim() || null;
 
-            const colorInput =
-                interaction.options.getString('brand-color') || '#3498DB';
+            /*
+             * Only validate the brand color if one was typed.
+             * If it was left empty, the color already saved for
+             * this server is kept (see the save step below).
+             */
+            const typedColorInput =
+                interaction.options.getString('brand-color');
 
-            const brandColor = normalizeHexColor(colorInput);
+            let typedBrandColor = null;
 
-            if (!brandColor) {
-                return interaction.editReply({
-                    content:
-                        '❌ The brand color must be a valid six-digit hex color, such as `#3498DB`.',
-                });
+            if (typedColorInput) {
+                typedBrandColor = normalizeHexColor(typedColorInput);
+
+                if (!typedBrandColor) {
+                    return interaction.editReply({
+                        content:
+                            '❌ The brand color must be a valid six-digit hex color, such as `#3498DB`.',
+                    });
+                }
             }
 
-            const guildConfiguration = {
-                guildId: interaction.guildId,
-                guildName: interaction.guild.name,
-
-                serverName,
-                serverCode,
-
-                owners: {
-                    primary: primaryOwner,
-                    secondary: secondaryOwner,
-                },
-
-                announcementRoleId: announcementRole.id,
-                sessionChannelId: sessionChannel.id,
-                logChannelId: logChannel.id,
-
-                brandColor: brandColor.hex,
-
-                configuredBy: {
-                    discordUserId: interaction.user.id,
-                    discordUsername: interaction.user.username,
-                },
-
-                updatedAt: new Date().toISOString(),
-            };
+            let savedBrandHex = DEFAULT_BRAND_COLOR;
 
             await updateDatabase(
                 'guild-configs',
                 (configurations) => {
-                    configurations[interaction.guildId] =
-                        guildConfiguration;
+                    const existingConfiguration =
+                        configurations[interaction.guildId] || {};
+
+                    savedBrandHex =
+                        typedBrandColor?.hex ||
+                        existingConfiguration.brandColor ||
+                        DEFAULT_BRAND_COLOR;
+
+                    /*
+                     * The old saved settings are copied first, then the
+                     * new values are written on top. That way /setup
+                     * never wipes extra settings that were added by
+                     * other parts of the bot.
+                     */
+                    configurations[interaction.guildId] = {
+                        ...existingConfiguration,
+
+                        guildId: interaction.guildId,
+                        guildName: interaction.guild.name,
+
+                        serverName,
+                        serverCode,
+
+                        owners: {
+                            primary: primaryOwner,
+                            secondary: secondaryOwner,
+                        },
+
+                        announcementRoleId: announcementRole.id,
+                        sessionChannelId: sessionChannel.id,
+                        logChannelId: logChannel.id,
+
+                        brandColor: savedBrandHex,
+
+                        configuredBy: {
+                            discordUserId: interaction.user.id,
+                            discordUsername: interaction.user.username,
+                        },
+
+                        updatedAt: new Date().toISOString(),
+                    };
 
                     return configurations;
                 },
                 {}
             );
+
+            const brandColor =
+                normalizeHexColor(savedBrandHex) ||
+                normalizeHexColor(DEFAULT_BRAND_COLOR);
 
             const ownerDisplay = secondaryOwner
                 ? `${primaryOwner}\n${secondaryOwner}`
