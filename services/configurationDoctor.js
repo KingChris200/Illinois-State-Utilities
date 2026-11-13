@@ -80,7 +80,7 @@ async function runConfigurationDoctor({
             name: 'Session Channel',
             id:
                 process.env.ERLC_SESSION_CHANNEL_ID ||
-                '1490731232311378010',
+                '1547316476908802108',
             required: true,
         },
         {

@@ -2,7 +2,7 @@ const { MAIN_SERVER_ID } = require('./serverConfigs');
 
 const TICKET_CONFIGS = {
     [MAIN_SERVER_ID]: {
-        assistanceChannelId: '1490730143508070540',
+        assistanceChannelId: '1547317873863561296',
         transcriptChannelId: '1490813707289362533',
         categories: [
             {

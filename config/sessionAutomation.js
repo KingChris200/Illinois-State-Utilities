@@ -13,7 +13,7 @@ function readBoundedInteger(name, fallback, minimum, maximum) {
 module.exports = {
     channelId:
         process.env.ERLC_SESSION_CHANNEL_ID ||
-        '1490731232311378010',
+        '1547316476908802108',
     pingRoleId:
         process.env.ERLC_SESSION_PING_ROLE_ID ||
         '1377126063926411334',
