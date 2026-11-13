@@ -34,8 +34,12 @@ const ISP_SERVER_ID =
 
 const ISRP_CHANNELS = {
     commands:
-        '1490733534611116204',
+        '1547319302569463951',
 
+    /*
+     * NOT IN THE NEW SERVER LIST - still the old ID.
+     * Replace once you have the new channel.
+     */
     staffFeedback:
         '1539790036994629792',
 
@@ -48,12 +52,24 @@ const ISRP_CHANNELS = {
     assistance:
         '1547317873863561296',
 
+    /*
+     * NOT IN THE NEW SERVER LIST - still the old ID.
+     * Replace once you have the new channel.
+     */
     proof:
         '1490733647915913246',
 
+    /*
+     * The ID sent for primary was missing its last digit,
+     * so this is the old full ID. Confirm it is right.
+     */
     primary:
         '1490733409037975654',
 
+    /*
+     * NOT IN THE NEW SERVER LIST - still the old ID.
+     * Replace once you have the new channel.
+     */
     inGameChat:
         '1506444257173704704',
 
@@ -106,67 +122,67 @@ const ISP_CHANNELS = {
 const MAIN_SERVER_RANKS = [
     {
         name: 'Trial Moderator',
-        roleId: '1490524523794268250',
+        roleId: '1551085556962820218',
     },
     {
         name: 'Senior Moderator',
-        roleId: '1490524339550949580',
+        roleId: '1551085488809451600',
     },
     {
-        name: 'Community Moderator',
-        roleId: '1490524276820807710',
-    },
-
-    {
-        name: 'Junior Staff Supervisor',
-        roleId: '1510594647766990988',
-    },
-    {
-        name: 'Senior Staff Supervisor',
-        roleId: '1510602643016388728',
-    },
-    {
-        name: 'Head Staff Supervisor',
-        roleId: '1490523702142701811',
+        name: 'Head Moderator',
+        roleId: '1551085442135498852',
     },
 
     {
-        name: 'Junior Manager',
-        roleId: '1490885470522183740',
+        name: 'Junior Administrator',
+        roleId: '1551085221766504468',
     },
     {
-        name: 'Manager',
-        roleId: '1510594665852829716',
+        name: 'Senior Administrator',
+        roleId: '1551085200430211172',
     },
     {
-        name: 'Senior Manager',
-        roleId: '1490523518901813339',
+        name: 'Head Administrator',
+        roleId: '1551085162928930816',
     },
 
     {
         name: 'Junior Internal Affairs',
-        roleId: '1526344620844253325',
+        roleId: '1551085013376696381',
     },
     {
         name: 'Senior Internal Affairs',
-        roleId: '1526344724238307459',
+        roleId: '1551084946062446664',
     },
     {
-        name: 'Superior Internal Affairs',
-        roleId: '1526345126794756156',
+        name: 'Internal Affairs Supervisor',
+        roleId: '1551084863501631578',
     },
 
     {
-        name: 'Assistant Server Director',
-        roleId: '1490523390778544291',
+        name: 'Junior Management',
+        roleId: '1551084742949212281',
     },
     {
-        name: 'Deputy Server Director',
-        roleId: '1490523081129857196',
+        name: 'Senior Management',
+        roleId: '1551084668248391761',
     },
     {
-        name: 'Server Director',
-        roleId: '1491215580223639604',
+        name: 'Head Management',
+        roleId: '1551084605736624168',
+    },
+
+    {
+        name: 'Assistant Director',
+        roleId: '1548826428991217805',
+    },
+    {
+        name: 'Deputy Director',
+        roleId: '1548826365909012630',
+    },
+    {
+        name: 'Director',
+        roleId: '1548826307729821716',
     },
 
     {
@@ -284,26 +300,32 @@ const SERVER_CONFIGS = {
             ownershipTeam:
                 '1520179382407266354',
 
-            directorTeam:
-                '1490808065514016887',
+            botDeveloper:
+                '1377093347231137862',
 
-            internalAffairsTeam:
-                '1526344302618218656',
+            directorTeam:
+                '1551086969877041233',
 
             managementBoard:
-                '1490523581187231795',
+                '1551086846862299236',
+
+            internalAffairsTeam:
+                '1551086603143876628',
+
+            highRanking:
+                '1556095518952919060',
 
             supervisoryBoard:
-                '1490523797629960392',
+                '1551086460982136833',
 
             moderationBoard:
-                '1520521292711854283',
+                '1551086377456894112',
 
             serverStaffTeam:
-                '1490847791940112485',
+                '1553785618377474058',
 
-            trainingAndEducation:
-                '1490884232380420106',
+            lowRanking:
+                '1561234345975619664',
         },
 
         reviewerRoleIds: [
@@ -314,42 +336,43 @@ const SERVER_CONFIGS = {
             '1520179382407266354',
             '1490522930608738406',
             '1490522983947698349',
+            '1377093347231137862',
 
             /*
              * Directorate
              */
 
-            '1491215580223639604',
-            '1490523081129857196',
-            '1490523390778544291',
-            '1490808065514016887',
-
-            /*
-             * Internal Affairs
-             */
-
-            '1526345126794756156',
-            '1526344724238307459',
-            '1526344620844253325',
-            '1526344302618218656',
+            '1548826307729821716',
+            '1548826365909012630',
+            '1548826428991217805',
+            '1551086969877041233',
 
             /*
              * Management
              */
 
-            '1490523518901813339',
-            '1510594665852829716',
-            '1490885470522183740',
-            '1490523581187231795',
+            '1551084605736624168',
+            '1551084668248391761',
+            '1551084742949212281',
+            '1551086846862299236',
 
             /*
-             * Staff Supervisory
+             * Internal Affairs
              */
 
-            '1490523702142701811',
-            '1510602643016388728',
-            '1510594647766990988',
-            '1490523797629960392',
+            '1551084863501631578',
+            '1551084946062446664',
+            '1551085013376696381',
+            '1551086603143876628',
+
+            /*
+             * Administration
+             */
+
+            '1551085162928930816',
+            '1551085200430211172',
+            '1551085221766504468',
+            '1551086460982136833',
         ],
 
         embedTitles: {
