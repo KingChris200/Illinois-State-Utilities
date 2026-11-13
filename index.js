@@ -38,8 +38,6 @@ const loadedCommandCount = loadCommands(client);
 const loadedEventCount = loadEvents(client);
 
 client.once('clientReady', (readyClient) => {
-    console.clear();
-
     console.log('══════════════════════════════════════════════════════');
     console.log('              ILLINOIS STATE UTILITIES');
     console.log('               MANAGEMENT PLATFORM');
