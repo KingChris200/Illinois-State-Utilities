@@ -1,4 +1,4 @@
-const {
+onst {
     SlashCommandBuilder,
     EmbedBuilder,
     MessageFlags,
@@ -45,7 +45,7 @@ const {
  * serverConfigs.js first. This ID acts as the ISRP fallback.
  */
 const ISRP_PROMOTION_CHANNEL_ID =
-    '1490759034847105196';
+    '1547773652525916232';
 
 const DEFAULT_BRAND_COLOR =
     0x2b2d31;
